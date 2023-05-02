@@ -41,7 +41,7 @@ public class DemoExtractor implements Extractor {
             }
 
         }
-        fields[1] = new Field("numberOfFiles", "INT");
+        fields[1] = new Field("numberOfFiles", "INTEGER");
         fields[2] = new Field("size", "BIGINT");
         extractedFields[1] = numberOfFiles;
         extractedFields[2] = size;
@@ -50,7 +50,7 @@ public class DemoExtractor implements Extractor {
     private void extractFromPom(Package pkg, Object[] extractedFields) {
         Model model = pkg.getPom();
         String nameOfFile = model.getName();
-        Field field = new Field ("fileName", "VARCHAR");
+        Field field = new Field ("fileName", "VARCHAR(128)");
         fields[0] = field;
         extractedFields[0] = nameOfFile;
     }
