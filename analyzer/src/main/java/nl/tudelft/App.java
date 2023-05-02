@@ -15,7 +15,7 @@ public class App {
                 id.get()
         };
 
-        var builder = extractors(new AnalyzerBuilder());
+        var builder = extractors(new RunnerBuilder());
         var maven = new Maven();
         var db = new Database();
         try (var analyzer = builder.build(db)) {
@@ -23,7 +23,7 @@ public class App {
         }
     }
 
-    private static AnalyzerBuilder extractors(AnalyzerBuilder builder) {
+    private static RunnerBuilder extractors(RunnerBuilder builder) {
         return builder;
     }
 

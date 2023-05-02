@@ -6,16 +6,16 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class Analyzer implements Closeable {
+public class Runner implements Closeable {
     private final Database db;
     private final Map<String, Extractor> extractors;
 
-    Analyzer(Database db) {
+    Runner(Database db) {
         this.db = db;
         this.extractors = new TreeMap<>();
     }
 
-    Analyzer addExtractor(String name, Extractor extractor) {
+    Runner addExtractor(String name, Extractor extractor) {
         if (this.extractors.containsKey(name))
             throw new IllegalArgumentException("extractor `" + name + "` already added");
 
