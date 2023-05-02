@@ -22,4 +22,9 @@ public class PackageId {
     public String getVersion() {
         return version;
     }
+
+    @Override
+    public String toString() {
+        return group + ":" + artifact + ":" + version;
+    }
 }
