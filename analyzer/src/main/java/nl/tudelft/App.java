@@ -1,9 +1,15 @@
 package nl.tudelft;
 
+import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+import nl.tudelft.mavensecrets.resolver.Resolver;
+
+import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.logging.Logger;
 
 public class App {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, SQLException {
         if (args.length != 1)
             throw new RuntimeException("expected a single package id");
 
@@ -15,19 +21,24 @@ public class App {
                 id.get()
         };
 
+        Logger logger = Logger.getGlobal();
+        File local = new File(System.getProperty("user.home") + "/.m2/repository");
+        local.mkdir();
+        Resolver resolver = new DefaultResolver(logger, local);
+
         var builder = extractors(new RunnerBuilder());
-        var maven = new Maven();
-        var db = new Database();
-        try (var analyzer = builder.build(db)) {
-            analyzer.run(maven, packages);
+        var maven = new Maven(resolver);
+        var db = openDatabase();
+        try (var runner = builder.build(db)) {
+            runner.run(maven, packages);
         }
     }
 
     private static RunnerBuilder extractors(RunnerBuilder builder) {
-        return builder;
+        return builder.addExtractor("favoriteName", new DemoExtractor());
     }
 
-    private static Database openDatabase() {
-        return new Database();
+    private static Database openDatabase() throws SQLException {
+        return Database.connect("jdbc:postgresql://localhost:5432/postgres", "postgres", "SuperSekretPassword");
     }
 }

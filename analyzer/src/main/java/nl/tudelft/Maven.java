@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.jar.JarFile;
 
 import org.apache.maven.model.Model;
+import org.apache.maven.model.io.DefaultModelReader;
+import org.apache.maven.model.io.ModelReader;
 import org.eclipse.aether.artifact.Artifact;
 
 import nl.tudelft.mavensecrets.resolver.Resolver;
@@ -18,7 +20,7 @@ public class Maven {
         this.resolver = Objects.requireNonNull(resolver);
     }
 
-    public Package get(PackageId id) {
+    public Package getPackage(PackageId id) {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.getGroup(), id.getArtifact(), id.getVersion());
@@ -56,6 +58,7 @@ public class Maven {
 
     private Model parsePom(File file) throws IOException {
         // TODO Implementation
-        throw new UnsupportedOperationException();
+        ModelReader mr = new DefaultModelReader();
+        return mr.read(file, null);
     }
 }
