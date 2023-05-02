@@ -1,5 +1,6 @@
 package nl.tudelft;
 
+import java.sql.SQLException;
 import java.util.*;
 
 public class RunnerBuilder {
@@ -24,7 +25,7 @@ public class RunnerBuilder {
         return this;
     }
 
-    Runner build(Database db) {
+    Runner build(Database db) throws SQLException {
         var analyzer =  new Runner(db);
         for (var entry : extractors.entrySet())
             analyzer.addExtractor(entry.getKey(), entry.getValue());

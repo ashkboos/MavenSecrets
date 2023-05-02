@@ -17,8 +17,8 @@ public class DemoExtractor implements Extractor {
 
     @Override
     public Field[] fields() {
-        fields[0] = new Field ("fileName", "VARCHAR(128)");
-        fields[1] = new Field("numberOfFiles", "INTEGER");
+        fields[0] = new Field ("filename", "VARCHAR(128)");
+        fields[1] = new Field("numberoffiles", "INTEGER");
         fields[2] = new Field("size", "BIGINT");
         return fields;
     }
@@ -32,7 +32,7 @@ public class DemoExtractor implements Extractor {
     }
 
     private void extractFromJar(Package pkg, Object[] extractedFields) {
-        JarFile jar = pkg.getJar();
+        JarFile jar = pkg.jar();
         long size = 0;
         Enumeration<JarEntry> enumerator = jar.entries();
         int numberOfFiles = 0;
@@ -48,7 +48,7 @@ public class DemoExtractor implements Extractor {
     }
 
     private void extractFromPom(Package pkg, Object[] extractedFields) {
-        Model model = pkg.getPom();
+        Model model = pkg.pom();
         String nameOfFile = model.getName();
         extractedFields[0] = nameOfFile;
     }

@@ -2,6 +2,7 @@ package nl.tudelft;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
@@ -15,7 +16,7 @@ public class Runner implements Closeable {
         this.extractors = new TreeMap<>();
     }
 
-    Runner addExtractor(String name, Extractor extractor) {
+    Runner addExtractor(String name, Extractor extractor) throws SQLException {
         if (this.extractors.containsKey(name))
             throw new IllegalArgumentException("extractor `" + name + "` already added");
 
@@ -27,14 +28,14 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, PackageId[] packages) {
+    void run(Maven mvn, PackageId[] packages) throws SQLException, IOException {
         var fields = extractors.values().stream().flatMap(i -> Arrays.stream(i.fields())).toArray(Field[]::new);
         if (fields.length == 0)
             return;
 
         var values = new Object[fields.length];
         for (var id : packages) {
-            try (var pkg = mvn.get(id)) {
+            try (var pkg = mvn.getPackage(id)) {
                 extractInto(mvn, pkg, values);
             }
 

@@ -109,8 +109,9 @@ public class DefaultResolver implements Resolver {
     @Override
     public Optional<File> getArtifact(Artifact artifact) {
         Objects.requireNonNull(artifact);
+        Artifact artifactJar = new SubArtifact(artifact, null, "jar");
 
-        return resolve(artifact)
+        return resolve(artifactJar)
                 .map(Artifact::getFile);
     }
 

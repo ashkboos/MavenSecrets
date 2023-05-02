@@ -25,6 +25,11 @@ public class PackageId {
         return version;
     }
 
+    @Override
+    public String toString() {
+        return group + ":" + artifact + ":" + version;
+    }
+
     public static Optional<PackageId> tryParse(String text) {
         var split = text.split(":", 4);
         if (split.length != 3)
