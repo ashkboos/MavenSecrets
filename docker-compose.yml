@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+  db:
+    image: postgres:15.2
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: SuperSekretPassword
+      ports:
+        - "5432:5432"
