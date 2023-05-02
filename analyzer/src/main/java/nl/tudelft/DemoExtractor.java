@@ -11,12 +11,15 @@ public class DemoExtractor implements Extractor {
     private int lengthOfFields;
 
     public DemoExtractor() {
-        this.fields = new Field[lengthOfFields];
         this.lengthOfFields = 3;
+        this.fields = new Field[lengthOfFields];
     }
 
     @Override
     public Field[] fields() {
+        fields[0] = new Field ("fileName", "VARCHAR(128)");
+        fields[1] = new Field("numberOfFiles", "INTEGER");
+        fields[2] = new Field("size", "BIGINT");
         return fields;
     }
 
@@ -39,10 +42,7 @@ public class DemoExtractor implements Extractor {
             if(!entry.isDirectory()) {
                 numberOfFiles++;
             }
-
         }
-        fields[1] = new Field("numberOfFiles", "INTEGER");
-        fields[2] = new Field("size", "BIGINT");
         extractedFields[1] = numberOfFiles;
         extractedFields[2] = size;
     }
@@ -50,8 +50,6 @@ public class DemoExtractor implements Extractor {
     private void extractFromPom(Package pkg, Object[] extractedFields) {
         Model model = pkg.getPom();
         String nameOfFile = model.getName();
-        Field field = new Field ("fileName", "VARCHAR(128)");
-        fields[0] = field;
         extractedFields[0] = nameOfFile;
     }
 
