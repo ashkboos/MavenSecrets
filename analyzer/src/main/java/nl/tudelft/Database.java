@@ -9,7 +9,8 @@ import java.util.*;
 
 // PackageId PKEY, Field 1, Value 1, Field 2, Value 2, etc
 public class Database implements Closeable {
-    private static final String TABLE_NAME = "packages";
+    private static final String PACKAGES_TABLE = "packages";
+    private static final String PACKAGE_INDEX_TABLE = "package_list";
     private final Connection conn;
     private final Logger log;
 
@@ -30,7 +31,7 @@ public class Database implements Closeable {
     }
 
     void updateSchema(Field[] fields) throws SQLException {
-        if (!tableExists())
+        if (!tableExists(PACKAGES_TABLE))
             createTable();
 
         Set<String> cols = listColumns();
@@ -39,8 +40,8 @@ public class Database implements Closeable {
                 createColumn(field);
     }
 
-    private boolean tableExists() throws SQLException {
-        var result = queryScalar("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = '" + TABLE_NAME + "')");
+    private boolean tableExists(String name) throws SQLException {
+        var result = queryScalar("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = '" + name + "')");
         if (result instanceof Boolean)
             return (Boolean) result;
 
@@ -48,11 +49,11 @@ public class Database implements Closeable {
     }
 
     private void createTable() throws SQLException {
-        execute("CREATE TABLE " + TABLE_NAME + "(id VARCHAR(128) PRIMARY KEY)");
+        execute("CREATE TABLE " + PACKAGES_TABLE + "(id VARCHAR(128) PRIMARY KEY)");
     }
 
     private Set<String> listColumns() throws SQLException {
-        try (var results = query("SELECT column_name FROM information_schema.columns WHERE table_name = '" + TABLE_NAME + "'")) {
+        try (var results = query("SELECT column_name FROM information_schema.columns WHERE table_name = '" + PACKAGES_TABLE + "'")) {
             var columns = new HashSet<String>();
             while (results.next())
                 columns.add(results.getString(1));
@@ -62,7 +63,7 @@ public class Database implements Closeable {
     }
 
     private void createColumn(Field field) throws SQLException {
-        execute("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + field.getName() + " " + field.getType() + " NULL");
+        execute("ALTER TABLE " + PACKAGES_TABLE + " ADD COLUMN " + field.getName() + " " + field.getType() + " NULL");
     }
 
     // Don't call it without being sure of schema
@@ -86,7 +87,7 @@ public class Database implements Closeable {
         arguments[0] = id.toString();
         for (var i = 0; i < fields.length; i++)
             arguments[i + fields.length + 1] = arguments[i + 1] = values[i];
-        execute("INSERT INTO " + TABLE_NAME + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
+        execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
     /**
@@ -94,7 +95,10 @@ public class Database implements Closeable {
      */
     public List<PackageId> getPackageIds() throws SQLException {
         List<PackageId> packageIds = new LinkedList<>();
-        try (var results = query("SELECT groupid, artifactid, version FROM package_list")) {
+        if (!tableExists(PACKAGE_INDEX_TABLE))
+            return packageIds;
+
+        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE)) {
             while (results.next()) {
                 packageIds.add(new PackageId(results.getString("groupid"),
                         results.getString("artifactid"),
