@@ -1,9 +1,9 @@
 package nl.tudelft.mavensecrets.resolver;
 
 import java.io.File;
-import java.util.Optional;
 
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
 
 /**
  * An artifact resolver.
@@ -21,20 +21,12 @@ public interface Resolver {
     Artifact createArtifact(String groupId, String artifactId, String version);
 
     /**
-     * Create an artifact descriptor.
-     *
-     * @param coords Descriptor.
-     * @return The artifact.
-     */
-    Artifact createArtifact(String coords);
-
-    /**
      * Resolve an artifact.
      *
      * @param artifact Artifact.
      * @return The artifact or an empty optional if resolution fails.
      */
-    Optional<Artifact> resolve(Artifact artifact);
+    Artifact resolve(Artifact artifact) throws ArtifactResolutionException;
 
     /**
      * Resolve an artifact's POM.
@@ -42,7 +34,7 @@ public interface Resolver {
      * @param artifact Artifact.
      * @return The file location of the POM or an empty optional if resolution fails.
      */
-    Optional<File> getPom(Artifact artifact);
+    File getPom(Artifact artifact) throws ArtifactResolutionException;
 
     /**
      * Resolve an artifact.
@@ -50,5 +42,5 @@ public interface Resolver {
      * @param artifact Artifact.
      * @return The file location of the artifact or an empty optional if resolution fails.
      */
-    Optional<File> getArtifact(Artifact artifact);
+    File getJar(Artifact artifact) throws ArtifactResolutionException;
 }

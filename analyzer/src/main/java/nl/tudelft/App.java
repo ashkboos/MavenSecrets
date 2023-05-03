@@ -1,15 +1,12 @@
 package nl.tudelft;
 
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import nl.tudelft.mavensecrets.resolver.Resolver;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.logging.Logger;
 
 public class App {
-    public static void main(String[] args) throws IOException, SQLException {
+    public static void main(String[] args) throws IOException, SQLException, PackageException {
         if (args.length != 1)
             throw new RuntimeException("expected a single package id");
 
@@ -21,11 +18,7 @@ public class App {
                 id.get()
         };
 
-        Logger logger = Logger.getGlobal();
-        File local = new File(System.getProperty("user.home") + "/.m2/repository");
-        local.mkdir();
-        Resolver resolver = new DefaultResolver(logger, local);
-
+        var resolver = new DefaultResolver();
         var builder = extractors(new RunnerBuilder());
         var maven = new Maven(resolver);
         var db = openDatabase();

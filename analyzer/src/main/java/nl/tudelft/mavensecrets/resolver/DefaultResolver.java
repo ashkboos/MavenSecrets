@@ -3,11 +3,10 @@ package nl.tudelft.mavensecrets.resolver;
 import java.io.File;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
@@ -32,13 +31,24 @@ import org.eclipse.aether.util.artifact.SubArtifact;
  * This implementation pulls from Maven Central.
  */
 public class DefaultResolver implements Resolver {
-
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");
 
     private final Logger logger;
     private final RepositorySystemSession session;
     private RepositorySystem repository = null;
+
+    public DefaultResolver() {
+        var repo = new File(System.getProperty("user.home"),".m2/repository");
+
+        this.logger = LogManager.getLogger(DefaultResolver.class);
+        this.repository = createRepositorySystem();
+        this.session = createSession(new LocalRepository(repo));
+    }
+
+    public DefaultResolver(File local) {
+        this(LogManager.getLogger(DefaultResolver.class), local);
+    }
 
     /**
      * Create a resolver instance.
@@ -74,14 +84,7 @@ public class DefaultResolver implements Resolver {
     }
 
     @Override
-    public Artifact createArtifact(String coords) {
-        Objects.requireNonNull(coords);
-
-        return new DefaultArtifact(coords);
-    }
-
-    @Override
-    public Optional<Artifact> resolve(Artifact artifact) {
+    public Artifact resolve(Artifact artifact) throws ArtifactResolutionException {
         Objects.requireNonNull(artifact);
 
         ArtifactRequest request = new ArtifactRequest();
@@ -90,29 +93,26 @@ public class DefaultResolver implements Resolver {
         ArtifactResult result;
         try {
             result = repository.resolveArtifact(session, request);
-        } catch (ArtifactResolutionException exception) {
-            // FIXME log? This may be handled by the listeners already.
-            return Optional.empty();
+        } catch (ArtifactResolutionException ex) {
+            logger.error("failed to resolve artifact " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getExtension() + ":" + artifact.getVersion(), ex);
+            throw ex;
         }
-        return Optional.ofNullable(result.getArtifact());
+
+        return result.getArtifact();
     }
 
     @Override
-    public Optional<File> getPom(Artifact artifact) {
+    public File getPom(Artifact artifact) throws ArtifactResolutionException {
         Objects.requireNonNull(artifact);
 
-        Artifact pom = new SubArtifact(artifact, null, "pom");
-        return resolve(pom)
-                .map(Artifact::getFile);
+        return resolve(new SubArtifact(artifact, null, "pom")).getFile();
     }
 
     @Override
-    public Optional<File> getArtifact(Artifact artifact) {
+    public File getJar(Artifact artifact) throws ArtifactResolutionException {
         Objects.requireNonNull(artifact);
-        Artifact artifactJar = new SubArtifact(artifact, null, "jar");
 
-        return resolve(artifactJar)
-                .map(Artifact::getFile);
+        return resolve(new SubArtifact(artifact, null, "jar")).getFile();
     }
 
     /**
@@ -130,7 +130,7 @@ public class DefaultResolver implements Resolver {
         locator.setErrorHandler(new org.eclipse.aether.impl.DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                logger.log(Level.SEVERE, "Service creation failed for " + type + " with implementation " + impl, exception);
+                logger.error("Service creation failed for " + type + " with implementation " + impl, exception);
             }
         });
 
