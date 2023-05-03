@@ -60,7 +60,7 @@ public class JavaVersionExtractor implements Extractor {
                 byte[] buf = new byte[8];
 
                 // Sanity check
-                if (stream.read(buf) != buf.length || buf[0] != 0xCA || buf[1] != 0xFE || buf[2] != 0xBA || buf[3] != 0xBE) {
+                if (stream.read(buf) != buf.length || (buf[0] & 0xFF) != 0xCA || (buf[1] & 0xFF) != 0xFE || (buf[2] & 0xFF) != 0xBA || (buf[3] & 0xFF) != 0xBE) {
                     throw new IOException("Malformed header");
                 }
 
