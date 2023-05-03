@@ -114,7 +114,7 @@ public class Database implements Closeable {
      * @throws SQLException
      */
     public List<PackageId> getPackageIds() throws SQLException {
-        PreparedStatement query = conn.prepareStatement("SELECT groupid, artifactid, version FROM package_list");
+        PreparedStatement query = conn.prepareStatement("SELECT groupid, artifactid, version FROM " + TABLE_NAME2);
         var results = query.executeQuery();
         List<PackageId> packageIds = new LinkedList<>();
         while (results.next()) {

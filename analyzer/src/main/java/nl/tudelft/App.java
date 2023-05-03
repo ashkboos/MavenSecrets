@@ -12,6 +12,8 @@ import java.util.logging.Logger;
 public class App {
     public static void main(String[] args) throws IOException, SQLException {
         var db = openDatabase();
+        IndexerReader ir = new IndexerReader(db);
+        ir.indexerReader();
         var packages = db.getPackageIds();
 
         Logger logger = Logger.getGlobal();
@@ -21,8 +23,7 @@ public class App {
 
         var builder = extractors(new RunnerBuilder());
         var maven = new Maven(resolver);
-        IndexerReader ir = new IndexerReader(db);
-        ir.indexerReader();
+
         try (var runner = builder.build(db)) {
             runner.run(maven, packages);
         }

@@ -14,7 +14,7 @@ public class IndexerReader {
     }
 
     public List<String[]> indexerReader() throws IOException, SQLException {
-        File file = new File("nexus-maven-repository-index.gz");
+        File file = new File("nexus-maven-repository-index.370.gz");
         FileInputStream fileInputStream = new FileInputStream(file);
         ChunkReader reader = new ChunkReader("index", fileInputStream);
         Iterator<Map<String, String>> itr = reader.iterator();
