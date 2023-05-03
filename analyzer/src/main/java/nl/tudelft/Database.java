@@ -89,6 +89,22 @@ public class Database implements Closeable {
         execute("INSERT INTO " + TABLE_NAME + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
+    /**
+     * @return list of package ids of packages to be fed to the runner
+     */
+    public List<PackageId> getPackageIds() throws SQLException {
+        List<PackageId> packageIds = new LinkedList<>();
+        try (var results = query("SELECT groupid, artifactid, version FROM package_list")) {
+            while (results.next()) {
+                packageIds.add(new PackageId(results.getString("groupid"),
+                        results.getString("artifactid"),
+                        results.getString("version")));
+            }
+        }
+
+        return packageIds;
+    }
+
     @Override
     public void close() {
         try {

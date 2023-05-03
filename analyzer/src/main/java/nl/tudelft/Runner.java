@@ -34,7 +34,7 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, PackageId[] packages) throws SQLException, IOException, PackageException {
+    void run(Maven mvn, Collection<PackageId> packages) throws SQLException, IOException, PackageException {
         var fields = extractors.values().stream().flatMap(i -> Arrays.stream(i.fields())).toArray(Field[]::new);
         if (fields.length == 0)
             return;
