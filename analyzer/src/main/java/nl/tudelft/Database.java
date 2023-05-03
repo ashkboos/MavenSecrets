@@ -81,6 +81,22 @@ public class Database implements Closeable {
         query.execute();
     }
 
+    /**
+     * @return list of package ids of packages to be fed to the runner
+     * @throws SQLException
+     */
+    public List<PackageId> getPackageIds() throws SQLException {
+        PreparedStatement query = conn.prepareStatement("SELECT groupid, artifactid, version FROM package_list");
+        var results = query.executeQuery();
+        List<PackageId> packageIds = new LinkedList<>();
+        while (results.next()) {
+           packageIds.add(new PackageId(results.getString("groupid"),
+                   results.getString("artifactid"),
+                   results.getString("version") ));
+        }
+        return packageIds;
+    }
+
     @Override
     public void close() {
         try {
