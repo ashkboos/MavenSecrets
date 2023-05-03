@@ -43,7 +43,7 @@ public class Runner implements Closeable {
         }
     }
 
-    private void extractInto(Maven mvn, Package pkg, Object[] values) {
+    private void extractInto(Maven mvn, Package pkg, Object[] values) throws IOException {
         var offset = 0;
         for (var pair : extractors.entrySet()) {
             var name = pair.getKey();

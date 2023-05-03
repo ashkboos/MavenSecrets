@@ -13,17 +13,15 @@ public class App {
         if (args.length != 1)
             throw new RuntimeException("expected a single package id");
 
-        var id = PackageId.tryParse(args[0]);
-        if (id.isEmpty())
-            throw new RuntimeException("invalid package id");
-
-        var packages = new PackageId[]{
-                id.get()
-        };
+        var id = PackageId.tryParse(args[0]).orElseThrow(() -> new RuntimeException("invalid package id"));
+        var packages = new PackageId[] {id};
 
         Logger logger = Logger.getGlobal();
+
+        // This is the default repository location but can be configured
         File local = new File(System.getProperty("user.home") + "/.m2/repository");
-        local.mkdir();
+        local.mkdirs();
+
         Resolver resolver = new DefaultResolver(logger, local);
 
         var builder = extractors(new RunnerBuilder());

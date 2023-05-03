@@ -109,6 +109,8 @@ public class DefaultResolver implements Resolver {
     @Override
     public Optional<File> getArtifact(Artifact artifact) {
         Objects.requireNonNull(artifact);
+
+        // This does not work for different artefact types
         Artifact artifactJar = new SubArtifact(artifact, null, "jar");
 
         return resolve(artifactJar)
