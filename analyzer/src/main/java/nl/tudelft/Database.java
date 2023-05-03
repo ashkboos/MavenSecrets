@@ -9,23 +9,21 @@ import java.util.*;
 
 // PackageId PKEY, Field 1, Value 1, Field 2, Value 2, etc
 public class Database implements Closeable {
+    private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
     private final Connection conn;
-    private final Logger log;
 
-    private Database(Connection conn, Logger log) {
+    private Database(Connection conn) {
         this.conn = conn;
-        this.log = log;
     }
 
     public static Database connect(String url, String user, String pass) throws SQLException {
-        var log = LogManager.getLogger(Database.class);
         try {
-            log.trace("connecting to " + url);
-            return new Database(DriverManager.getConnection(url, user, pass), log);
+            LOGGER.trace("connecting to " + url);
+            return new Database(DriverManager.getConnection(url, user, pass));
         } catch (SQLException ex) {
-            log.error("failed to connect to the database", ex);
+            LOGGER.error("failed to connect to the database", ex);
             throw ex;
         }
     }
@@ -135,11 +133,11 @@ public class Database implements Closeable {
         try {
             results = prepare(sql, arguments).executeQuery();
         } catch (SQLException ex) {
-            log.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
             throw ex;
         }
 
-        log.trace("queried " + stringify(sql, arguments));
+        LOGGER.trace("queried " + stringify(sql, arguments));
         return results;
     }
 
@@ -159,11 +157,11 @@ public class Database implements Closeable {
                     throw new RuntimeException("query returned too many rows");
             }
         } catch (SQLException ex) {
-            log.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
             throw ex;
         }
 
-        log.trace("query " + stringify(sql, arguments) + " returned `" + value + "`: " + value.getClass().getName());
+        LOGGER.trace("query " + stringify(sql, arguments) + " returned `" + value + "`: " + value.getClass().getName());
         return value;
     }
 
@@ -177,11 +175,11 @@ public class Database implements Closeable {
                 statement.execute();
             }
         } catch (SQLException ex) {
-            log.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
             throw ex;
         }
 
-        log.trace("executed " + stringify(sql, arguments));
+        LOGGER.trace("executed " + stringify(sql, arguments));
     }
 
     private static String stringify(String sql, Object[] arguments) {

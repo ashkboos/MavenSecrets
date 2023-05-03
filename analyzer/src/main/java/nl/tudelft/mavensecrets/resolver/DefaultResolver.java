@@ -31,35 +31,24 @@ import org.eclipse.aether.util.artifact.SubArtifact;
  * This implementation pulls from Maven Central.
  */
 public class DefaultResolver implements Resolver {
+    private static final Logger LOGGER = LogManager.getLogger(DefaultResolver.class);
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");
 
-    private final Logger logger;
     private final RepositorySystemSession session;
     private RepositorySystem repository = null;
 
     public DefaultResolver() {
-        var repo = new File(System.getProperty("user.home"),".m2/repository");
-
-        this.logger = LogManager.getLogger(DefaultResolver.class);
-        this.repository = createRepositorySystem();
-        this.session = createSession(new LocalRepository(repo));
-    }
-
-    public DefaultResolver(File local) {
-        this(LogManager.getLogger(DefaultResolver.class), local);
+        this(new File(System.getProperty("user.home"),".m2/repository"));
     }
 
     /**
      * Create a resolver instance.
      *
-     * @param logger Logger.
      * @param local Local repository directory.
      */
-    public DefaultResolver(final Logger logger, File local) {
-        Objects.requireNonNull(logger);
+    public DefaultResolver(File local) {
         Objects.requireNonNull(local);
-        this.logger = logger;
         this.repository = createRepositorySystem();
         this.session = createSession(new LocalRepository(local));
     }
@@ -94,7 +83,7 @@ public class DefaultResolver implements Resolver {
         try {
             result = repository.resolveArtifact(session, request);
         } catch (ArtifactResolutionException ex) {
-            logger.error("failed to resolve artifact " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getExtension() + ":" + artifact.getVersion(), ex);
+            LOGGER.error("failed to resolve artifact " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getExtension() + ":" + artifact.getVersion(), ex);
             throw ex;
         }
 
@@ -130,7 +119,7 @@ public class DefaultResolver implements Resolver {
         locator.setErrorHandler(new org.eclipse.aether.impl.DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                logger.error("Service creation failed for " + type + " with implementation " + impl, exception);
+                LOGGER.error("Service creation failed for " + type + " with implementation " + impl, exception);
             }
         });
 
@@ -149,8 +138,8 @@ public class DefaultResolver implements Resolver {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         session.setLocalRepositoryManager(repository.newLocalRepositoryManager(session, local));
         session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_FAIL);
-        session.setTransferListener(new DefaultTransferListener(logger));
-        session.setRepositoryListener(new DefaultRepositoryListener(logger));
+        session.setTransferListener(new DefaultTransferListener(LOGGER));
+        session.setRepositoryListener(new DefaultRepositoryListener(LOGGER));
         session.setReadOnly();
 
         return session;

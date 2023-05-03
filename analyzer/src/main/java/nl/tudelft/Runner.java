@@ -11,21 +11,20 @@ import java.time.Instant;
 import java.util.*;
 
 public class Runner implements Closeable {
+    private static final Logger LOGGER = LogManager.getLogger(Runner.class);
     private final Database db;
     private final Map<String, Extractor> extractors;
-    private final Logger log;
 
     Runner(Database db) {
         this.db = db;
         this.extractors = new TreeMap<>();
-        this.log = LogManager.getLogger(Runner.class);
     }
 
     Runner addExtractor(String name, Extractor extractor) throws SQLException {
         if (this.extractors.containsKey(name))
             throw new IllegalArgumentException("extractor `" + name + "` already added");
 
-        log.trace("adding extractor `" + name + "`: " + extractor.getClass().getName());
+        LOGGER.trace("adding extractor `" + name + "`: " + extractor.getClass().getName());
         db.updateSchema(extractor.fields());
         extractors.put(name, extractor);
 
@@ -51,7 +50,7 @@ public class Runner implements Closeable {
             db.update(id, fields, values.toArray());
             var time = Duration.between(start, Instant.now());
             var fetchTime = Duration.between(start, fetchEnd);
-            log.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
+            LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
         }
     }
 
