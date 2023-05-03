@@ -35,7 +35,7 @@ public class App {
     }
 
     private static RunnerBuilder extractors(RunnerBuilder builder) {
-        return builder.addExtractor("favoriteName", new DemoExtractor());
+        return builder.addExtractor("favoriteName", new DemoExtractor()).addExtractor("vc", new ExtractorVC());
     }
 
     private static Database openDatabase() throws SQLException {
