@@ -1,26 +1,28 @@
 package nl.tudelft;
 
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import nl.tudelft.mavensecrets.resolver.Resolver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.io.IOException;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.logging.Logger;
 
 public class App {
-    public static void main(String[] args) throws IOException, SQLException {
+    private static final Logger LOGGER = LogManager.getLogger(App.class);
+
+    public static void main(String[] args) throws IOException, SQLException, PackageException {
         var db = openDatabase();
         IndexerReader ir = new IndexerReader(db);
         ir.indexerReader();
         var packages = db.getPackageIds();
 
-        Logger logger = Logger.getGlobal();
-        File local = new File(System.getProperty("user.home") + "/.m2/repository");
-        local.mkdir();
-        Resolver resolver = new DefaultResolver(logger, local);
+        if (packages.isEmpty()) {
+            LOGGER.info("no packages, nothing to do");
+            return;
+        } else
+            LOGGER.info("found " + packages.size() + " packages");
 
+        var resolver = new DefaultResolver();
         var builder = extractors(new RunnerBuilder());
         var maven = new Maven(resolver);
 

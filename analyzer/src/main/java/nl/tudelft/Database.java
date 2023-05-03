@@ -1,5 +1,8 @@
 package nl.tudelft;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.Closeable;
 import java.sql.*;
 import java.sql.Date;
@@ -7,8 +10,9 @@ import java.util.*;
 
 // PackageId PKEY, Field 1, Value 1, Field 2, Value 2, etc
 public class Database implements Closeable {
-    private static final String TABLE_NAME = "packages";
-    private static final String TABLE_NAME2 = "indexes";
+    private static final Logger LOGGER = LogManager.getLogger(Database.class);
+    private static final String PACKAGES_TABLE = "packages";
+    private static final String PACKAGE_INDEX_TABLE = "package_list";
     private final Connection conn;
 
     private Database(Connection conn) {
@@ -16,7 +20,13 @@ public class Database implements Closeable {
     }
 
     public static Database connect(String url, String user, String pass) throws SQLException {
-        return new Database(DriverManager.getConnection(url, user, pass));
+        try {
+            LOGGER.trace("connecting to " + url);
+            return new Database(DriverManager.getConnection(url, user, pass));
+        } catch (SQLException ex) {
+            LOGGER.error("failed to connect to the database", ex);
+            throw ex;
+        }
     }
 
     void createIndexesTable() throws SQLException {
@@ -26,7 +36,7 @@ public class Database implements Closeable {
     }
 
     void updateSchema(Field[] fields) throws SQLException{
-        if (!tableExists(TABLE_NAME))
+        if (!tableExists(PACKAGES_TABLE))
             createTable();
 
         Set<String> cols = listColumns();
@@ -35,15 +45,16 @@ public class Database implements Closeable {
                 createColumn(field);
     }
 
-    private boolean tableExists(String tableName) throws SQLException {
-        var query = conn.prepareStatement("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = '" + tableName + "')");
+    private boolean tableExists(String name) throws SQLException {
+        var result = queryScalar("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = '" + name + "')");
+        if (result instanceof Boolean)
+            return (Boolean) result;
 
-        var results = query.executeQuery();
-        return results.next() && results.getBoolean(1);
+        throw new RuntimeException("query didn't result in boolean");
     }
 
     private void createTable() throws SQLException {
-        conn.prepareStatement("CREATE TABLE " + TABLE_NAME + "(id VARCHAR(128) PRIMARY KEY)").execute();
+        execute("CREATE TABLE " + PACKAGES_TABLE + "(id VARCHAR(128) PRIMARY KEY)");
     }
 
     private void createTable2() throws SQLException {
@@ -56,19 +67,17 @@ public class Database implements Closeable {
     }
 
     private Set<String> listColumns() throws SQLException {
-        var query = conn.prepareStatement("SELECT column_name FROM information_schema.columns WHERE table_name = '" + TABLE_NAME + "'");
+        try (var results = query("SELECT column_name FROM information_schema.columns WHERE table_name = '" + PACKAGES_TABLE + "'")) {
+            var columns = new HashSet<String>();
+            while (results.next())
+                columns.add(results.getString(1));
 
-        var results = query.executeQuery();
-
-        var columns = new HashSet<String>();
-        while (results.next())
-            columns.add(results.getString(1));
-
-        return columns;
+            return columns;
+        }
     }
 
     private void createColumn(Field field) throws SQLException {
-        conn.prepareStatement("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + field.getName() + " " + field.getType() + " NULL").execute();
+        execute("ALTER TABLE " + PACKAGES_TABLE + " ADD COLUMN " + field.getName() + " " + field.getType() + " NULL");
     }
 
     // Don't call it without being sure of schema
@@ -87,15 +96,12 @@ public class Database implements Closeable {
 
             upd.append(field.getName()).append("=?");
         }
-        
-        PreparedStatement query = conn.prepareStatement("INSERT INTO Packages(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd);
-        query.setString(1, id.toString());
-        for (var i = 0; i < fields.length; i++) {
-            query.setObject(i + 2, values[i]);
-            query.setObject(i + 2 + fields.length, values[i]);
-        }
 
-        query.execute();
+        Object[] arguments = new Object[fields.length * 2 + 1];
+        arguments[0] = id.toString();
+        for (var i = 0; i < fields.length; i++)
+            arguments[i + fields.length + 1] = arguments[i + 1] = values[i];
+        execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified) throws SQLException {
@@ -111,17 +117,20 @@ public class Database implements Closeable {
 
     /**
      * @return list of package ids of packages to be fed to the runner
-     * @throws SQLException
      */
     public List<PackageId> getPackageIds() throws SQLException {
-        PreparedStatement query = conn.prepareStatement("SELECT groupid, artifactid, version FROM " + TABLE_NAME2);
-        var results = query.executeQuery();
         List<PackageId> packageIds = new LinkedList<>();
-        while (results.next()) {
-           packageIds.add(new PackageId(results.getString("groupid"),
-                   results.getString("artifactid"),
-                   results.getString("version") ));
+        if (!tableExists(PACKAGE_INDEX_TABLE))
+            return packageIds;
+
+        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE)) {
+            while (results.next()) {
+                packageIds.add(new PackageId(results.getString("groupid"),
+                        results.getString("artifactid"),
+                        results.getString("version")));
+            }
         }
+
         return packageIds;
     }
 
@@ -132,5 +141,78 @@ public class Database implements Closeable {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private PreparedStatement prepare(String sql, Object[] arguments) throws SQLException {
+        var statement = conn.prepareStatement(sql);
+        for (var i = 0; i < arguments.length; i++)
+            statement.setObject(i + 1, arguments[i]);
+
+        return statement;
+    }
+
+    private ResultSet query(String sql) throws SQLException {
+        return query(sql, new Object[0]);
+    }
+
+    private ResultSet query(String sql, Object[] arguments) throws SQLException {
+        ResultSet results;
+        try {
+            results = prepare(sql, arguments).executeQuery();
+        } catch (SQLException ex) {
+            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            throw ex;
+        }
+
+        LOGGER.trace("queried " + stringify(sql, arguments));
+        return results;
+    }
+
+    private Object queryScalar(String sql) throws SQLException {
+        return queryScalar(sql, new Object[0]);
+    }
+
+    private Object queryScalar(String sql, Object[] arguments) throws SQLException {
+        Object value;
+        try {
+            try (ResultSet results = prepare(sql, arguments).executeQuery()) {
+                if (!results.next())
+                    throw new RuntimeException("query didn't return any rows");
+
+                value = results.getObject(1);
+                if (results.next())
+                    throw new RuntimeException("query returned too many rows");
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            throw ex;
+        }
+
+        LOGGER.trace("query " + stringify(sql, arguments) + " returned `" + value + "`: " + value.getClass().getName());
+        return value;
+    }
+
+    private void execute(String sql) throws SQLException {
+        execute(sql, new Object[0]);
+    }
+
+    private void execute(String sql, Object[] arguments) throws SQLException {
+        try {
+            try (var statement = prepare(sql, arguments)) {
+                statement.execute();
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            throw ex;
+        }
+
+        LOGGER.trace("executed " + stringify(sql, arguments));
+    }
+
+    private static String stringify(String sql, Object[] arguments) {
+        if (arguments.length == 0)
+            return "`" + sql + "`";
+
+        return "`" + sql + "` with [" + Arrays.stream(arguments).map(Object::toString).reduce((i, j) -> i + "," + j).orElse("") + "]";
     }
 }

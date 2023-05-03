@@ -1,16 +1,15 @@
 package nl.tudelft.mavensecrets.resolver;
 
 import java.util.Objects;
-import java.util.logging.Logger;
 
+import org.apache.logging.log4j.Logger;
 import org.eclipse.aether.AbstractRepositoryListener;
 
 public class DefaultRepositoryListener extends AbstractRepositoryListener {
-
     @SuppressWarnings("unused")
-    private final Logger logger;
+    private final Logger log;
 
-    public DefaultRepositoryListener(Logger logger) {
-        this.logger = Objects.requireNonNull(logger);
+    public DefaultRepositoryListener(Logger log) {
+        this.log = Objects.requireNonNull(log);
     }
 }
