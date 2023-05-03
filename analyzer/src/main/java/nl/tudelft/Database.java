@@ -2,11 +2,13 @@ package nl.tudelft;
 
 import java.io.Closeable;
 import java.sql.*;
+import java.sql.Date;
 import java.util.*;
 
 // PackageId PKEY, Field 1, Value 1, Field 2, Value 2, etc
 public class Database implements Closeable {
     private static final String TABLE_NAME = "packages";
+    private static final String TABLE_NAME2 = "indexes";
     private final Connection conn;
 
     private Database(Connection conn) {
@@ -17,8 +19,14 @@ public class Database implements Closeable {
         return new Database(DriverManager.getConnection(url, user, pass));
     }
 
+    void createIndexesTable() throws SQLException {
+        if(!tableExists(TABLE_NAME2)) {
+            createTable2();
+        }
+    }
+
     void updateSchema(Field[] fields) throws SQLException{
-        if (!tableExists())
+        if (!tableExists(TABLE_NAME))
             createTable();
 
         Set<String> cols = listColumns();
@@ -27,8 +35,8 @@ public class Database implements Closeable {
                 createColumn(field);
     }
 
-    private boolean tableExists() throws SQLException {
-        var query = conn.prepareStatement("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = '" + TABLE_NAME + "')");
+    private boolean tableExists(String tableName) throws SQLException {
+        var query = conn.prepareStatement("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = '" + tableName + "')");
 
         var results = query.executeQuery();
         return results.next() && results.getBoolean(1);
@@ -36,6 +44,15 @@ public class Database implements Closeable {
 
     private void createTable() throws SQLException {
         conn.prepareStatement("CREATE TABLE " + TABLE_NAME + "(id VARCHAR(128) PRIMARY KEY)").execute();
+    }
+
+    private void createTable2() throws SQLException {
+        conn.prepareStatement("CREATE TABLE " + TABLE_NAME2 + "(groupid varchar(128)," +
+                "artifactid varchar(128)," +
+                "version    varchar(128)," +
+                "lastmodified date," +
+                "constraint table_name_pk " +
+                "primary key (groupid, artifactid, version))").execute();
     }
 
     private Set<String> listColumns() throws SQLException {
@@ -79,6 +96,17 @@ public class Database implements Closeable {
         }
 
         query.execute();
+    }
+
+    void updateIndexTable(String groupId, String artifactId, String version, Date lastModified) throws SQLException {
+        PreparedStatement query = conn.prepareStatement("INSERT INTO " + TABLE_NAME2 +
+                "(groupid, artifactid, version, lastmodified) VALUES(?,?,?,?) ON CONFLICT DO NOTHING");
+        query.setString(1, groupId);
+        query.setString(2, artifactId);
+        query.setString(3, version);
+        query.setDate(4, lastModified);
+        query.execute();
+
     }
 
     @Override

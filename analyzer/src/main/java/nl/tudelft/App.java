@@ -29,6 +29,8 @@ public class App {
         var builder = extractors(new RunnerBuilder());
         var maven = new Maven(resolver);
         var db = openDatabase();
+        IndexerReader ir = new IndexerReader(db);
+        ir.putInDatabase();
         try (var runner = builder.build(db)) {
             runner.run(maven, packages);
         }

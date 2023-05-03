@@ -46,6 +46,11 @@
             <artifactId>postgresql</artifactId>
             <version>42.6.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.maven.indexer</groupId>
+            <artifactId>indexer-reader</artifactId>
+            <version>7.0.1</version>
+        </dependency>
     </dependencies>
 
     <build>
