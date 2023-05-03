@@ -22,8 +22,8 @@ public class JavaVersionExtractor implements Extractor {
 
     private final Field[] fields = {
             new Field("java_version_manifest", "VARCHAR(16)"),
-            new Field("java_version_class_major", "BIT(16)"),
-            new Field("java_version_class_minor", "BIT(16)")
+            new Field("java_version_class_major", "BYTEA"),
+            new Field("java_version_class_minor", "BYTEA")
     };
 
     @Override
