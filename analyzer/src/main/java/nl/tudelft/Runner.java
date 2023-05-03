@@ -3,9 +3,7 @@ package nl.tudelft;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class Runner implements Closeable {
     private final Database db;
@@ -28,23 +26,23 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, PackageId[] packages) throws SQLException, IOException {
+    void run(Maven mvn, Collection<PackageId> packages) throws SQLException, IOException {
         var fields = extractors.values().stream().flatMap(i -> Arrays.stream(i.fields())).toArray(Field[]::new);
         if (fields.length == 0)
             return;
 
-        var values = new Object[fields.length];
+        List<Object> values = null;
         for (var id : packages) {
             try (var pkg = mvn.getPackage(id)) {
-                extractInto(mvn, pkg, values);
+                values = extractInto(mvn, pkg);
             }
 
-            db.update(id, fields, values);
+            db.update(id, fields, values.toArray());
         }
     }
 
-    private void extractInto(Maven mvn, Package pkg, Object[] values) throws IOException {
-        var offset = 0;
+    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
+        var list = new LinkedList<>();
         for (var pair : extractors.entrySet()) {
             var name = pair.getKey();
             var extractor = pair.getValue();
@@ -53,9 +51,10 @@ public class Runner implements Closeable {
             if (result.length != extractor.fields().length)
                 throw new RuntimeException("extractor `" + name + "` returned unexpected number of values");
 
-            for (var value : values)
-                values[offset++] = value;
+            for (var value : result)
+                list.add(value);
         }
+        return list;
     }
 
     @Override
