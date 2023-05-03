@@ -14,7 +14,8 @@ public class IndexerReader {
     }
 
     public List<String[]> indexerReader() throws IOException, SQLException {
-        File file = new File("nexus-maven-repository-index.370.gz");
+        boolean checked = false;
+        File file = new File("nexus-maven-repository-index.524.gz");
         FileInputStream fileInputStream = new FileInputStream(file);
         ChunkReader reader = new ChunkReader("index", fileInputStream);
         Iterator<Map<String, String>> itr = reader.iterator();
@@ -31,7 +32,8 @@ public class IndexerReader {
                 indexInfo.add(newList);
                 i++;
                 if(i == 2048) {
-                    putInDatabase(indexInfo);
+                    putInDatabase(indexInfo, checked);
+                    checked = true;
                     i = 0;
                     indexInfo = new ArrayList<>();
                 }
@@ -41,8 +43,8 @@ public class IndexerReader {
         return indexInfo;
     }
 
-    public void putInDatabase(List<String[]> indexedInfo) throws IOException, SQLException {
-        db.createIndexesTable();
+    public void putInDatabase(List<String[]> indexedInfo, boolean checked) throws IOException, SQLException {
+        db.createIndexesTable(checked);
         for(String[] info : indexedInfo) {
             db.updateIndexTable(info[0], info[1], info[2], convertToDate(info[3]));
         }

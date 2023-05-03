@@ -29,9 +29,9 @@ public class Database implements Closeable {
         }
     }
 
-    void createIndexesTable() throws SQLException {
-        if(!tableExists(TABLE_NAME2)) {
-            createTable2();
+    void createIndexesTable(boolean checked) throws SQLException {
+        if(!checked && !tableExists(PACKAGE_INDEX_TABLE)) {
+            createIndexTable();
         }
     }
 
@@ -57,8 +57,8 @@ public class Database implements Closeable {
         execute("CREATE TABLE " + PACKAGES_TABLE + "(id VARCHAR(128) PRIMARY KEY)");
     }
 
-    private void createTable2() throws SQLException {
-        conn.prepareStatement("CREATE TABLE " + TABLE_NAME2 + "(groupid varchar(128)," +
+    private void createIndexTable() throws SQLException {
+        conn.prepareStatement("CREATE TABLE " + PACKAGE_INDEX_TABLE + "(groupid varchar(128)," +
                 "artifactid varchar(128)," +
                 "version    varchar(128)," +
                 "lastmodified date," +
@@ -105,7 +105,7 @@ public class Database implements Closeable {
     }
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified) throws SQLException {
-        PreparedStatement query = conn.prepareStatement("INSERT INTO " + TABLE_NAME2 +
+        PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
                 "(groupid, artifactid, version, lastmodified) VALUES(?,?,?,?) ON CONFLICT DO NOTHING");
         query.setString(1, groupId);
         query.setString(2, artifactId);
@@ -213,6 +213,6 @@ public class Database implements Closeable {
         if (arguments.length == 0)
             return "`" + sql + "`";
 
-        return "`" + sql + "` with [" + Arrays.stream(arguments).map(Object::toString).reduce((i, j) -> i + "," + j).orElse("") + "]";
+        return "`" + sql + "` with [" + Arrays.stream(arguments).map(Objects::toString).reduce((i, j) -> i + "," + j).orElse("") + "]";
     }
 }
