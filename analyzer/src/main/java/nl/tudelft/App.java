@@ -16,6 +16,8 @@ public class App {
 
     public static void main(String[] args) throws IOException, SQLException, PackageException {
         var db = openDatabase();
+        IndexerReader ir = new IndexerReader(db);
+        ir.indexerReader();
         var packages = db.getPackageIds();
 
         if (packages.isEmpty()) {
@@ -27,6 +29,7 @@ public class App {
         var resolver = new DefaultResolver();
         var builder = extractors(new RunnerBuilder());
         var maven = new Maven(resolver);
+
         try (var runner = builder.build(db)) {
             runner.run(maven, packages);
         }
