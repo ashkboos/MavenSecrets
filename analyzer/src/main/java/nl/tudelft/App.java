@@ -40,7 +40,8 @@ public class App {
                 .addExtractor("compiler", new CompilerConfigExtractor())
                 .addExtractor("modules", new JavaModuleExtractor())
                 .addExtractor("version", new JavaVersionExtractor())
-                .addExtractor("parent", new ParentExtractor());
+                .addExtractor("parent", new ParentExtractor())
+                .addExtractor("repo_urls", new ExtractorVC());
     }
 
     private static Database openDatabase() throws SQLException {
