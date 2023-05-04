@@ -21,27 +21,7 @@ public class App {
     public static void main(String[] args) throws IOException, SQLException, PackageException {
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
-        if(args.length > 1 && args[0].equals("index")) {
-            String indexFile = args[1];
-            String url = "https://repo.maven.apache.org/maven2/.index/" + indexFile;
-            Path path = Paths.get(indexFile);
-
-            // Check if the file exists
-            if (!Files.exists(path)) {
-                try {
-                    // Download the file
-                    URL fileUrl = new URL(url);
-                    Files.copy(fileUrl.openStream(), path);
-                    System.out.println("Index file downloaded successfully.");
-                } catch (IOException e) {
-                    System.out.println("Error downloading the index file: " + e.getMessage());
-                }
-            } else {
-                System.out.println("Index file already exists.");
-            }
-            IndexerReader ir = new IndexerReader(db);
-            ir.indexerReader(indexFile);
-        }
+        runIndexerReader(args, db);
         var packages = db.getPackageIds();
 
         if (packages.isEmpty()) {
@@ -60,7 +40,31 @@ public class App {
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;
 
-        System.out.println("Elapsed time: " + elapsedTime + " milliseconds");
+        LOGGER.info("Elapsed time: " + elapsedTime + " milliseconds");
+    }
+
+    private static void runIndexerReader(String[] args, Database db) throws IOException, SQLException {
+        if(args.length > 1 && args[0].equals("index")) {
+            String indexFile = args[1];
+            String url = "https://repo.maven.apache.org/maven2/.index/" + indexFile;
+            Path path = Paths.get(indexFile);
+
+            // Check if the file exists
+            if (!Files.exists(path)) {
+                try {
+                    // Download the file
+                    URL fileUrl = new URL(url);
+                    Files.copy(fileUrl.openStream(), path);
+                    LOGGER.info("Successfully downloaded file");
+                } catch (IOException e) {
+                    LOGGER.error(e);
+                }
+            } else {
+                LOGGER.info("Index file already exists");
+            }
+            IndexerReader ir = new IndexerReader(db);
+            ir.indexerReader(indexFile);
+        }
     }
 
     private static RunnerBuilder extractors(RunnerBuilder builder) {
