@@ -54,7 +54,7 @@ public class Runner implements Closeable {
         }
     }
 
-    private List<Object> extractInto(Maven mvn, Package pkg) {
+    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
         var list = new LinkedList<>();
         for (var pair : extractors.entrySet()) {
             var name = pair.getKey();

@@ -1,5 +1,9 @@
 package nl.tudelft;
 
+import nl.tudelft.mavensecrets.extractors.CompilerConfigExtractor;
+import nl.tudelft.mavensecrets.extractors.JavaModuleExtractor;
+import nl.tudelft.mavensecrets.extractors.JavaVersionExtractor;
+import nl.tudelft.mavensecrets.extractors.ParentExtractor;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,7 +33,11 @@ public class App {
     }
 
     private static RunnerBuilder extractors(RunnerBuilder builder) {
-        return builder.addExtractor("favoriteName", new DemoExtractor());
+        return builder
+                .addExtractor("compiler", new CompilerConfigExtractor())
+                .addExtractor("modules", new JavaModuleExtractor())
+                .addExtractor("version", new JavaVersionExtractor())
+                .addExtractor("parent", new ParentExtractor());
     }
 
     private static Database openDatabase() throws SQLException {

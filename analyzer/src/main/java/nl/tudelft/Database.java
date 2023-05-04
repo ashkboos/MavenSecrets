@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 
@@ -34,7 +35,7 @@ public class Database implements Closeable {
 
         Set<String> cols = listColumns();
         for (var field : fields)
-            if (!cols.contains(field.getName()))
+            if (!cols.contains(field.name()))
                 createColumn(field);
     }
 
@@ -61,7 +62,7 @@ public class Database implements Closeable {
     }
 
     private void createColumn(Field field) throws SQLException {
-        execute("ALTER TABLE " + PACKAGES_TABLE + " ADD COLUMN " + field.getName() + " " + field.getType() + " NULL");
+        execute("ALTER TABLE " + PACKAGES_TABLE + " ADD COLUMN " + field.name() + " " + field.type() + " NULL");
     }
 
     // Don't call it without being sure of schema
@@ -73,12 +74,12 @@ public class Database implements Closeable {
         StringBuilder qe = new StringBuilder("?");
         StringBuilder upd = new StringBuilder();
         for (var field : fields) {
-            names.append(",").append(field.getName());
+            names.append(",").append(field.name());
             qe.append(",?");
             if (!upd.isEmpty())
                 upd.append(",");
 
-            upd.append(field.getName()).append("=?");
+            upd.append(field.name()).append("=?");
         }
 
         Object[] arguments = new Object[fields.length * 2 + 1];
@@ -108,11 +109,11 @@ public class Database implements Closeable {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         try {
             conn.close();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IOException(e);
         }
     }
 
@@ -186,6 +187,6 @@ public class Database implements Closeable {
         if (arguments.length == 0)
             return "`" + sql + "`";
 
-        return "`" + sql + "` with [" + Arrays.stream(arguments).map(Object::toString).reduce((i, j) -> i + "," + j).orElse("") + "]";
+        return "`" + sql + "` with [" + Arrays.stream(arguments).map(Objects::toString).reduce((i, j) -> i + "," + j).orElse("") + "]";
     }
 }
