@@ -18,6 +18,7 @@ import org.apache.maven.model.interpolation.StringSearchModelInterpolator;
 import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
 import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
+import org.apache.maven.model.path.DefaultUrlNormalizer;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.codehaus.plexus.interpolation.StringSearchInterpolator;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -123,7 +124,14 @@ public class DefaultResolver implements Resolver {
             var parentId = new PackageId(parentGroup, parentPom.getArtifactId(), parentVersion);
 
             LOGGER.trace("resolving parent " + PackageId.fromArtifact(artifact) + " -> " + parentId);
-            var parent = loadPom(createArtifact(parentId.group(), parentId.artifact(), parentId.version()));
+            Model parent;
+            try {
+                parent = loadPom(createArtifact(parentId.group(), parentId.artifact(), parentId.version()));
+            } catch (Throwable ex) {
+                LOGGER.error("failed to resolve parent " + PackageId.fromArtifact(artifact) + " -> " + parentId, ex);
+                throw ex;
+            }
+
             properties.putAll(parent.getProperties());
         }
 
@@ -135,6 +143,7 @@ public class DefaultResolver implements Resolver {
 
         return new StringVisitorModelInterpolator()
                 .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
+                .setUrlNormalizer(new DefaultUrlNormalizer())
                 .interpolateModel(pomFile, null, request, new LoggedModelProblemCollector(LOGGER));
     }
 
