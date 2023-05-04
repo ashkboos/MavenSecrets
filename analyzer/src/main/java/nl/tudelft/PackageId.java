@@ -1,33 +1,17 @@
 package nl.tudelft;
 
+import org.eclipse.aether.artifact.Artifact;
+
 import java.util.Optional;
 
-public class PackageId {
-    private String group;
-    private String artifact;
-    private String version;
-
-    public PackageId(String group, String artifact, String version) {
-        this.group = group;
-        this.artifact = artifact;
-        this.version = version;
-    }
-
-    public String getGroup() {
-        return group;
-    }
-
-    public String getArtifact() {
-        return artifact;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
+public record PackageId(String group, String artifact, String version) {
     @Override
     public String toString() {
         return group + ":" + artifact + ":" + version;
+    }
+
+    public static PackageId fromArtifact(Artifact artifact) {
+        return new PackageId(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
     }
 
     public static Optional<PackageId> tryParse(String text) {

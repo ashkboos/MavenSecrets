@@ -1,4 +1,4 @@
-FROM maven:3.9.1-eclipse-temurin-8
+FROM maven:3.9.1-eclipse-temurin-17
 WORKDIR /project
 
 COPY pom.xml /project/pom.xml
