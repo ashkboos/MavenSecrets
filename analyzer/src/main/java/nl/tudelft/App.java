@@ -1,27 +1,30 @@
 package nl.tudelft;
 
+import nl.tudelft.mavensecrets.extractors.CompilerConfigExtractor;
+import nl.tudelft.mavensecrets.extractors.JavaModuleExtractor;
+import nl.tudelft.mavensecrets.extractors.JavaVersionExtractor;
+import nl.tudelft.mavensecrets.extractors.ParentExtractor;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import nl.tudelft.mavensecrets.resolver.Resolver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.io.IOException;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.logging.Logger;
 
 public class App {
-    public static void main(String[] args) throws IOException, SQLException {
+    private static final Logger LOGGER = LogManager.getLogger(App.class);
+
+    public static void main(String[] args) throws IOException, SQLException, PackageException {
         var db = openDatabase();
         var packages = db.getPackageIds();
 
-        Logger logger = Logger.getGlobal();
+        if (packages.isEmpty()) {
+            LOGGER.info("no packages, nothing to do");
+            return;
+        } else
+            LOGGER.info("found " + packages.size() + " packages");
 
-        // This is the default repository location but can be configured
-        File local = new File(System.getProperty("user.home") + "/.m2/repository");
-        local.mkdirs();
-
-        Resolver resolver = new DefaultResolver(logger, local);
-
+        var resolver = new DefaultResolver();
         var builder = extractors(new RunnerBuilder());
         var maven = new Maven(resolver);
         try (var runner = builder.build(db)) {
@@ -30,11 +33,14 @@ public class App {
     }
 
     private static RunnerBuilder extractors(RunnerBuilder builder) {
-        return builder.addExtractor("favoriteName", new DemoExtractor());
+        return builder
+                .addExtractor("compiler", new CompilerConfigExtractor())
+                .addExtractor("modules", new JavaModuleExtractor())
+                .addExtractor("version", new JavaVersionExtractor())
+                .addExtractor("parent", new ParentExtractor());
     }
 
     private static Database openDatabase() throws SQLException {
         return Database.connect("jdbc:postgresql://localhost:5432/postgres", "postgres", "SuperSekretPassword");
     }
-
 }
