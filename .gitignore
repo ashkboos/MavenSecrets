@@ -10,6 +10,12 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
+# The index file
+*.gz
+
+# IML files
+*.iml
+
 # Package Files #
 *.jar
 *.war
