@@ -9,15 +9,39 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
 
     public static void main(String[] args) throws IOException, SQLException, PackageException {
+        long startTime = System.currentTimeMillis();
         var db = openDatabase();
-        IndexerReader ir = new IndexerReader(db);
-        ir.indexerReader();
+        if(args.length > 1 && args[0].equals("index")) {
+            String indexFile = args[1];
+            String url = "https://repo.maven.apache.org/maven2/.index/" + indexFile;
+            Path path = Paths.get(indexFile);
+
+            // Check if the file exists
+            if (!Files.exists(path)) {
+                try {
+                    // Download the file
+                    URL fileUrl = new URL(url);
+                    Files.copy(fileUrl.openStream(), path);
+                    System.out.println("Index file downloaded successfully.");
+                } catch (IOException e) {
+                    System.out.println("Error downloading the index file: " + e.getMessage());
+                }
+            } else {
+                System.out.println("Index file already exists.");
+            }
+            IndexerReader ir = new IndexerReader(db);
+            ir.indexerReader(indexFile);
+        }
         var packages = db.getPackageIds();
 
         if (packages.isEmpty()) {
@@ -33,6 +57,10 @@ public class App {
         try (var runner = builder.build(db)) {
             runner.run(maven, packages);
         }
+        long endTime = System.currentTimeMillis();
+        long elapsedTime = endTime - startTime;
+
+        System.out.println("Elapsed time: " + elapsedTime + " milliseconds");
     }
 
     private static RunnerBuilder extractors(RunnerBuilder builder) {
