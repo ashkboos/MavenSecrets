@@ -1,8 +1,15 @@
 package nl.tudelft;
 
 import java.io.Closeable;
-import java.sql.*;
-import java.util.*;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 // PackageId PKEY, Field 1, Value 1, Field 2, Value 2, etc
 public class Database implements Closeable {
@@ -23,7 +30,7 @@ public class Database implements Closeable {
 
         Set<String> cols = listColumns();
         for (var field : fields)
-            if (!cols.contains(field.getName()))
+            if (!cols.contains(field.name()))
                 createColumn(field);
     }
 
@@ -51,7 +58,7 @@ public class Database implements Closeable {
     }
 
     private void createColumn(Field field) throws SQLException {
-        conn.prepareStatement("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + field.getName() + " " + field.getType() + " NULL").execute();
+        conn.prepareStatement("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + field.name() + " " + field.type() + " NULL").execute();
     }
 
     // Don't call it without being sure of schema
@@ -63,12 +70,12 @@ public class Database implements Closeable {
         StringBuilder qe = new StringBuilder("?");
         StringBuilder upd = new StringBuilder();
         for (var field : fields) {
-            names.append(",").append(field.getName());
+            names.append(",").append(field.name());
             qe.append(",?");
             if (!upd.isEmpty())
                 upd.append(",");
 
-            upd.append(field.getName()).append("=?");
+            upd.append(field.name()).append("=?");
         }
         
         PreparedStatement query = conn.prepareStatement("INSERT INTO Packages(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd);
@@ -98,11 +105,11 @@ public class Database implements Closeable {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         try {
             conn.close();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IOException(e);
         }
     }
 }

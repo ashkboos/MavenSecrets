@@ -15,8 +15,11 @@ public class App {
         var packages = db.getPackageIds();
 
         Logger logger = Logger.getGlobal();
+
+        // This is the default repository location but can be configured
         File local = new File(System.getProperty("user.home") + "/.m2/repository");
-        local.mkdir();
+        local.mkdirs();
+
         Resolver resolver = new DefaultResolver(logger, local);
 
         var builder = extractors(new RunnerBuilder());
