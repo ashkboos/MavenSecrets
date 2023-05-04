@@ -33,6 +33,7 @@ import org.eclipse.aether.util.artifact.SubArtifact;
 public class DefaultResolver implements Resolver {
     private static final Logger LOGGER = LogManager.getLogger(DefaultResolver.class);
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
+    private static final RemoteRepository MAVEN_INDEX = new RemoteRepository.Builder("index", "default", "https://repo.maven.apache.org/maven2/.index/").build();
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");
 
     private final RepositorySystemSession session;
