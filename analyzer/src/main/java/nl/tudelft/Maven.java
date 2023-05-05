@@ -1,6 +1,8 @@
 package nl.tudelft;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.jar.JarFile;
 
@@ -42,20 +44,31 @@ public class Maven {
         }
     }
 
-    public Artifact getArtifactSources(PackageId id) throws PackageException, ArtifactResolutionException {
+    public List<Artifact> getArtifactSources(PackageId id) throws PackageException, ArtifactResolutionException {
         Objects.requireNonNull(id);
+        List<Artifact> allArtifact = new ArrayList<>();
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
-        Artifact sub = new SubArtifact(artifact, "sources", "jar");
+        Artifact subMd5 = new SubArtifact(artifact, "sources", "jar.md5");
+        Artifact subSha = new SubArtifact(artifact, "sources", "jar.sha1");
 
-        return resolver.resolve(sub);
+        allArtifact.add(resolver.resolve(subMd5));
+        allArtifact.add(resolver.resolve(subSha));
+
+        return allArtifact;
     }
 
-    public Artifact getArtifactJavaDoc(PackageId id) throws PackageException, ArtifactResolutionException {
+    public List<Artifact> getArtifactJavaDoc(PackageId id) throws PackageException, ArtifactResolutionException {
         Objects.requireNonNull(id);
+        List<Artifact> allArtifact = new ArrayList<>();
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
-        Artifact sub = new SubArtifact(artifact, "javadoc", "jar");
-        return resolver.resolve(sub);
+        Artifact subMd5 = new SubArtifact(artifact, "javadoc", "jar.md5");
+        Artifact subSha = new SubArtifact(artifact, "javadoc", "jar.sha1");
+
+        allArtifact.add(resolver.resolve(subMd5));
+        allArtifact.add(resolver.resolve(subSha));
+
+        return allArtifact;
     }
 }

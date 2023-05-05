@@ -28,9 +28,10 @@ public class PackagingTypeExtractor implements Extractor {
         List<Object> extractedFields = new ArrayList<>();
         Model model = pkg.pom();
         String packagingType = model.getPackaging();
+        int check = 0;
 
-        Artifact artifactWithSources = null;
-        Artifact artifactWithJavadoc = null;
+        List<Artifact> artifactWithSources = null;
+        List<Artifact> artifactWithJavadoc = null;
         try {
             artifactWithSources = mvn.getArtifactSources(pkg.id());
             artifactWithJavadoc = mvn.getArtifactJavaDoc(pkg.id());
@@ -40,19 +41,26 @@ public class PackagingTypeExtractor implements Extractor {
 
         extractedFields.add(packagingType);
 
-        if(artifactWithSources != null) {
-            extractedFields.add(artifactWithSources.getClassifier());
-        } else {
-            extractedFields.add("null");
-        }
+        addQualifier(extractedFields, 0, artifactWithSources);
 
-        if(artifactWithJavadoc != null) {
-            extractedFields.add(artifactWithJavadoc.getClassifier());
-
-        } else {
-            extractedFields.add("null");
-        }
+        addQualifier(extractedFields, 0, artifactWithJavadoc);
 
         return extractedFields.toArray();
+    }
+
+    private void addQualifier(List<Object> extractedFields, int check, List<Artifact> artifacts) {
+        if (artifacts != null) {
+            for (Artifact artifact : artifacts) {
+                if (artifact != null) {
+                    extractedFields.add(artifact.getClassifier());
+                    check++;
+                    break;
+                }
+            }
+        }
+
+        if(check == 0) {
+            extractedFields.add("null");
+        }
     }
 }
