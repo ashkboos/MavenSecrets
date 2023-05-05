@@ -1,8 +1,10 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import java.io.File;
 import java.util.*;
 import nl.tudelft.*;
 import nl.tudelft.Package;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
@@ -14,7 +16,9 @@ public class PackagingTypeExtractor implements Extractor {
         this.fields = new Field[]{
             new Field ("packagingtype", "VARCHAR(128)"),
             new Field("qualifiersources", "VARCHAR(128)"),
-            new Field("qualifierjavadoc", "VARCHAR(128)")
+            new Field("qualifierjavadoc", "VARCHAR(128)"),
+            new Field("md5", "VARCHAR(128)"),
+            new Field("sha1", "VARCHAR(128)")
         };
     }
 
@@ -28,7 +32,6 @@ public class PackagingTypeExtractor implements Extractor {
         List<Object> extractedFields = new ArrayList<>();
         Model model = pkg.pom();
         String packagingType = model.getPackaging();
-        int check = 0;
 
         List<Artifact> artifactWithSources = null;
         List<Artifact> artifactWithJavadoc = null;
@@ -44,6 +47,34 @@ public class PackagingTypeExtractor implements Extractor {
         addQualifier(extractedFields, 0, artifactWithSources);
 
         addQualifier(extractedFields, 0, artifactWithJavadoc);
+
+        int fa = 0;
+        int ga = 0;
+        if(artifactWithSources != null) {
+            for (Artifact a : artifactWithSources) {
+                File f = a.getFile();
+                String checkSumFilePath =
+                    f.getParent() + File.separator + FilenameUtils.getBaseName(f.getName());
+
+                if(new File(checkSumFilePath + ".md5").exists() && fa != 1) {
+                    extractedFields.add("MD5");
+                    fa = 1;
+                }
+
+                if(new File(checkSumFilePath + ".sha1").exists() && ga != 1) {
+                    extractedFields.add("SHA1");
+                    ga = 1;
+                }
+            }
+        }
+
+        if(fa == 0) {
+            extractedFields.add("null");
+        }
+
+        if(ga == 0) {
+            extractedFields.add("null");
+        }
 
         return extractedFields.toArray();
     }
