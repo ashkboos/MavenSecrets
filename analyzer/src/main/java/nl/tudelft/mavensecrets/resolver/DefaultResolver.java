@@ -87,6 +87,10 @@ public class DefaultResolver implements Resolver {
             throw ex;
         }
 
+        if(result == null) {
+            return null;
+        }
+
         return result.getArtifact();
     }
 

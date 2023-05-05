@@ -12,6 +12,7 @@ import org.eclipse.aether.artifact.Artifact;
 
 import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.util.artifact.SubArtifact;
 
 public class Maven {
     private final Resolver resolver;
@@ -39,5 +40,22 @@ public class Maven {
         } catch (IOException ex) {
             throw new PackageException(id, "unable to read artifact", ex);
         }
+    }
+
+    public Artifact getArtifactSources(PackageId id) throws PackageException, ArtifactResolutionException {
+        Objects.requireNonNull(id);
+
+        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
+        Artifact sub = new SubArtifact(artifact, "sources", "jar");
+
+        return resolver.resolve(sub);
+    }
+
+    public Artifact getArtifactJavaDoc(PackageId id) throws PackageException, ArtifactResolutionException {
+        Objects.requireNonNull(id);
+
+        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
+        Artifact sub = new SubArtifact(artifact, "javadoc", "jar");
+        return resolver.resolve(sub);
     }
 }
