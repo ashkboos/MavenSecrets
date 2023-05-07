@@ -34,10 +34,35 @@ public class PackagingTypeExtractor implements Extractor {
         Model model = pkg.pom();
         String packagingType = model.getPackaging();
 
+        Artifact executableArtifact = null;
         Artifact artifactSources = null;
         Artifact artifactJavadoc = null;
         Artifact artifactWithMd5 = null;
         Artifact artifactWithSha1 = null;
+
+        try {
+            executableArtifact = mvn.getArtifact(pkg.id(), "jar");
+        } catch (ArtifactResolutionException e) {
+            LOGGER.error("Jar artifact not found", e);
+            try {
+                executableArtifact = mvn.getArtifact(pkg.id(), "war");
+            } catch (ArtifactResolutionException e1) {
+                LOGGER.error("War artifact not found", e1);
+                try {
+                    executableArtifact = mvn.getArtifact(pkg.id(), "ear");
+                } catch (ArtifactResolutionException e2) {
+                    LOGGER.error("Ear artifact not found", e2);
+                    try {
+                        executableArtifact = mvn.getArtifact(pkg.id(), "zip");
+                    } catch (ArtifactResolutionException e3) {
+                        LOGGER.error("Zip artifact not found", e3);
+                    }
+                }
+            }
+        }
+
+        assert executableArtifact != null;
+        LOGGER.info(executableArtifact.getExtension() + " EXTENSIONNN");
 
         try {
             artifactSources = mvn.getArtifactQualifier(pkg.id(), "sources");

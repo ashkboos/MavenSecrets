@@ -42,11 +42,11 @@ public class Maven {
         }
     }
 
-    public Artifact getArtifact(PackageId id) throws ArtifactResolutionException {
+    public Artifact getArtifact(PackageId id, String executableType) throws ArtifactResolutionException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
-        Artifact sub = new SubArtifact(artifact, "", "jar");
+        Artifact sub = new SubArtifact(artifact, "", executableType);
 
         return resolver.resolve(sub);
     }
