@@ -1,8 +1,6 @@
 package nl.tudelft;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.jar.JarFile;
 
@@ -44,31 +42,30 @@ public class Maven {
         }
     }
 
-    public List<Artifact> getArtifactSources(PackageId id) throws PackageException, ArtifactResolutionException {
+    public Artifact getArtifact(PackageId id) throws ArtifactResolutionException {
         Objects.requireNonNull(id);
-        List<Artifact> allArtifact = new ArrayList<>();
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
-        Artifact subMd5 = new SubArtifact(artifact, "sources", "jar.md5");
-        Artifact subSha = new SubArtifact(artifact, "sources", "jar.sha1");
+        Artifact sub = new SubArtifact(artifact, "", "jar");
 
-        allArtifact.add(resolver.resolve(subMd5));
-        allArtifact.add(resolver.resolve(subSha));
-
-        return allArtifact;
+        return resolver.resolve(sub);
     }
 
-    public List<Artifact> getArtifactJavaDoc(PackageId id) throws PackageException, ArtifactResolutionException {
+    public Artifact getArtifactChecksum(PackageId id, String checksumType) throws PackageException, ArtifactResolutionException {
         Objects.requireNonNull(id);
-        List<Artifact> allArtifact = new ArrayList<>();
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
-        Artifact subMd5 = new SubArtifact(artifact, "javadoc", "jar.md5");
-        Artifact subSha = new SubArtifact(artifact, "javadoc", "jar.sha1");
+        Artifact subArtifact = new SubArtifact(artifact, "", checksumType);
 
-        allArtifact.add(resolver.resolve(subMd5));
-        allArtifact.add(resolver.resolve(subSha));
+        return resolver.resolve(subArtifact);
+    }
 
-        return allArtifact;
+    public Artifact getArtifactQualifier(PackageId id, String qualifier) throws PackageException, ArtifactResolutionException {
+        Objects.requireNonNull(id);
+
+        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
+        Artifact subArtifact = new SubArtifact(artifact, qualifier, "jar");
+
+        return resolver.resolve(subArtifact);
     }
 }
