@@ -14,6 +14,9 @@ public class Database implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
+    private static final int BACKOFF_TIME_MS = 1000;
+    private static final int BACKOFF_BASE = 2;
+    private static final int BACKOFF_RETRIES = 3;
 
     static {
         // Legacy driver registring because Maven shade does funny things
@@ -31,12 +34,26 @@ public class Database implements Closeable {
     }
 
     public static Database connect(String url, String user, String pass) throws SQLException {
-        try {
-            LOGGER.trace("connecting to " + url);
-            return new Database(DriverManager.getConnection(url, user, pass));
-        } catch (SQLException ex) {
-            LOGGER.error("failed to connect to the database", ex);
-            throw ex;
+        LOGGER.trace("connecting to " + url);
+        var sleep = BACKOFF_TIME_MS;
+        for (var i = 0;; i++) {
+            try {
+                return new Database(DriverManager.getConnection(url, user, pass));
+            } catch (SQLException ex) {
+                LOGGER.error("failed to connect to the database (attempt " + (i + 1) + ")", ex);
+                if (i > BACKOFF_RETRIES)
+                    throw ex;
+            }
+
+            try {
+                // exponential backoff; not a busy wait
+                // noinspection BusyWait
+                Thread.sleep(sleep);
+            } catch (InterruptedException e) {
+                // ignored.
+            }
+
+            sleep *= BACKOFF_BASE;
         }
     }
 
