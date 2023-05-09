@@ -105,7 +105,29 @@ public class DefaultResolver implements Resolver {
     public File getJar(Artifact artifact) throws ArtifactResolutionException {
         Objects.requireNonNull(artifact);
 
-        return resolve(new SubArtifact(artifact, null, "jar")).getFile();
+        if(artifact.getArtifactId().equals("jwic-sourceviewer")) {
+            System.out.println("jkj");
+        }
+        Artifact artifactType = resolve(new SubArtifact(artifact, null, "jar"));
+
+        if(artifactType != null) {
+            if (artifactType.getExtension().equals("")) {
+                artifactType = resolve(new SubArtifact(artifact, null, "war"));
+            }
+
+            if (artifactType.getExtension().equals("")) {
+                artifactType = resolve(new SubArtifact(artifact, null, "ear"));
+            }
+
+            if (artifactType.getExtension().equals("")) {
+                artifactType = resolve(new SubArtifact(artifact, null, "zip"));
+            }
+        } else {
+            return null;
+        }
+
+        return artifactType.getFile();
+
     }
 
     /**

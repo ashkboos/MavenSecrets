@@ -1,6 +1,8 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import java.io.File;
 import java.util.*;
+import java.util.jar.JarFile;
 import nl.tudelft.*;
 import nl.tudelft.Package;
 import org.apache.logging.log4j.LogManager;
@@ -15,7 +17,8 @@ public class PackagingTypeExtractor implements Extractor {
 
     public PackagingTypeExtractor() {
         this.fields = new Field[]{
-            new Field ("packagingtype", "VARCHAR(128)"),
+            new Field ("packagingtypefrompom", "VARCHAR(128)"),
+            new Field("packagingtypefromrepo", "VARCHAR(128)"),
             new Field("qualifiersources", "VARCHAR(128)"),
             new Field("qualifierjavadoc", "VARCHAR(128)"),
             new Field("md5", "VARCHAR(128)"),
@@ -32,15 +35,16 @@ public class PackagingTypeExtractor implements Extractor {
     public Object[] extract(Maven mvn, Package pkg) {
         List<Object> extractedFields = new ArrayList<>();
         Model model = pkg.pom();
+        JarFile file = pkg.jar();
         String packagingType = model.getPackaging();
 
-        Artifact executableArtifact = null;
+        //Artifact executableArtifact = null;
         Artifact artifactSources = null;
         Artifact artifactJavadoc = null;
         Artifact artifactWithMd5 = null;
         Artifact artifactWithSha1 = null;
 
-        try {
+        /*try {
             executableArtifact = mvn.getArtifact(pkg.id(), "jar");
         } catch (ArtifactResolutionException e) {
             LOGGER.error("Jar artifact not found", e);
@@ -59,36 +63,40 @@ public class PackagingTypeExtractor implements Extractor {
                     }
                 }
             }
-        }
+        }*/
 
-        assert executableArtifact != null;
-        LOGGER.info(executableArtifact.getExtension() + " EXTENSIONNN");
+        /*assert executableArtifact != null;
+        LOGGER.info(executableArtifact.getExtension() + " EXTENSIONNN");*/
+
+        String fileExtension = file.getName().substring(file.getName().lastIndexOf('.') + 1);
 
         try {
-            artifactSources = mvn.getArtifactQualifier(pkg.id(), "sources");
+            artifactSources = mvn.getArtifactQualifier(pkg.id(), "sources", fileExtension);
         } catch (PackageException | ArtifactResolutionException e) {
             LOGGER.error("Source artifact not found", e);
         }
 
         try {
-            artifactJavadoc = mvn.getArtifactQualifier(pkg.id(), "javadoc");
+            artifactJavadoc = mvn.getArtifactQualifier(pkg.id(), "javadoc", fileExtension);
         } catch (PackageException | ArtifactResolutionException e) {
             LOGGER.error("Javadoc artifact not found", e);
         }
 
         try {
-            artifactWithMd5 = mvn.getArtifactChecksum(pkg.id(), "jar.md5");
+            artifactWithMd5 = mvn.getArtifactChecksum(pkg.id(), fileExtension + ".md5");
         } catch (PackageException | ArtifactResolutionException e) {
             LOGGER.error("MD5 artifact not found", e);
         }
 
         try {
-            artifactWithSha1 = mvn.getArtifactChecksum(pkg.id(), "jar.sha1");
+            artifactWithSha1 = mvn.getArtifactChecksum(pkg.id(), fileExtension + ".sha1");
         } catch (PackageException | ArtifactResolutionException e) {
             LOGGER.error("SHA1 artifact not found", e);
         }
 
         extractedFields.add(packagingType);
+
+        extractedFields.add(fileExtension);
 
         addQualifier(extractedFields, artifactSources);
 
@@ -113,7 +121,7 @@ public class PackagingTypeExtractor implements Extractor {
         if(artifact != null) {
             extractedFields.add(type.toUpperCase());
         } else {
-            extractedFields.add("null 12");
+            extractedFields.add("null");
         }
     }
 }

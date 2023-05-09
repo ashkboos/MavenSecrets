@@ -60,11 +60,11 @@ public class Maven {
         return resolver.resolve(subArtifact);
     }
 
-    public Artifact getArtifactQualifier(PackageId id, String qualifier) throws PackageException, ArtifactResolutionException {
+    public Artifact getArtifactQualifier(PackageId id, String qualifier, String packagingType) throws PackageException, ArtifactResolutionException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
-        Artifact subArtifact = new SubArtifact(artifact, qualifier, "jar");
+        Artifact subArtifact = new SubArtifact(artifact, qualifier, packagingType);
 
         return resolver.resolve(subArtifact);
     }
