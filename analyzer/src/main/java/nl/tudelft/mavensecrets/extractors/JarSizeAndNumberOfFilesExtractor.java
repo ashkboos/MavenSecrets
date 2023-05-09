@@ -34,8 +34,7 @@ public class JarSizeAndNumberOfFilesExtractor implements Extractor {
 
     @Override
     public Object[] extract(Maven mvn, Package pkg) throws IOException, SQLException {
-        Map<String, Integer> extensionMap;
-        Map<String, Long> extensionSizeMap = new HashMap<>();
+        List<ExtensionTuple> extensionTuples = new ArrayList<>();
         List<Field> extensionFields = new ArrayList<>();
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
@@ -55,21 +54,15 @@ public class JarSizeAndNumberOfFilesExtractor implements Extractor {
             if(!entry.isDirectory()) {
                 if(name[name.length - 1].contains("/")) {
                     String ext = "noextension";
-                    if(extensionSizeMap.containsKey(ext)) {
-                        extensionSizeMap.put(ext, extensionSizeMap.get(ext) + entry.getSize());
-                    } else extensionSizeMap.put(ext, entry.getSize());
+                    extensionTuples.add(new ExtensionTuple(ext, entry.getSize()));
                     extensions.add(ext);
                 } else if(name[name.length - 1].contains("-")) {
                     String ext = "containshyphen";
-                    if(extensionSizeMap.containsKey(ext)) {
-                        extensionSizeMap.put(ext, extensionSizeMap.get(ext) + entry.getSize());
-                    } else extensionSizeMap.put(ext, entry.getSize());
+                    extensionTuples.add(new ExtensionTuple(ext, entry.getSize()));
                     extensions.add(ext);
                 } else {
                     String ext = name[name.length - 1].toLowerCase();
-                    if(extensionSizeMap.containsKey(ext)) {
-                        extensionSizeMap.put(ext, extensionSizeMap.get(ext) + entry.getSize());
-                    } else extensionSizeMap.put(ext, entry.getSize());
+                    extensionTuples.add(new ExtensionTuple(ext, entry.getSize()));
                     extensions.add(ext);
                 }
             }
@@ -79,18 +72,20 @@ public class JarSizeAndNumberOfFilesExtractor implements Extractor {
         }
         sizeAndNumber[0] = size;
         sizeAndNumber[1] = numberOfFiles;
-        extensionMap = extensionsToMap(extensions);
-        for(Map.Entry<String, Integer> t : extensionMap.entrySet()) {
+        Map<String, ExtensionInfo> extensionInfo = computeExtensionInfo(extensionTuples);
+        for(Map.Entry<String, ExtensionInfo> t : extensionInfo.entrySet()) {
             String extension = t.getKey();
-            int count = t.getValue();
+            ExtensionInfo info = t.getValue();
             extensionFields.add(new Field(extension, "INTEGER"));
-            result.add(count);
-        }
-        for(Map.Entry<String, Long> t : extensionSizeMap.entrySet()) {
-            String extension = t.getKey() + "size";
-            long totalExtSize = t.getValue();
-            extensionFields.add(new Field(extension, "BIGINT"));
-            result.add(totalExtSize);
+            extensionFields.add(new Field(extension + "size", "BIGINT"));
+            extensionFields.add(new Field(extension + "min", "BIGINT"));
+            extensionFields.add(new Field(extension + "max", "BIGINT"));
+            extensionFields.add(new Field(extension + "median", "BIGINT"));
+            result.add(info.count);
+            result.add(info.total);
+            result.add(info.min);
+            result.add(info.max);
+            result.add(info.median);
         }
         extensionDatabase(db, checked, extensionFields.toArray(new Field[0]), result.toArray(), pkg.id());
         checked = true;
@@ -103,21 +98,95 @@ public class JarSizeAndNumberOfFilesExtractor implements Extractor {
         db.update(id, fields, values, false);
     }
 
-    /**
-     * Turns list into map, keeping track of number of occurrences
-     *
-     * @param extensions List of file extensions
-     * @return map containing every unique extension in the list with the number of occurrences
-     */
-    private Map<String, Integer> extensionsToMap (List<String> extensions) {
-        Map<String, Integer> result = new HashMap<>();
-        for(String extension : extensions) {
-            if(result.containsKey(extension)) {
-                result.put(extension, result.get(extension) + 1);
+    private Map<String, ExtensionInfo> computeExtensionInfo (List<ExtensionTuple> extensionTuples) {
+        Map<String, ExtensionInfo> result = new HashMap<>();
+        Map<String, ArrayList<Long>> sizes = new HashMap<>();
+        for(ExtensionTuple e : extensionTuples) {
+            if(result.containsKey(e.extension)) {
+                sizes.get(e.extension).add(e.size);
+                ExtensionInfo info = result.get(e.extension);
+                info.updateTotal(e.size);
+                info.updateMin(e.size);
+                info.updateMax(e.size);
+                info.updateCount();
+                result.put(e.extension, info);
             } else {
-                result.put(extension, 1);
+                ArrayList<Long> list = new ArrayList<>();
+                list.add(e.size);
+                sizes.put(e.extension, list);
+                result.put(e.extension, new ExtensionInfo(e.size, e.size, e.size, e.size, e.size));
             }
         }
+
+        //Compute median for every extension
+        for(Map.Entry<String, ArrayList<Long>> entry  : sizes.entrySet()) {
+            ExtensionInfo info = result.get(entry.getKey());
+            long mean = info.total / info.count;
+            List<Long> entrySizes = entry.getValue();
+            Collections.sort(entrySizes);
+            long median;
+            if(entrySizes.size() % 2 == 0) {
+                median = (entrySizes.get(entrySizes.size() / 2) + (entrySizes.get(entrySizes.size() / 2 - 1))) / 2;
+            } else  {
+                median = entrySizes.get(entrySizes.size() / 2);
+            }
+            result.get(entry.getKey()).updateMedian(median);
+        }
         return result;
+    }
+
+    public class ExtensionTuple {
+        String extension;
+        long size;
+
+        public ExtensionTuple(String extension, long size) {
+            this.extension = extension;
+            this.size = size;
+        }
+    }
+
+    public class ExtensionInfo {
+        long total;
+        long min;
+        long max;
+        long std;
+        long median;
+        long count;
+
+        public ExtensionInfo(long total, long min, long max, long std, long median) {
+            this.total = total;
+            this.min = min;
+            this.max = max;
+            this.std = std;
+            this.median = median;
+            this.count = 1;
+        }
+        void updateTotal(long other) {
+            this.total += other;
+        }
+
+        void updateMin(long other) {
+            if(other < this.min) {
+                this.min = other;
+            }
+        }
+
+        void updateMax(long other) {
+            if(other > this.max) {
+                this.max = other;
+            }
+        }
+
+        void updateMedian(long other) {
+            this.median = other;
+        }
+
+        void updateCount() {
+            this.count++;
+        }
+
+        void updateStd(long other) {
+            this.std = other;
+        }
     }
 }
