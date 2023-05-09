@@ -50,14 +50,14 @@ public class Runner implements Closeable {
                 continue;
             }
 
-            db.update(id, fields, values.toArray());
+            db.update(id, fields, values.toArray(), true);
             var time = Duration.between(start, Instant.now());
             var fetchTime = Duration.between(start, fetchEnd);
             LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
         }
     }
 
-    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
+    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException, SQLException {
         var list = new LinkedList<>();
         for (var pair : extractors.entrySet()) {
             var name = pair.getKey();

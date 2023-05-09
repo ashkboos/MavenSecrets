@@ -28,7 +28,7 @@ public class App {
             LOGGER.info("found " + packages.size() + " packages");
 
         var resolver = new DefaultResolver();
-        var builder = extractors(new RunnerBuilder());
+        var builder = extractors(new RunnerBuilder(), db);
         var maven = new Maven(resolver);
 
         try (var runner = builder.build(db)) {
@@ -64,14 +64,14 @@ public class App {
         }
     }
 
-    private static RunnerBuilder extractors(RunnerBuilder builder) {
+    private static RunnerBuilder extractors(RunnerBuilder builder, Database db) {
         return builder
                 .addExtractor("compiler", new CompilerConfigExtractor())
                 .addExtractor("modules", new JavaModuleExtractor())
                 .addExtractor("version", new JavaVersionExtractor())
                 .addExtractor("parent", new ParentExtractor())
                 .addExtractor("repo_urls", new ExtractorVC())
-                .addExtractor("size", new JarSizeAndNumberOfFilesExtractor());
+                .addExtractor("size", new JarSizeAndNumberOfFilesExtractor(db));
 
     }
 
