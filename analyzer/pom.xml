@@ -12,6 +12,12 @@
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 	<dependencies>
 		<!-- Maven -->
 		<dependency>
@@ -76,10 +82,16 @@
             <artifactId>indexer-reader</artifactId>
             <version>7.0.1</version>
         </dependency>
+        <!-- JitPack dependencies -->
+        <dependency>
+            <groupId>com.github.fasten-project</groupId>
+            <artifactId>fasten</artifactId>
+            <version>v0.0.18</version>
+            <type>pom</type>
+        </dependency>
     </dependencies>
-
     <build>
-        <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
+        <pluginManagement><!-- lock down plugins versions to avoid using Maven deAfaults (may be moved to parent pom) -->
             <plugins>
                 <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
                 <plugin>
