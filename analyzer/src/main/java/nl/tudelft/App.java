@@ -1,9 +1,6 @@
 package nl.tudelft;
 
-import nl.tudelft.mavensecrets.extractors.CompilerConfigExtractor;
-import nl.tudelft.mavensecrets.extractors.JavaModuleExtractor;
-import nl.tudelft.mavensecrets.extractors.JavaVersionExtractor;
-import nl.tudelft.mavensecrets.extractors.ParentExtractor;
+import nl.tudelft.mavensecrets.extractors.*;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,7 +71,10 @@ public class App {
                 .addExtractor("version", new JavaVersionExtractor())
                 .addExtractor("parent", new ParentExtractor())
                 .addExtractor("repo_urls", new ExtractorVC())
-                .addExtractor("demo", new DemoExtractor());
+                .addExtractor("demo", new DemoExtractor())
+                .addExtractor("lang", new LanguageExtractor())
+                .addExtractor("embed", new EmbedExtractor())
+                .addExtractor("mismatched", new MismatchedPackagesExtractor());
     }
 
     private static Database openDatabase() throws SQLException {

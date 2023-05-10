@@ -50,10 +50,14 @@ public class Runner implements Closeable {
                 continue;
             }
 
+            var dbStart = Instant.now();
             db.update(id, fields, values.toArray());
-            var time = Duration.between(start, Instant.now());
+            var end = Instant.now();
+            var time = Duration.between(start, end);
             var fetchTime = Duration.between(start, fetchEnd);
-            LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
+            var extractTime = Duration.between(fetchEnd, dbStart);
+            var dbTime = Duration.between(dbStart, end);
+            LOGGER.info("processed " + id + " in " + time.toMillis() + " ms (fetch: " + fetchTime.toMillis() + " ms, extract: " + extractTime.toMillis() + " ms, db: " + dbTime.toMillis() + " ms)");
         }
     }
 
