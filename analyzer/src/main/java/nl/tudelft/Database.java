@@ -30,6 +30,11 @@ public class Database implements Closeable {
         }
     }
 
+    void addTimestamp() throws SQLException {
+        updateSchema(new Field[] {new Field("lastmodified", "DATE")});
+        execute("INSERT INTO packages (id, lastmodified) SELECT CONCAT(groupid, ':', artifactid, ':', version) AS id, lastmodified FROM package_list ON CONFLICT DO NOTHING");
+    }
+
     void createIndexesTable(boolean checked) throws SQLException {
         if(!checked && !tableExists(PACKAGE_INDEX_TABLE)) {
             createIndexTable();
@@ -55,7 +60,7 @@ public class Database implements Closeable {
     }
 
     private void createTable() throws SQLException {
-        execute("CREATE TABLE " + PACKAGES_TABLE + "(id VARCHAR(128) PRIMARY KEY)");
+        execute("CREATE TABLE " + PACKAGES_TABLE + "(id VARCHAR PRIMARY KEY)");
     }
 
     private void createIndexTable() throws SQLException {

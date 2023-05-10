@@ -23,6 +23,7 @@ public class App {
         var db = openDatabase();
         runIndexerReader(args, db);
         var packages = db.getPackageIds();
+        db.addTimestamp();
 
         if (packages.isEmpty()) {
             LOGGER.info("no packages, nothing to do");
