@@ -1,11 +1,13 @@
-from giturlparse import parse
+from urllib.parse import urlparse
 from database import *
+import re
 
 # Scenarios
-# 1. ONLY scm_url 
+# 1. ONLY scm_url
 # 2. ONLY homepage_url
 # 3. scm_url & homepage_url are the same
 # 4. BOTH null
+
 
 def main():
     db = Database('localhost', '5432', 'postgres', 'SuperSekretPassword')
@@ -15,9 +17,12 @@ def main():
     parse_url("scm_url", conn)
     parse_url('homepage_url', conn)
 
-    # cur = conn.cursor()
-    # cur.execute('SELECT COUNT(*) FROM packages WHERE scm_url IS NULL')
-    # print('scm_url is NULL =', cur.fetchall()[0][0])
+    cur = conn.cursor()
+    print('*' * 50)
+    cur.execute('SELECT COUNT(*) FROM packages WHERE scm_url IS NULL')
+    print('scm_url is NULL =', cur.fetchall()[0][0])
+    cur.execute('SELECT COUNT(*) FROM packages WHERE homepage_url IS NULL')
+    print('homepage_url is NULL =', cur.fetchall()[0][0])
 
 
 def parse_url(field: str, conn):
@@ -31,18 +36,42 @@ def parse_url(field: str, conn):
     for record in cur:
         url = record[field]
 
-        try:
-            parsed_url = parse(url)
-            host = parsed_url.host
+        if field == 'scm_url':
+            host = parse_git_url(url)
+        elif field == 'homepage_url':
+            host = parse_homepage_url(url)
+
+        if host:
             hosts.append(host)
-        except:
-            unparseable.append(url)
+        else:
+            unparseable.append(host)
 
     print('*' * 50)
     print(field)
-    print(sorted([(host, hosts.count(host)) for host in set(hosts)]))
+    print([(host, hosts.count(host)) for host in set(hosts)])
     print('Parsed =', len(hosts))
     print('NOT Parsed =', len(unparseable))
+    return hosts, unparseable
+
+
+def parse_git_url(url):
+    n_url = re.sub(r"^(scm|svn):git:", "", url)
+    n_url = re.sub(r"^(scm|svn):", "", n_url)
+    n_url = re.sub(r"^git@", "ssh://git@", n_url)
+    n_url = re.sub(r"^git:", "", n_url)
+    n_url = re.sub(r"^(ssh://[^@]+@[^:]+):", r"\1/", n_url)
+
+    parsed_url = urlparse(n_url)
+    if parsed_url.hostname == None:
+        print(url)
+    return parsed_url.hostname
+
+
+def parse_homepage_url(url):
+    parsed_url = urlparse(url)
+    if parsed_url.hostname == None:
+        print(url)
+    return parsed_url.hostname
 
 
 main()
