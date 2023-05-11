@@ -10,10 +10,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 public class Runner implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);
@@ -45,52 +43,59 @@ public class Runner implements Closeable {
     }
 
     private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn){
-        ExecutorService executor = Executors.newFixedThreadPool(16); // Create a thread pool with 8 threads (adjust the number as needed)
+        ExecutorService executor = Executors.newFixedThreadPool(16);
 
-        List<CompletableFuture<Void>> futures = packages.stream()
-                .map(id -> CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return processPackage(id, fields, mvn);
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }, executor))
-                .collect(Collectors.toList());
-
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        try {
-            allFutures.get(); // Wait for all packages to be processed
-        } catch (InterruptedException | ExecutionException e) {
-            // Handle exceptions
-            e.printStackTrace();
-        } finally {
-            executor.shutdown();
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (PackageId id : packages) {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            executor.submit(new ProcessPackageTask(id, fields, mvn, future));
+            futures.add(future);
         }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        executor.shutdown();
     }
 
-    private Void processPackage(PackageId id, Field[] fields, Maven mvn) throws SQLException {
-        Instant fetchEnd = null;
-        List<Object> values = null;
+    private class ProcessPackageTask implements Runnable {
 
-        var start = Instant.now();
-        try (var pkg = mvn.getPackage(id)) {
-            fetchEnd = Instant.now();
-            values = extractInto(mvn, pkg);
-        } catch (PackageException | IOException e) {
-            LOGGER.error(e);
-            return null;
+        private final PackageId id;
+        private final Field[] fields;
+        private final Maven mvn;
+        private final CompletableFuture<Void> future;
+
+        public ProcessPackageTask(PackageId id, Field[] fields, Maven mvn, CompletableFuture<Void> future) {
+            this.id = id;
+            this.fields = fields;
+            this.mvn = mvn;
+            this.future = future;
         }
 
-        db.update(id, fields, values.toArray());
-        var time = Duration.between(start, Instant.now());
-        var fetchTime = Duration.between(start, fetchEnd);
-        LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
+        @Override
+        public void run() {
+            Instant fetchEnd;
+            List<Object> values;
 
-        return null;
+            var start = Instant.now();
+            try (var pkg = mvn.getPackage(id)) {
+                fetchEnd = Instant.now();
+                values = extractInto(mvn, pkg);
+            } catch (PackageException | IOException e) {
+                LOGGER.error(e);
+                future.complete(null);
+                return;
+            }
+
+            try {
+                db.update(id, fields, values.toArray());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            var time = Duration.between(start, Instant.now());
+            var fetchTime = Duration.between(start, fetchEnd);
+            LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
+
+            future.complete(null);
+        }
     }
-
-
 
     private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
         var list = new LinkedList<>();
