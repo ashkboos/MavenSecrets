@@ -50,3 +50,5 @@ buildNumber.properties
 .vscode/
 .idea/
 .settings/
+
+__pycache__/
