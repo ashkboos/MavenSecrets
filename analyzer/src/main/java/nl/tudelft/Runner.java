@@ -47,7 +47,7 @@ public class Runner implements Closeable {
                 values = extractInto(mvn, pkg);
             } catch (PackageException e) {
                 LOGGER.error(e);
-//                continue;
+                continue;
             }
 
             db.update(id, fields, values.toArray());
