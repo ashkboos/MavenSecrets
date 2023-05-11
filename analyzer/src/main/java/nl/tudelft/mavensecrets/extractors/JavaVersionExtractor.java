@@ -26,6 +26,9 @@ import nl.tudelft.Package;
  */
 public class JavaVersionExtractor implements Extractor {
 
+    private static final Name BUILD_JDK = new Name("Build-Jdk");
+    private static final Name BUILD_JDK_SPEC = new Name("Build-Jdk-Spec");
+
     private final Field[] fields = {
             new Field("java_version_manifest_1", "VARCHAR(16)"), // Build-Jdk
             new Field("java_version_manifest_2", "VARCHAR(16)"), // Build-Jdk-Spec
@@ -49,8 +52,8 @@ public class JavaVersionExtractor implements Extractor {
 
         // Manifest version if available
         Manifest manifest = jar.getManifest();
-        result[0] = manifest == null ? null : manifest.getMainAttributes().get(new Name("Build-Jdk"));
-        result[1] = manifest == null ? null : manifest.getMainAttributes().get(new Name("Build-Jdk-Spec"));
+        result[0] = manifest == null ? null : manifest.getMainAttributes().get(BUILD_JDK);
+        result[1] = manifest == null ? null : manifest.getMainAttributes().get(BUILD_JDK_SPEC);
 
         // Class file
         Map<JavaClassVersion, Integer> versions = new HashMap<>();
