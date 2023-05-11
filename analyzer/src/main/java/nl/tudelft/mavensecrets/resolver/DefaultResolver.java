@@ -105,7 +105,7 @@ public class DefaultResolver implements Resolver {
     public File getJar(Artifact artifact) throws ArtifactResolutionException {
         Objects.requireNonNull(artifact);
 
-        Artifact artifactType = null;
+        Artifact artifactType;
         try {
             artifactType = resolve(new SubArtifact(artifact, null, "jar"));
         } catch(ArtifactResolutionException e1) {

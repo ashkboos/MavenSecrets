@@ -1,6 +1,5 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.File;
 import java.util.*;
 import java.util.jar.JarFile;
 import nl.tudelft.*;
@@ -38,36 +37,22 @@ public class PackagingTypeExtractor implements Extractor {
         JarFile file = pkg.jar();
         String packagingType = model.getPackaging();
 
-        Artifact artifactSources = null;
-        Artifact artifactJavadoc = null;
-        Artifact artifactWithMd5 = null;
-        Artifact artifactWithSha1 = null;
+        Artifact artifactSources;
+        Artifact artifactJavadoc;
+        Artifact artifactWithMd5;
+        Artifact artifactWithSha1;
 
         String fileExtension = file.getName().substring(file.getName().lastIndexOf('.') + 1);
 
-        try {
-            artifactSources = mvn.getArtifactQualifier(pkg.id(), "sources", fileExtension);
-        } catch (PackageException | ArtifactResolutionException e) {
-            LOGGER.error("Source artifact not found", e);
-        }
 
-        try {
-            artifactJavadoc = mvn.getArtifactQualifier(pkg.id(), "javadoc", fileExtension);
-        } catch (PackageException | ArtifactResolutionException e) {
-            LOGGER.error("Javadoc artifact not found", e);
-        }
+        artifactSources = getQualifierArtifact(mvn, pkg, fileExtension, "sources");
 
-        try {
-            artifactWithMd5 = mvn.getArtifactChecksum(pkg.id(), fileExtension + ".md5");
-        } catch (PackageException | ArtifactResolutionException e) {
-            LOGGER.error("MD5 artifact not found", e);
-        }
+        artifactJavadoc = getQualifierArtifact(mvn, pkg, fileExtension, "javadoc");
 
-        try {
-            artifactWithSha1 = mvn.getArtifactChecksum(pkg.id(), fileExtension + ".sha1");
-        } catch (PackageException | ArtifactResolutionException e) {
-            LOGGER.error("SHA1 artifact not found", e);
-        }
+        artifactWithMd5 = getCheckSumArtifact(mvn, pkg, fileExtension, ".md5");
+
+        artifactWithSha1 = getCheckSumArtifact(mvn, pkg, fileExtension, ".sha1");
+
 
         extractedFields.add(packagingType);
 
@@ -84,6 +69,26 @@ public class PackagingTypeExtractor implements Extractor {
         return extractedFields.toArray();
     }
 
+    private Artifact getCheckSumArtifact(Maven mvn, Package pkg, String fileExtension, String checksumType) {
+        Artifact artifact = null;
+        try {
+            artifact = mvn.getArtifactChecksum(pkg.id(), fileExtension + checksumType);
+        } catch (PackageException | ArtifactResolutionException e) {
+            LOGGER.error(checksumType + " artifact not found", e);
+        }
+        return artifact;
+    }
+
+    private Artifact getQualifierArtifact(Maven mvn, Package pkg, String fileExtension, String qualifierName) {
+        Artifact artifact = null;
+        try {
+            artifact = mvn.getArtifactQualifier(pkg.id(), qualifierName, fileExtension);
+        } catch (PackageException | ArtifactResolutionException e) {
+            LOGGER.error(qualifierName + " artifact not found", e);
+        }
+        return artifact;
+    }
+
     private void addQualifier(List<Object> extractedFields, Artifact artifact) {
         if (artifact != null) {
             extractedFields.add(artifact.getClassifier());
@@ -92,9 +97,9 @@ public class PackagingTypeExtractor implements Extractor {
         }
     }
 
-    private void addCheckSumType(List<Object> extractedFields, Artifact artifact, String type) {
+    private void addCheckSumType(List<Object> extractedFields, Artifact artifact, String checksumType) {
         if(artifact != null) {
-            extractedFields.add(type.toUpperCase());
+            extractedFields.add(checksumType.toUpperCase());
         } else {
             extractedFields.add("null");
         }
