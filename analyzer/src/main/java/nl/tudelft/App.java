@@ -1,21 +1,34 @@
 package nl.tudelft;
 
-import nl.tudelft.mavensecrets.extractors.*;
-import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Objects;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import io.github.cdimascio.dotenv.Dotenv;
+import nl.tudelft.mavensecrets.Config;
+import nl.tudelft.mavensecrets.YamlConfig;
+import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
 
     public static void main(String[] args) throws IOException, SQLException, PackageException {
+        // Config
+        LOGGER.info("Loading configuration");
+        Config config = loadConfiguration();
+        LOGGER.info("Extractors: " + config.getExtractors());
+        
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
         runIndexerReader(args, db);
@@ -28,7 +41,7 @@ public class App {
             LOGGER.info("found " + packages.size() + " packages");
 
         var resolver = new DefaultResolver();
-        var builder = extractors(new RunnerBuilder());
+        var builder = extractors(config, new RunnerBuilder());
         var maven = new Maven(resolver);
 
         try (var runner = builder.build(db)) {
@@ -64,19 +77,60 @@ public class App {
         }
     }
 
-    private static RunnerBuilder extractors(RunnerBuilder builder) {
-        return builder
-                .addExtractor("compiler", new CompilerConfigExtractor())
-                .addExtractor("modules", new JavaModuleExtractor())
-                .addExtractor("version", new JavaVersionExtractor())
-                .addExtractor("parent", new ParentExtractor())
-                .addExtractor("repo_urls", new ExtractorVC())
-                .addExtractor("demo", new DemoExtractor())
-                .addExtractor("demo", new DemoExtractor())
-                .addExtractor("packaging", new PackagingTypeExtractor());
+    private static RunnerBuilder extractors(Config config, RunnerBuilder builder) {
+        Objects.requireNonNull(config);
+        Objects.requireNonNull(builder);
+
+        // Should not be an issue since RunnerBuilder is mutable
+        config.getExtractors().forEach(builder::addExtractor);
+
+        return builder;
     }
 
     private static Database openDatabase() throws SQLException {
-        return Database.connect("jdbc:postgresql://localhost:5432/postgres", "postgres", "SuperSekretPassword");
+        var dotenv = Dotenv.configure()
+                .ignoreIfMissing()
+                .ignoreIfMalformed()
+                .load();
+
+        var host = dotenv.get("DB_HOST");
+        var port = dotenv.get("DB_PORT");
+        var name = dotenv.get("DB_NAME");
+        var user = dotenv.get("DB_USER");
+        var pass = dotenv.get("DB_PASS");
+        if (host != null && name != null && user != null)
+            return Database.connect("jdbc:postgresql://" + host + ":" + (port == null ? "5432" : port) + "/" + name, user, pass);
+        else
+            return Database.connect("jdbc:postgresql://localhost:5432/postgres", "postgres", "SuperSekretPassword");
+    }
+
+    /**
+     * Load the program's configuration.
+     *
+     * @return The configuration.
+     * @throws IOException If an I/O error occurs.
+     */
+    private static Config loadConfiguration() throws IOException {
+        File dir = new File(".");
+        File file = new File(dir, "config.yml");
+
+        // Copy defaults
+        if (!file.exists()) {
+            dir.mkdirs();
+            try (InputStream in = App.class.getClassLoader().getResourceAsStream("config.yml")) {
+                if (in == null) {
+                    throw new RuntimeException("No config.yml resource present");
+                }
+                try (OutputStream out = new FileOutputStream(file)) {
+                    byte[] buf = new byte[1 << 10];
+                    int len;
+                    while ((len = in.read(buf)) != -1) {
+                        out.write(buf, 0, len);
+                    }
+                }
+            }
+        }
+
+        return YamlConfig.fromFile(file);
     }
 }
