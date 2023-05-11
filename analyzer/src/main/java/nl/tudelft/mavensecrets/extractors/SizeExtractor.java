@@ -13,16 +13,16 @@ import java.util.jar.JarFile;
 /**
  * An extractor fetching Jar Size and number of files
  */
-public class JarSizeAndNumberOfFilesExtractor implements Extractor {
+public class SizeExtractor implements Extractor {
     private final Database db;
-    private Boolean checked;
+    public Boolean checked;
 
     private final Field[] fields = {
             new Field("size", "BIGINT"),
             new Field("numberoffiles", "INTEGER")
     };
 
-    public JarSizeAndNumberOfFilesExtractor(Database db) {
+    public SizeExtractor(Database db) {
         this.db = db;
         checked = false;
     }
@@ -92,7 +92,7 @@ public class JarSizeAndNumberOfFilesExtractor implements Extractor {
         return sizeAndNumber;
     }
 
-    void extensionDatabase(Database db, boolean checked, Field[] fields, Object[] values, PackageId id) throws SQLException {
+    public void extensionDatabase(Database db, boolean checked, Field[] fields, Object[] values, PackageId id) throws SQLException {
         db.createExtensionTable(checked);
         db.updateExtensionSchema(fields);
         db.update(id, fields, values, false);

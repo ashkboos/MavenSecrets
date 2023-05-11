@@ -1,10 +1,10 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
+import nl.tudelft.*;
 import nl.tudelft.Package;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
+//import eu.fasten.core.maven.resolution;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,10 +27,18 @@ public class DependencyExtractor implements Extractor {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
         Object[] result = new Object[2];
-
-        File pomFile = pkg.pom().getPomFile();
+        //File pomFile = pkg.pom().getPomFile();
         List<Dependency> dependencies = pkg.pom().getDependencies();
-//        Set<Revision> directDeps = getDependencies(pomFile, true);
+        int directDependencies = dependencies.size();
+        int transitiveDependencies = 0;
+        Model m = pkg.pom();
+        while(m.getDependencies().size() > 0) {
+            for(Dependency d : m.getDependencies()) {
+                PackageId dep = new PackageId(d.getGroupId(), d.getArtifactId(), d.getVersion());
+            }
+        }
+
+        //Set<Revision> directDeps = getDependencies(pomFile, true);
         return result;
     }
 }
