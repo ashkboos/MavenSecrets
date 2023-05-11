@@ -1,34 +1,25 @@
 package nl.tudelft;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class RunnerBuilder {
-    private final Map<String, Extractor> extractors = new HashMap<>();
-    private final Set<String> whitelist;
 
-    public RunnerBuilder() {
-        whitelist = new HashSet<>();
-    }
+    private final Map<Class<?>, Extractor> extractors = new HashMap<>();
 
-    public RunnerBuilder(Collection<String> whitelist) {
-        this.whitelist = new HashSet<>(whitelist);
-    }
+    RunnerBuilder addExtractor(Extractor extractor) {
+        Objects.requireNonNull(extractor);
 
-    RunnerBuilder addExtractor(String name, Extractor extractor) {
-        if (this.extractors.containsKey(name))
-            throw new IllegalArgumentException("extractor `" + name + "` already added");
-        if (!whitelist.isEmpty() && !whitelist.contains(name))
-            return this;
-
-        extractors.put(name, extractor);
+        extractors.putIfAbsent(extractor.getClass(), extractor);
         return this;
     }
 
     Runner build(Database db) throws SQLException {
         var analyzer =  new Runner(db);
-        for (var entry : extractors.entrySet())
-            analyzer.addExtractor(entry.getKey(), entry.getValue());
+        for (var entry : extractors.values())
+            analyzer.addExtractor(entry);
 
         return analyzer;
     }

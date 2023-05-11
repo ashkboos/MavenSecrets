@@ -1,0 +1,8 @@
+extractors:
+  - nl.tudelft.mavensecrets.extractors.CompilerConfigExtractor
+  - nl.tudelft.mavensecrets.extractors.JavaModuleExtractor
+  - nl.tudelft.mavensecrets.extractors.JavaVersionExtractor
+  - nl.tudelft.mavensecrets.extractors.ParentExtractor
+  - nl.tudelft.mavensecrets.extractors.PackagingTypeExtractor
+  - nl.tudelft.ExtractorVC
+  - nl.tudelft.DemoExtractor 
