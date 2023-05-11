@@ -1,6 +1,5 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Objects;
@@ -8,8 +7,6 @@ import java.util.Set;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -20,7 +17,6 @@ import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
 import nl.tudelft.mavensecrets.NopResolver;
-import nl.tudelft.mavensecrets.resolver.Resolver;
 
 public class ParentExtractorTest {
 
@@ -43,18 +39,13 @@ public class ParentExtractorTest {
 
     @Test
     public void test_correct_number_of_fields() {
-        Package pkg = createPackage(new Model());
-
-        Object[] results;
-        try {
-            results = extractor.extract(maven, pkg);
+        try (Package pkg = createPackage(new Model())) {
+            Object[] results = extractor.extract(maven, pkg);
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(extractor.fields().length, results.length);
         } catch (IOException exception) {
             Assertions.fail(exception);
-            return;
         }
-
-        Assertions.assertNotNull(results);
-        Assertions.assertEquals(extractor.fields().length, results.length);
     }
 
     @Test
@@ -66,32 +57,22 @@ public class ParentExtractorTest {
         parent.setVersion("1.0");
         model.setParent(parent);
 
-        Package pkg = createPackage(model);
-
-        Object[] results;
-        try {
-            results = extractor.extract(maven, pkg);
+        try (Package pkg = createPackage(model)) {
+            Object[] results = extractor.extract(maven, pkg);
+            Assertions.assertArrayEquals(new Object[] {"my-group-id", "my-artifact-id", "1.0"}, results);
         } catch (IOException exception) {
             Assertions.fail(exception);
-            return;
         }
-
-        Assertions.assertArrayEquals(new Object[] {"my-group-id", "my-artifact-id", "1.0"}, results);
     }
     
     @Test
     public void test_parent_absent() {
-        Package pkg = createPackage(new Model());
-
-        Object[] results;
-        try {
-            results = extractor.extract(maven, pkg);
+        try (Package pkg = createPackage(new Model())) {
+            Object[] results = extractor.extract(maven, pkg);
+            Assertions.assertArrayEquals(new Object[] {null, null, null}, results);
         } catch (IOException exception) {
             Assertions.fail(exception);
-            return;
         }
-
-        Assertions.assertArrayEquals(new Object[] {null, null, null}, results);
     }
 
     @BeforeAll
@@ -110,5 +91,5 @@ public class ParentExtractorTest {
         Objects.requireNonNull(model);
 
         return new Package(null, null, model);
-    } 
+    }
 }
