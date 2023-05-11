@@ -66,6 +66,12 @@ public class App {
 
     private static RunnerBuilder extractors(RunnerBuilder builder) {
         return builder
+                .addExtractor("compiler", new CompilerConfigExtractor())
+                .addExtractor("modules", new JavaModuleExtractor())
+                .addExtractor("version", new JavaVersionExtractor())
+                .addExtractor("parent", new ParentExtractor())
+                .addExtractor("repo_urls", new ExtractorVC())
+                .addExtractor("demo", new DemoExtractor())
                 .addExtractor("demo", new DemoExtractor())
                 .addExtractor("packaging", new PackagingTypeExtractor());
     }
