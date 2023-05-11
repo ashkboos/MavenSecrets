@@ -87,6 +87,10 @@ public class DefaultResolver implements Resolver {
             throw ex;
         }
 
+        if(result == null) {
+            return null;
+        }
+
         return result.getArtifact();
     }
 
@@ -101,7 +105,34 @@ public class DefaultResolver implements Resolver {
     public File getJar(Artifact artifact) throws ArtifactResolutionException {
         Objects.requireNonNull(artifact);
 
-        return resolve(new SubArtifact(artifact, null, "jar")).getFile();
+        Artifact artifactType;
+        try {
+            artifactType = resolve(new SubArtifact(artifact, null, "jar"));
+        } catch(ArtifactResolutionException e1) {
+            LOGGER.info("Jar packaging for " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
+            try {
+                artifactType = resolve(new SubArtifact(artifact, null, "war"));
+            } catch(ArtifactResolutionException e2) {
+                LOGGER.info("War packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
+                try {
+                    artifactType = resolve(new SubArtifact(artifact, null, "ear"));
+                } catch(ArtifactResolutionException e3) {
+                    LOGGER.info("Ear packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
+                    try {
+                        artifactType = resolve(new SubArtifact(artifact, null, "zip"));
+                    } catch(ArtifactResolutionException e4) {
+                        LOGGER.info("Zip packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
+                        e4.addSuppressed(e3);
+                        e4.addSuppressed(e2);
+                        e4.addSuppressed(e1);
+                        throw e4;
+                    }
+                }
+            }
+        }
+
+        return artifactType.getFile();
+
     }
 
     /**
