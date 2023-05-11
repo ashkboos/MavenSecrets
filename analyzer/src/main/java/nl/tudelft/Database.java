@@ -59,7 +59,9 @@ public class Database implements Closeable {
 
     void addTimestamp() throws SQLException {
         updateSchema(new Field[] {new Field("lastmodified", "DATE")});
-        execute("INSERT INTO packages (id, lastmodified) SELECT CONCAT(groupid, ':', artifactid, ':', version) AS id, lastmodified FROM package_list ON CONFLICT DO NOTHING");
+        execute("UPDATE packages p SET lastmodified = pl.lastmodified " +
+                        "FROM package_list pl " +
+                        "WHERE CONCAT(pl.groupid, ':', pl.artifactid, ':', pl.version) = p.id ");
     }
 
     void createIndexesTable(boolean checked) throws SQLException {
