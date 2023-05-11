@@ -38,18 +38,16 @@ public class ParentExtractorTest {
     }
 
     @Test
-    public void test_correct_number_of_fields() {
+    public void test_correct_number_of_fields() throws IOException {
         try (Package pkg = createPackage(new Model())) {
             Object[] results = extractor.extract(maven, pkg);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
-        } catch (IOException exception) {
-            Assertions.fail(exception);
         }
     }
 
     @Test
-    public void test_parent_present() {
+    public void test_parent_present() throws IOException {
         Model model = new Model();
         Parent parent = new Parent();
         parent.setGroupId("my-group-id");
@@ -60,18 +58,14 @@ public class ParentExtractorTest {
         try (Package pkg = createPackage(model)) {
             Object[] results = extractor.extract(maven, pkg);
             Assertions.assertArrayEquals(new Object[] {"my-group-id", "my-artifact-id", "1.0"}, results);
-        } catch (IOException exception) {
-            Assertions.fail(exception);
         }
     }
     
     @Test
-    public void test_parent_absent() {
+    public void test_parent_absent() throws IOException {
         try (Package pkg = createPackage(new Model())) {
             Object[] results = extractor.extract(maven, pkg);
             Assertions.assertArrayEquals(new Object[] {null, null, null}, results);
-        } catch (IOException exception) {
-            Assertions.fail(exception);
         }
     }
 
