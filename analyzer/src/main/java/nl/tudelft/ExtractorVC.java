@@ -74,6 +74,7 @@ public class ExtractorVC implements Extractor{
         // TODO for multiple packaging types (JAR, WAR, EAR)
         // TODO convert try-catches to more readable format
         // TODO better exception handling
+        // FIXME need to do artefact resolution from maven repo
         // MD5
         JarFile jar = pkg.jar();
         String jarName = jar.getName();
