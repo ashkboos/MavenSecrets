@@ -14,6 +14,16 @@ public class Database implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
+
+    static {
+        // Legacy driver registring because Maven shade does funny things
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException exception) {
+            throw new ExceptionInInitializerError(exception);
+        }
+    }
+
     private final Connection conn;
 
     private Database(Connection conn) {
