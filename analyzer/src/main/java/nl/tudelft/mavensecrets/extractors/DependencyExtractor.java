@@ -28,17 +28,20 @@ public class DependencyExtractor implements Extractor {
         Objects.requireNonNull(pkg);
         Object[] result = new Object[2];
         //File pomFile = pkg.pom().getPomFile();
-        List<Dependency> dependencies = pkg.pom().getDependencies();
+        Model m = pkg.pom();
+        List<Dependency> dependencies = m.getDependencies();
         int directDependencies = dependencies.size();
         int transitiveDependencies = 0;
-        Model m = pkg.pom();
-        while(m.getDependencies().size() > 0) {
-            for(Dependency d : m.getDependencies()) {
-                PackageId dep = new PackageId(d.getGroupId(), d.getArtifactId(), d.getVersion());
-            }
-        }
+
+//        while(m.getDependencies().size() > 0) {
+//            for(Dependency d : m.getDependencies()) {
+//                PackageId dep = new PackageId(d.getGroupId(), d.getArtifactId(), d.getVersion());
+//            }
+//        }
 
         //Set<Revision> directDeps = getDependencies(pomFile, true);
+        result[0] = directDependencies;
+        result[1] = -1;
         return result;
     }
 }

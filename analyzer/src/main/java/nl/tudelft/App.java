@@ -71,7 +71,8 @@ public class App {
                 .addExtractor("version", new JavaVersionExtractor())
                 .addExtractor("parent", new ParentExtractor())
                 .addExtractor("repo_urls", new ExtractorVC())
-                .addExtractor("size", new SizeExtractor(db));
+                .addExtractor("size", new SizeExtractor(db))
+                .addExtractor("dependency", new DependencyExtractor());
 
     }
 
