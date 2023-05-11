@@ -1,5 +1,6 @@
 package nl.tudelft;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import nl.tudelft.mavensecrets.extractors.CompilerConfigExtractor;
 import nl.tudelft.mavensecrets.extractors.JavaModuleExtractor;
 import nl.tudelft.mavensecrets.extractors.JavaVersionExtractor;
@@ -78,6 +79,19 @@ public class App {
     }
 
     private static Database openDatabase() throws SQLException {
-        return Database.connect("jdbc:postgresql://localhost:5432/postgres", "postgres", "SuperSekretPassword");
+        var dotenv = Dotenv.configure()
+                .ignoreIfMissing()
+                .ignoreIfMalformed()
+                .load();
+
+        var host = dotenv.get("DB_HOST");
+        var port = dotenv.get("DB_PORT");
+        var name = dotenv.get("DB_NAME");
+        var user = dotenv.get("DB_USER");
+        var pass = dotenv.get("DB_PASS");
+        if (host != null && name != null && user != null)
+            return Database.connect("jdbc:postgresql://" + host + ":" + (port == null ? "5432" : port) + "/" + name, user, pass);
+        else
+            return Database.connect("jdbc:postgresql://localhost:5432/postgres", "postgres", "SuperSekretPassword");
     }
 }
