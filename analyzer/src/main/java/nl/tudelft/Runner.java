@@ -38,16 +38,16 @@ public class Runner implements Closeable {
         if (fields.length == 0)
             return;
 
+        Instant fetchEnd = null;
         List<Object> values = null;
         for (var id : packages) {
             var start = Instant.now();
-            Instant fetchEnd;
             try (var pkg = mvn.getPackage(id)) {
                 fetchEnd = Instant.now();
                 values = extractInto(mvn, pkg);
             } catch (PackageException e) {
                 LOGGER.error(e);
-                continue;
+//                continue;
             }
 
             db.update(id, fields, values.toArray());
