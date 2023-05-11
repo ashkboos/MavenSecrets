@@ -77,6 +77,13 @@ public class JavaVersionExtractor implements Extractor {
         return result;
     }
 
+    /**
+     * Read the class version from a stream.
+     *
+     * @param stream Class {@link InputStream}.
+     * @return The class versions.
+     * @throws IOException If an I/O error occurs.
+     */
     private JavaClassVersion fetchClassVersion(InputStream stream) throws IOException {
         Objects.requireNonNull(stream);
 
@@ -95,7 +102,11 @@ public class JavaVersionExtractor implements Extractor {
         return new JavaClassVersion(major, minor);
     }
 
+    /**
+     * A Java class version record storing both major and minor class versions.
+     */
     private static record JavaClassVersion(byte[] major, byte[] minor) {
+
         private JavaClassVersion(byte[] major, byte[] minor) {
             Objects.requireNonNull(major);
             Objects.requireNonNull(minor);
