@@ -1,6 +1,7 @@
 package nl.tudelft.mavensecrets.extractors;
 
 import java.util.*;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import nl.tudelft.*;
 import nl.tudelft.Package;
@@ -21,7 +22,8 @@ public class PackagingTypeExtractor implements Extractor {
             new Field("qualifiersources", "VARCHAR(128)"),
             new Field("qualifierjavadoc", "VARCHAR(128)"),
             new Field("md5", "VARCHAR(128)"),
-            new Field("sha1", "VARCHAR(128)")
+            new Field("sha1", "VARCHAR(128)"),
+            new Field("typesoffile", "VARCHAR(512)")
         };
     }
 
@@ -53,6 +55,8 @@ public class PackagingTypeExtractor implements Extractor {
 
         artifactWithSha1 = getCheckSumArtifact(mvn, pkg, fileExtension, ".sha1");
 
+        Set<String> allFiles = getFilesFromExecutable(file);
+
 
         extractedFields.add(packagingType);
 
@@ -65,6 +69,8 @@ public class PackagingTypeExtractor implements Extractor {
         addCheckSumType(extractedFields, artifactWithMd5, ".md5");
 
         addCheckSumType(extractedFields, artifactWithSha1, ".sha1");
+
+        extractedFields.add(allFiles.toString());
 
         return extractedFields.toArray();
     }
@@ -103,5 +109,23 @@ public class PackagingTypeExtractor implements Extractor {
         } else {
             extractedFields.add("null");
         }
+    }
+
+    private Set<String> getFilesFromExecutable(JarFile file) {
+        Set<String> fileTypes = new HashSet<>();
+
+        Enumeration<JarEntry> entries = file.entries();
+        while (entries.hasMoreElements()) {
+            JarEntry entry = entries.nextElement();
+            if (!entry.isDirectory()) {
+                String fileName = entry.getName();
+                int lastDotIndex = fileName.lastIndexOf('.');
+                if (lastDotIndex != -1 && lastDotIndex != fileName.length() - 1) {
+                    String fileExtension = fileName.substring(lastDotIndex + 1).toLowerCase();
+                    fileTypes.add(fileExtension);
+                }
+            }
+        }
+        return fileTypes;
     }
 }
