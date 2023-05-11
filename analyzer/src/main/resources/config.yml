@@ -3,3 +3,5 @@ extractors:
   - nl.tudelft.mavensecrets.extractors.JavaModuleExtractor
   - nl.tudelft.mavensecrets.extractors.JavaVersionExtractor
   - nl.tudelft.mavensecrets.extractors.ParentExtractor
+  - nl.tudelft.ExtractorVC
+  - nl.tudelft.DemoExtractor 
