@@ -13,7 +13,7 @@ import java.util.*;
 public class Runner implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);
     private final Database db;
-    private final Map<Class<?>, Extractor> extractors = new TreeMap<>();
+    private final Map<Class<?>, Extractor> extractors = new HashMap<>();
 
     Runner(Database db) {
         this.db = db;
