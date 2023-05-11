@@ -14,7 +14,6 @@ import java.util.jar.JarFile;
  * An extractor fetching Jar Size and number of files
  */
 public class SizeExtractor implements Extractor {
-    private final Database db;
     public Boolean checked;
 
     private final Field[] fields = {
@@ -22,8 +21,7 @@ public class SizeExtractor implements Extractor {
             new Field("numberoffiles", "INTEGER")
     };
 
-    public SizeExtractor(Database db) {
-        this.db = db;
+    public SizeExtractor() {
         checked = false;
     }
 
@@ -33,7 +31,7 @@ public class SizeExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException, SQLException {
+    public Object[] extract(Maven mvn, Package pkg, Database db) throws IOException, SQLException {
         List<ExtensionTuple> extensionTuples = new ArrayList<>();
         List<Field> extensionFields = new ArrayList<>();
         Objects.requireNonNull(mvn);

@@ -21,6 +21,7 @@ public class SizeExtractorTest {
 
     @Test
     public void test() throws Exception {
+        Database db = mock(Database.class);
         List<File> files = new ArrayList<>();
         String name = System.getProperty("user.home") +"/.m2/test/demo.jar";
         File pomFile = new File(System.getProperty("user.home"), "/.m2/test/pom.xml");
@@ -48,9 +49,9 @@ public class SizeExtractorTest {
                 Mockito.any(Field[].class),
                 Mockito.any(Object[].class),
                 Mockito.any(PackageId.class));
-        when(sizeExtractor.extract(mvn, pkg)).thenCallRealMethod();
+        when(sizeExtractor.extract(mvn, pkg, db)).thenCallRealMethod();
         //verify(sizeExtractor).extensionDatabase(Mockito.any(Database.class), Mockito.anyBoolean(), fields.capture(), values.capture(), Mockito.any(PackageId.class));
-        Object[] obj = sizeExtractor.extract(mvn, pkg);
+        Object[] obj = sizeExtractor.extract(mvn, pkg, db);
         //Field[] o = fields.getValue();
         assertEquals(files.size(), obj[1]);
 
@@ -60,6 +61,7 @@ public class SizeExtractorTest {
 
     @Test
     public void testMockSizeExtractor() throws Exception {
+        Database db = mock(Database.class);
         Resolver resolver = mock(Resolver.class);
         Maven mvn = new Maven(resolver);
         Model model = new Model();
@@ -79,8 +81,8 @@ public class SizeExtractorTest {
                 Mockito.any(Field[].class),
                 Mockito.any(Object[].class),
                 Mockito.any(PackageId.class));
-        when(sizeExtractor.extract(mvn, pkg)).thenCallRealMethod();
-        Object[] obj = sizeExtractor.extract(mvn, pkg);
+        when(sizeExtractor.extract(mvn, pkg, db)).thenCallRealMethod();
+        Object[] obj = sizeExtractor.extract(mvn, pkg, db);
         assertEquals(jarFile.size() - countDirectories(jarFile), obj[1]);
         assertEquals((long) 881724, obj[0]);
     }

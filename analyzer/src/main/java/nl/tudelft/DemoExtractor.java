@@ -24,7 +24,7 @@ public class DemoExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) {
+    public Object[] extract(Maven mvn, Package pkg, Database db) {
         Object[] extractedFields = new Object[lengthOfFields];
         extractFromPom(pkg, extractedFields);
         extractFromJar(pkg, extractedFields);

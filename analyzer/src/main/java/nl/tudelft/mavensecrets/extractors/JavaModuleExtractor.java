@@ -5,9 +5,7 @@ import java.util.Objects;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
+import nl.tudelft.*;
 import nl.tudelft.Package;
 
 /**
@@ -25,7 +23,7 @@ public class JavaModuleExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, Database db) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 

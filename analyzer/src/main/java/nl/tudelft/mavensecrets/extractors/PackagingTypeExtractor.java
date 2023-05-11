@@ -31,7 +31,7 @@ public class PackagingTypeExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) {
+    public Object[] extract(Maven mvn, Package pkg, Database db) {
         List<Object> extractedFields = new ArrayList<>();
         Model model = pkg.pom();
         JarFile file = pkg.jar();

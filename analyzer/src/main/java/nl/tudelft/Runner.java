@@ -62,7 +62,7 @@ public class Runner implements Closeable {
         var list = new LinkedList<>();
         for (var extractor : extractors.values()) {
 
-            var result = extractor.extract(mvn, pkg);
+            var result = extractor.extract(mvn, pkg, db);
             if (result.length != extractor.fields().length)
                 throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
 
