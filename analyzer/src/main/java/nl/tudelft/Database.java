@@ -15,6 +15,7 @@ public class Database implements Closeable {
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
     private static final String EXTENSION_TABLE = "extensions";
+    private static final String UNRESOLVED_PACKAGES = "unresolved_packages";
     private static final int BACKOFF_TIME_MS = 1000;
     private static final int BACKOFF_BASE = 2;
     private static final int BACKOFF_RETRIES = 3;
@@ -70,6 +71,12 @@ public class Database implements Closeable {
         }
     }
 
+    public void createUnresolvedTable(boolean checked) throws SQLException {
+        if(!checked && !tableExists(UNRESOLVED_PACKAGES)) {
+            createUnresolvedTable();
+        }
+    }
+
     void updateSchema(Field[] fields) throws SQLException{
         if (!tableExists(PACKAGES_TABLE))
             createTable(PACKAGES_TABLE);
@@ -94,6 +101,10 @@ public class Database implements Closeable {
             return (Boolean) result;
 
         throw new RuntimeException("query didn't result in boolean");
+    }
+
+    private void createUnresolvedTable() throws SQLException {
+        execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(id VARCHAR(128) PRIMARY KEY, error VARCHAR(512))");
     }
 
     private void createTable(String tableName) throws SQLException {
@@ -156,6 +167,15 @@ public class Database implements Closeable {
         query.setString(2, artifactId);
         query.setString(3, version);
         query.setDate(4, lastModified);
+        query.execute();
+
+    }
+
+    void updateUnresolvedTable(String id, String error) throws SQLException {
+        PreparedStatement query = conn.prepareStatement("INSERT INTO " + UNRESOLVED_PACKAGES +
+                "(id, error) VALUES(?,?) ON CONFLICT DO NOTHING");
+        query.setString(1, id);
+        query.setString(2, error);
         query.execute();
 
     }

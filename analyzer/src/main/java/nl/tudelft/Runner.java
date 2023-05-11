@@ -46,6 +46,8 @@ public class Runner implements Closeable {
                 values = extractInto(mvn, pkg);
             } catch (PackageException e) {
                 LOGGER.error(e);
+                db.createUnresolvedTable(false);
+                db.updateUnresolvedTable(id.toString(), e.getError());
                 continue;
             }
 
