@@ -17,12 +17,9 @@ import java.util.zip.ZipEntry;
  */
 public class JarUtil {
 
-    public static final Consumer<Manifest> DEFAULT_MANIFEST = mf -> mf.getMainAttributes().put(new Name("my-key"), "my-value");
-    public static final IOConsumer<JarOutputStream> DEFAULT_CONTENT = jos -> {
+    public static final Consumer<Manifest> DEFAULT_MANIFEST = mf -> mf.getMainAttributes().put(Name.MANIFEST_VERSION, "1.0");
+    public static final IOConsumer<JarOutputStream> DEFAULT_RESOURCES = jos -> {
         jos.putNextEntry(new ZipEntry("my-resource.txt"));
-        writeBytes(jos);
-        jos.closeEntry();
-        jos.putNextEntry(new ZipEntry("my-class.class"));
         writeBytes(jos);
         jos.closeEntry();
         jos.putNextEntry(new ZipEntry("my-dir/"));
@@ -30,10 +27,15 @@ public class JarUtil {
         jos.putNextEntry(new ZipEntry("my-dir/my-nested-resource.txt"));
         writeBytes(jos);
         jos.closeEntry();
+    };
+    public static final IOConsumer<JarOutputStream> DEFAULT_CONTENT = DEFAULT_RESOURCES.andThen(jos -> {
+        jos.putNextEntry(new ZipEntry("my-class.class"));
+        writeBytes(jos);
+        jos.closeEntry();
         jos.putNextEntry(new ZipEntry("my-dir/my-nested-class.class"));
         writeBytes(jos);
         jos.closeEntry();
-    };
+    });
 
     private static final Random RANDOM = new Random();
 

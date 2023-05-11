@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -48,8 +49,8 @@ public class JavaVersionExtractor implements Extractor {
 
         // Manifest version if available
         Manifest manifest = jar.getManifest();
-        result[0] = manifest == null ? null : manifest.getMainAttributes().get("Build-Jdk");
-        result[1] = manifest == null ? null : manifest.getMainAttributes().get("Build-Jdk-Spec");
+        result[0] = manifest == null ? null : manifest.getMainAttributes().get(new Name("Build-Jdk"));
+        result[1] = manifest == null ? null : manifest.getMainAttributes().get(new Name("Build-Jdk-Spec"));
 
         // Class file
         Map<JavaClassVersion, Integer> versions = new HashMap<>();
