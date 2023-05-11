@@ -14,12 +14,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import nl.tudelft.mavensecrets.NopResolver;
 import nl.tudelft.mavensecrets.resolver.Resolver;
 
 public class ParentExtractorTest {
@@ -97,7 +97,7 @@ public class ParentExtractorTest {
     @BeforeAll
     public static void setup() {
         extractor = new ParentExtractor();
-        maven = new Maven(new NopResolver());
+        maven = new Maven(NopResolver.getInstance());
     }
 
     @AfterAll
@@ -110,28 +110,5 @@ public class ParentExtractorTest {
         Objects.requireNonNull(model);
 
         return new Package(null, null, model);
-    }
-
-    private static class NopResolver implements Resolver {
-
-        @Override
-        public Artifact createArtifact(String groupId, String artifactId, String version) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Artifact resolve(Artifact artifact) throws ArtifactResolutionException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public File getPom(Artifact artifact) throws ArtifactResolutionException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public File getJar(Artifact artifact) throws ArtifactResolutionException {
-            throw new UnsupportedOperationException();
-        }
     } 
 }
