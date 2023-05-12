@@ -5,6 +5,9 @@ import java.util.Objects;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
@@ -14,6 +17,8 @@ import nl.tudelft.Package;
  * An extractor fetching whether or not an artifact uses Java modules.
  */
 public class JavaModuleExtractor implements Extractor {
+
+    private static final Logger LOGGER = LogManager.getLogger(JavaModuleExtractor.class);
 
     private final Field[] fields = {
             new Field("use_java_modules", "BOOLEAN")
@@ -37,6 +42,8 @@ public class JavaModuleExtractor implements Extractor {
                     String s = i == -1 ? str : str.substring(i + 1);
                     return s.equals("module-info.class");
                 });
+
+        LOGGER.trace("Found module-info.class: {} ({})", useModules, pkg.id());
         return new Object[] {useModules};
     }
 }
