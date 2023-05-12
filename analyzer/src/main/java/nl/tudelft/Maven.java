@@ -42,6 +42,22 @@ public class Maven {
         }
     }
 
+    public Model getPom(PackageId id) throws PackageException {
+        Objects.requireNonNull(id);
+        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
+
+        try {
+            Model pomFile = modelReader.read(resolver.getPom(artifact), null);
+            return pomFile;
+        } catch (ArtifactResolutionException ex) {
+            throw new PackageException(id, "unable to resolve package", ex);
+        } catch (ModelParseException ex) {
+            throw new PackageException(id, "unable to parse POM", ex);
+        } catch (IOException ex) {
+            throw new PackageException(id, "unable to read artifact", ex);
+        }
+    }
+
     public Artifact getArtifact(PackageId id, String executableType) throws ArtifactResolutionException {
         Objects.requireNonNull(id);
 

@@ -2,6 +2,7 @@ package nl.tudelft;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.maven.shared.invoker.MavenInvocationException;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -49,6 +50,8 @@ public class Runner implements Closeable {
                 db.createUnresolvedTable(false);
                 db.updateUnresolvedTable(id.toString(), e.getError());
                 continue;
+            } catch (MavenInvocationException e) {
+                throw new RuntimeException(e);
             }
 
             db.update(id, fields, values.toArray(), true);
@@ -58,7 +61,7 @@ public class Runner implements Closeable {
         }
     }
 
-    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException, SQLException {
+    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException, SQLException, PackageException, MavenInvocationException {
         var list = new LinkedList<>();
         for (var extractor : extractors.values()) {
 

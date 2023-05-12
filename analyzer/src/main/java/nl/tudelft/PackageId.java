@@ -21,4 +21,29 @@ public record PackageId(String group, String artifact, String version) {
 
         return Optional.of(new PackageId(split[0], split[1], split[2]));
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+
+        if (!(obj instanceof PackageId)) {
+            return false;
+        }
+
+        PackageId other = (PackageId) obj;
+
+        return this.group.equals(other.group) && this.artifact.equals(other.artifact) &&  this.version.equals(other.version);
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 17;
+        result = prime * result + (group == null ? 0 : group.hashCode());
+        result = prime * result + (artifact == null ? 0 : artifact.hashCode());
+        result = prime * result + (version == null ? 0 : version.hashCode());
+        return result;
+    }
 }
