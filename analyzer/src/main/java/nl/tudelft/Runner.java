@@ -9,9 +9,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 public class Runner implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);
@@ -32,7 +30,7 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, Collection<PackageId> packages) throws SQLException, IOException, PackageException {
+    void run(Maven mvn, Collection<PackageId> packages) throws ExecutionException, InterruptedException {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
@@ -42,7 +40,7 @@ public class Runner implements Closeable {
         processPackages(packages, fields, mvn);
     }
 
-    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn){
+    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn) throws ExecutionException, InterruptedException {
         int cores = Runtime.getRuntime().availableProcessors();
         LOGGER.info("Number of cores available = " + cores);
         ExecutorService executor = Executors.newFixedThreadPool(cores);
@@ -53,11 +51,12 @@ public class Runner implements Closeable {
             executor.submit(new ProcessPackageTask(id, fields, mvn, future));
             futures.add(future);
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        var fut = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        fut.get();
         executor.shutdown();
     }
 
-    private class ProcessPackageTask implements Runnable {
+    private class ProcessPackageTask implements Callable {
 
         private final PackageId id;
         private final Field[] fields;
@@ -71,8 +70,12 @@ public class Runner implements Closeable {
             this.future = future;
         }
 
+        /**
+         * @return 
+         * @throws SQLException
+         */
         @Override
-        public void run() {
+        public Object call() throws SQLException {
             Instant fetchEnd;
             List<Object> values;
 
@@ -83,19 +86,16 @@ public class Runner implements Closeable {
             } catch (PackageException | IOException e) {
                 LOGGER.error(e);
                 future.complete(null);
-                return;
+                return null;
             }
 
-            try {
-                db.update(id, fields, values.toArray());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            db.update(id, fields, values.toArray());
             var time = Duration.between(start, Instant.now());
             var fetchTime = Duration.between(start, fetchEnd);
             LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
 
             future.complete(null);
+            return null;
         }
     }
 

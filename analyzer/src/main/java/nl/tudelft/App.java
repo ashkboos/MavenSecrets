@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,7 +24,7 @@ import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
 
-    public static void main(String[] args) throws IOException, SQLException, PackageException {
+    public static void main(String[] args) throws IOException, SQLException, ExecutionException, InterruptedException {
         // Config
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
