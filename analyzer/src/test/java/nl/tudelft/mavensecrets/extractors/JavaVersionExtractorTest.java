@@ -115,6 +115,23 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
+    public void test_class_malformed_and_valid() throws IOException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
+            jos.putNextEntry(new ZipEntry("my-class-0.class"));
+            jos.write(new byte[1]);
+            jos.closeEntry();
+            jos.putNextEntry(new ZipEntry("my-class-1.class"));
+            jos.write(new byte[] {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE});
+            jos.write(new byte[] {1, 2, 3, 4});
+            jos.closeEntry();
+        }));
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] results = extractor.extract(maven, pkg);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {3, 4}, new byte[] {1, 2}}, results);
+        }
+    }
+
+    @Test
     public void test_class_absent() throws IOException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
