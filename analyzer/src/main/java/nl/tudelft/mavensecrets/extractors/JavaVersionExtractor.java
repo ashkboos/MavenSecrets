@@ -54,9 +54,13 @@ public class JavaVersionExtractor implements Extractor {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 
-        Object[] result = new Object[fields.length];
-
         JarFile jar = pkg.jar();
+        LOGGER.trace("Found jar: {} ({})", jar != null, pkg.id());
+        if (jar == null) {
+            return new Object[fields.length];
+        }
+
+        Object[] result = new Object[fields.length];
 
         // Manifest version if available
         Manifest manifest = jar.getManifest();

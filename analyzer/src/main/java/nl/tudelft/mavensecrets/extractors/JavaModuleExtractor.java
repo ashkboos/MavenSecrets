@@ -35,6 +35,11 @@ public class JavaModuleExtractor implements Extractor {
         Objects.requireNonNull(pkg);
 
         JarFile jar = pkg.jar();
+        LOGGER.trace("Found jar: {} ({})", jar != null, pkg.id());
+        if (jar == null) {
+            return new Object[fields.length];
+        }
+
         boolean useModules = jar.stream()
                 .map(ZipEntry::getName)
                 .anyMatch(str -> {

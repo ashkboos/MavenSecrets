@@ -3,7 +3,6 @@ package nl.tudelft.mavensecrets.extractors;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
@@ -42,6 +41,14 @@ public class JavaVersionExtractorTest {
             Assertions.assertNotNull(field.name());
             Assertions.assertNotNull(field.type());
             Assertions.assertTrue(names.add(field.name().toLowerCase()), "Duplicate field name: " + field.name());
+        }
+    }
+
+    @Test
+    public void test_no_jar() throws IOException {
+        try (Package pkg = createPackage(null)) {
+            Object[] results = extractor.extract(maven, pkg);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
         }
     }
 
@@ -191,8 +198,6 @@ public class JavaVersionExtractorTest {
     }
 
     private static Package createPackage(JarFile jar) {
-        Objects.requireNonNull(jar);
-
         return new Package(null, jar, null);
     }
 }

@@ -3,7 +3,6 @@ package nl.tudelft.mavensecrets.extractors;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -51,6 +50,14 @@ public class JavaModuleExtractorTest {
             Object[] results = extractor.extract(maven, pkg);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
+        }
+    }
+
+    @Test
+    public void test_no_jar() throws IOException {
+        try (Package pkg = createPackage(null)) {
+            Object[] results = extractor.extract(maven, pkg);
+            Assertions.assertArrayEquals(new Object[] {null}, results);
         }
     }
 
@@ -104,8 +111,6 @@ public class JavaModuleExtractorTest {
     }
 
     private static Package createPackage(JarFile jar) {
-        Objects.requireNonNull(jar);
-
         return new Package(null, jar, null);
     }
 }
