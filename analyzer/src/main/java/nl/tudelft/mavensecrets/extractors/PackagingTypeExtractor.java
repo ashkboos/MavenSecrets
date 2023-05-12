@@ -23,7 +23,7 @@ public class PackagingTypeExtractor implements Extractor {
             new Field("qualifierjavadoc", "VARCHAR(128)"),
             new Field("md5", "VARCHAR(128)"),
             new Field("sha1", "VARCHAR(128)"),
-            new Field("typesoffile", "VARCHAR(512)")
+            new Field("typesoffile", "VARCHAR(4096)")
         };
     }
 
