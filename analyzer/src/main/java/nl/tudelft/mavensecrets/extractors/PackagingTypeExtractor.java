@@ -47,9 +47,9 @@ public class PackagingTypeExtractor implements Extractor {
         String fileExtension = file.getName().substring(file.getName().lastIndexOf('.') + 1);
 
 
-        artifactSources = getQualifierArtifact(mvn, pkg, fileExtension, "sources");
+        artifactSources = getQualifierArtifact(mvn, pkg, "sources");
 
-        artifactJavadoc = getQualifierArtifact(mvn, pkg, fileExtension, "javadoc");
+        artifactJavadoc = getQualifierArtifact(mvn, pkg, "javadoc");
 
         artifactWithMd5 = getCheckSumArtifact(mvn, pkg, fileExtension, ".md5");
 
@@ -85,10 +85,11 @@ public class PackagingTypeExtractor implements Extractor {
         return artifact;
     }
 
-    private Artifact getQualifierArtifact(Maven mvn, Package pkg, String fileExtension, String qualifierName) {
+    private Artifact getQualifierArtifact(Maven mvn, Package pkg, String qualifierName) {
         Artifact artifact = null;
         try {
-            artifact = mvn.getArtifactQualifier(pkg.id(), qualifierName, fileExtension);
+            // The source files and javadoc files are always packaged as "jar"
+            artifact = mvn.getArtifactQualifier(pkg.id(), qualifierName, "jar");
         } catch (PackageException | ArtifactResolutionException e) {
             LOGGER.error(qualifierName + " artifact not found", e);
         }
