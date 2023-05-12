@@ -34,7 +34,7 @@ public class NopResolver implements Resolver {
     }
 
     @Override
-    public File getJar(Artifact artifact) throws ArtifactResolutionException {
+    public File getJar(Artifact artifact, String pkgType) throws ArtifactResolutionException {
         throw new UnsupportedOperationException();
     }
 

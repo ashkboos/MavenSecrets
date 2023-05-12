@@ -23,13 +23,13 @@ public class Maven {
         this.modelReader = new DefaultModelReader();
     }
 
-    public Package getPackage(PackageId id) throws PackageException {
+    public Package getPackage(PackageId id, String pkgType) throws PackageException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         try {
-            JarFile artifactFile = new JarFile(resolver.getJar(artifact));
+            JarFile artifactFile = new JarFile(resolver.getJar(artifact, pkgType));
             Model pomFile = modelReader.read(resolver.getPom(artifact), null);
 
             return new Package(id, artifactFile, pomFile);

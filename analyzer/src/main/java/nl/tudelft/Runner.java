@@ -29,7 +29,7 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, Collection<PackageId> packages) throws SQLException, IOException, PackageException {
+    void run(Maven mvn, List<PackageId> packages, List<String> packagingTypes) throws SQLException, IOException, PackageException {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
@@ -39,16 +39,20 @@ public class Runner implements Closeable {
 
         Instant fetchEnd = null;
         List<Object> values = null;
+        int count = 0;
+        int check = 0;
         for (var id : packages) {
             var start = Instant.now();
-            try (var pkg = mvn.getPackage(id)) {
+            String pkgType = packagingTypes.get(count);
+            count ++;
+            try (var pkg = mvn.getPackage(id, pkgType)) {
                 fetchEnd = Instant.now();
-                values = extractInto(mvn, pkg);
+                values = extractInto(mvn, pkg, pkgType);
             } catch (PackageException e) {
                 LOGGER.error(e);
                 continue;
             }
-
+            check++;
             db.update(id, fields, values.toArray());
             var time = Duration.between(start, Instant.now());
             var fetchTime = Duration.between(start, fetchEnd);
@@ -56,11 +60,11 @@ public class Runner implements Closeable {
         }
     }
 
-    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
+    private List<Object> extractInto(Maven mvn, Package pkg, String pkgType) throws IOException {
         var list = new LinkedList<>();
         for (var extractor : extractors.values()) {
 
-            var result = extractor.extract(mvn, pkg);
+            var result = extractor.extract(mvn, pkg, pkgType);
             if (result.length != extractor.fields().length)
                 throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
 

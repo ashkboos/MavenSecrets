@@ -25,7 +25,7 @@ public class JavaModuleExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 

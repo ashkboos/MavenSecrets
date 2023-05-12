@@ -26,6 +26,7 @@ public class JavaModuleExtractorTest {
     private static Extractor extractor = null;
     private static Maven maven = null;
     private static File file = null;
+    private static String pkgName = "";
 
     @TempDir
     private static File dir;
@@ -48,7 +49,7 @@ public class JavaModuleExtractorTest {
     public void test_correct_number_of_fields() throws IOException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_CONTENT);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
@@ -62,7 +63,7 @@ public class JavaModuleExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertArrayEquals(new Object[] {true}, results);
         }
     }
@@ -75,7 +76,7 @@ public class JavaModuleExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertArrayEquals(new Object[] {true}, results);
         }
     }
@@ -84,7 +85,7 @@ public class JavaModuleExtractorTest {
     public void test_module_info_present_absent() throws IOException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_CONTENT);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertArrayEquals(new Object[] {false}, results);
         }
     }

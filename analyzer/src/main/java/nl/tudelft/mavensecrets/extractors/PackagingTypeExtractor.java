@@ -33,34 +33,33 @@ public class PackagingTypeExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType) {
         List<Object> extractedFields = new ArrayList<>();
         Model model = pkg.pom();
         JarFile file = pkg.jar();
-        String packagingType = model.getPackaging();
+        String packagingTypeFromPom = model.getPackaging();
 
         Artifact artifactSources;
         Artifact artifactJavadoc;
         Artifact artifactWithMd5;
         Artifact artifactWithSha1;
 
-        String fileExtension = file.getName().substring(file.getName().lastIndexOf('.') + 1);
-
 
         artifactSources = getQualifierArtifact(mvn, pkg, "sources");
 
         artifactJavadoc = getQualifierArtifact(mvn, pkg, "javadoc");
 
-        artifactWithMd5 = getCheckSumArtifact(mvn, pkg, fileExtension, ".md5");
+        artifactWithMd5 = getCheckSumArtifact(mvn, pkg, pkgType, ".md5");
 
-        artifactWithSha1 = getCheckSumArtifact(mvn, pkg, fileExtension, ".sha1");
+        artifactWithSha1 = getCheckSumArtifact(mvn, pkg, pkgType, ".sha1");
 
         Set<String> allFiles = getFilesFromExecutable(file);
 
 
-        extractedFields.add(packagingType);
+        extractedFields.add(packagingTypeFromPom);
 
-        extractedFields.add(fileExtension);
+        extractedFields.add(pkgType);
+
 
         addQualifier(extractedFields, artifactSources);
 
