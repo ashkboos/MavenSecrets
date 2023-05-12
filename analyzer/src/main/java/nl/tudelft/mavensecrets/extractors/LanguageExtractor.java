@@ -15,6 +15,10 @@ public class LanguageExtractor implements Extractor {
             new Field("kotlin_linked", "BOOLEAN"),
             new Field("clojure_linked", "BOOLEAN"),
             new Field("groovy_linked", "BOOLEAN"),
+            new Field("has_tasty", "BOOLEAN"),
+            new Field("has_kt", "BOOLEAN"),
+            new Field("has_kotlin_module", "BOOLEAN"),
+            new Field("has_clj", "BOOLEAN")
     };
 
     @Override
@@ -29,11 +33,43 @@ public class LanguageExtractor implements Extractor {
                 isKotlinLinked(pkg),
                 isClojureLinked(pkg),
                 isGroovyLinked(pkg),
+                hasTasty(pkg),
+                hasKt(pkg),
+                hasKotlinModule(pkg),
+                hasClj(pkg)
         };
     }
 
-    private boolean isScalaLinked(Package pkg) {
+    private static boolean isScalaLinked(Package pkg) {
         return pkg.pom().getDependencies().stream().anyMatch(LanguageExtractor::isScalaLink);
+    }
+
+    private static boolean isKotlinLinked(Package pkg) {
+        return pkg.pom().getDependencies().stream().anyMatch(LanguageExtractor::isKotlinLink);
+    }
+
+    private static boolean isClojureLinked(Package pkg) {
+        return pkg.pom().getDependencies().stream().anyMatch(LanguageExtractor::isClojureLink);
+    }
+
+    private static boolean isGroovyLinked(Package pkg) {
+        return pkg.pom().getDependencies().stream().anyMatch(LanguageExtractor::isGroovyLink);
+    }
+
+    private static boolean hasTasty(Package pkg) {
+        return pkg.jar().stream().anyMatch(i -> i.getRealName().toLowerCase().endsWith(".tasty"));
+    }
+
+    private static boolean hasKt(Package pkg) {
+        return pkg.jar().stream().anyMatch(i -> i.getRealName().endsWith("Kt.class"));
+    }
+
+    private static boolean hasKotlinModule(Package pkg) {
+        return pkg.jar().stream().anyMatch(i -> i.getRealName().toLowerCase().endsWith(".kotlin_module"));
+    }
+
+    private static boolean hasClj(Package pkg) {
+        return pkg.jar().stream().anyMatch(i -> i.getRealName().toLowerCase().endsWith(".clj"));
     }
 
     private static boolean isScalaLink(Dependency dep) {
@@ -42,26 +78,14 @@ public class LanguageExtractor implements Extractor {
                         || Objects.equals(dep.getArtifactId(), "scala-library"));
     }
 
-    private boolean isKotlinLinked(Package pkg) {
-        return pkg.pom().getDependencies().stream().anyMatch(LanguageExtractor::isKotlinLink);
-    }
-
     private static boolean isKotlinLink(Dependency dep) {
         return Objects.equals(dep.getGroupId(), "org.jetbrains.kotlin")
                 && Objects.equals(dep.getArtifactId(), "kotlin-stdlib");
     }
 
-    private boolean isClojureLinked(Package pkg) {
-        return pkg.pom().getDependencies().stream().anyMatch(LanguageExtractor::isClojureLink);
-    }
-
     private static boolean isClojureLink(Dependency dep) {
         return Objects.equals(dep.getGroupId(), "org.clojure")
                 && Objects.equals(dep.getArtifactId(), "clojure");
-    }
-
-    private boolean isGroovyLinked(Package pkg) {
-        return pkg.pom().getDependencies().stream().anyMatch(LanguageExtractor::isGroovyLink);
     }
 
     private static boolean isGroovyLink(Dependency dep) {
