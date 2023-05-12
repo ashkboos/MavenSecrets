@@ -43,7 +43,9 @@ public class Runner implements Closeable {
     }
 
     private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn){
-        ExecutorService executor = Executors.newFixedThreadPool(16);
+        int cores = Runtime.getRuntime().availableProcessors();
+        LOGGER.info("Number of cores available = " + cores);
+        ExecutorService executor = Executors.newFixedThreadPool(cores);
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (PackageId id : packages) {
