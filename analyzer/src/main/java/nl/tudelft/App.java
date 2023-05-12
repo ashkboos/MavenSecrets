@@ -22,12 +22,15 @@ import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
+    static String[] args;
 
     public static void main(String[] args) throws IOException, SQLException, PackageException {
         // Config
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
         LOGGER.info("Extractors: " + config.getExtractors());
+
+        App.args = args;
         
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
@@ -132,5 +135,9 @@ public class App {
         }
 
         return YamlConfig.fromFile(file);
+    }
+
+    public static String[] getArgs() {
+        return args;
     }
 }
