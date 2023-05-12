@@ -11,6 +11,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
+		<junit.version>5.9.3</junit.version>
 	</properties>
 	<dependencies>
 		<!-- Maven -->
@@ -68,10 +69,16 @@
 		</dependency>
 		<!-- Testing -->
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.13.1</version>
-			<scope>test</scope>
+		    <groupId>org.junit.jupiter</groupId>
+    		<artifactId>junit-jupiter-api</artifactId>
+    		<version>${junit.version}</version>
+    		<scope>test</scope>
+		</dependency>
+		<dependency>
+		    <groupId>org.junit.jupiter</groupId>
+    		<artifactId>junit-jupiter-engine</artifactId>
+    		<version>${junit.version}</version>
+    		<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.mockito</groupId>
@@ -125,6 +132,7 @@
 									<excludes>
 										<exclude>META-INF/**</exclude>
 										<exclude>META-INF.versions.9.module-info</exclude>
+                                        <exclude>**/module-info.class</exclude>
 									</excludes>
 								</filter>
 								<filter>
