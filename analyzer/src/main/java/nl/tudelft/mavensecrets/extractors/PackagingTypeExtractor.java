@@ -23,6 +23,8 @@ public class PackagingTypeExtractor implements Extractor {
             new Field("qualifierjavadoc", "VARCHAR(128)"),
             new Field("md5", "VARCHAR(128)"),
             new Field("sha1", "VARCHAR(128)"),
+            new Field("sha256", "VARCHAR(128)"),
+            new Field("sha512", "VARCHAR(128)"),
             new Field("typesoffile", "VARCHAR(4096)")
         };
     }
@@ -43,6 +45,8 @@ public class PackagingTypeExtractor implements Extractor {
         Artifact artifactJavadoc;
         Artifact artifactWithMd5;
         Artifact artifactWithSha1;
+        Artifact artifactWithSha256;
+        Artifact artifactWithSha512;
 
 
         artifactSources = getQualifierArtifact(mvn, pkg, "sources");
@@ -52,6 +56,10 @@ public class PackagingTypeExtractor implements Extractor {
         artifactWithMd5 = getCheckSumArtifact(mvn, pkg, pkgType, ".md5");
 
         artifactWithSha1 = getCheckSumArtifact(mvn, pkg, pkgType, ".sha1");
+
+        artifactWithSha256 = getCheckSumArtifact(mvn, pkg, pkgType, ".sha256");
+
+        artifactWithSha512 = getCheckSumArtifact(mvn, pkg, pkgType, ".sha512");
 
         Set<String> allFiles = getFilesFromExecutable(file);
 
@@ -68,6 +76,10 @@ public class PackagingTypeExtractor implements Extractor {
         addCheckSumType(extractedFields, artifactWithMd5, ".md5");
 
         addCheckSumType(extractedFields, artifactWithSha1, ".sha1");
+
+        addCheckSumType(extractedFields, artifactWithSha256, "sha256");
+
+        addCheckSumType(extractedFields, artifactWithSha512, ".sha512");
 
         extractedFields.add(allFiles.toString());
 
