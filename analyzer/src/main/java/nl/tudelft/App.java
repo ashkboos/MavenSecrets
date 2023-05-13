@@ -24,7 +24,7 @@ import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
 
-    public static void main(String[] args) throws IOException, SQLException, ExecutionException, InterruptedException {
+    public static void main(String[] args) throws IOException, SQLException {
         // Config
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
@@ -48,6 +48,7 @@ public class App {
         try (var runner = builder.build(db)) {
             runner.run(maven, packages);
         }
+
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;
 

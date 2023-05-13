@@ -10,11 +10,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Runner implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);
     private final Database db;
     private final Map<Class<?>, Extractor> extractors = new HashMap<>();
+
+    private AtomicBoolean cancelled = new AtomicBoolean(false);
 
     Runner(Database db) {
         this.db = db;
@@ -30,7 +33,7 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, Collection<PackageId> packages) throws ExecutionException, InterruptedException {
+    void run(Maven mvn, Collection<PackageId> packages) {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
@@ -40,23 +43,28 @@ public class Runner implements Closeable {
         processPackages(packages, fields, mvn);
     }
 
-    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn) throws ExecutionException, InterruptedException {
+    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn) {
         int cores = Runtime.getRuntime().availableProcessors();
         LOGGER.info("Number of cores available = " + cores);
         ExecutorService executor = Executors.newFixedThreadPool(cores);
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<Future<Void>> futures = new ArrayList<>();
         for (PackageId id : packages) {
             CompletableFuture<Void> future = new CompletableFuture<>();
             executor.submit(new ProcessPackageTask(id, fields, mvn, future));
             futures.add(future);
         }
-        var fut = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        fut.get();
-        executor.shutdown();
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+        } catch (InterruptedException e) {
+            LOGGER.error(e);
+        } catch (ExecutionException e) {}
+        finally {
+            executor.shutdown();
+        }
     }
 
-    private class ProcessPackageTask implements Callable {
+    private class ProcessPackageTask implements Callable{
 
         private final PackageId id;
         private final Field[] fields;
@@ -75,7 +83,13 @@ public class Runner implements Closeable {
          * @throws SQLException
          */
         @Override
-        public Object call() throws SQLException {
+        public Object call() {
+            if (cancelled.get()) {
+                LOGGER.error("SQL Exception encountered in another thread. Skipping package " + id);
+                future.completeExceptionally(new SQLException("Lost connection to DB!"));
+                return null;
+            }
+
             Instant fetchEnd;
             List<Object> values;
 
@@ -85,11 +99,18 @@ public class Runner implements Closeable {
                 values = extractInto(mvn, pkg);
             } catch (PackageException | IOException e) {
                 LOGGER.error(e);
-                future.complete(null);
+                future.completeExceptionally(e);
                 return null;
             }
 
-            db.update(id, fields, values.toArray());
+            try {
+                db.update(id, fields, values.toArray());
+            } catch (SQLException e) {
+                cancelled.set(true);
+                future.completeExceptionally(e);
+                return null;
+            }
+
             var time = Duration.between(start, Instant.now());
             var fetchTime = Duration.between(start, fetchEnd);
             LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
