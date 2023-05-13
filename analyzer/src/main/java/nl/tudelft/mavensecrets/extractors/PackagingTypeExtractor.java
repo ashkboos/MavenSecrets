@@ -123,19 +123,16 @@ public class PackagingTypeExtractor implements Extractor {
         }
     }
 
-    private Set<String> getFilesFromExecutable(JarFile file) {
+    public Set<String> getFilesFromExecutable(JarFile file) {
         Set<String> fileTypes = new HashSet<>();
 
         Enumeration<JarEntry> entries = file.entries();
-        if (entries == null) {
-            entries = Collections.emptyEnumeration();
-        }
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
             if (!entry.isDirectory()) {
                 String entryName = entry.getName();
                 int lastDashIndex = entryName.lastIndexOf('/');
-                if (lastDashIndex != -1 && lastDashIndex != entryName.length() - 1) {
+                if (lastDashIndex != entryName.length() - 1) {
                     String fileName = entryName.substring(lastDashIndex + 1).toLowerCase();
                     String fileExtension;
                     if(fileName.lastIndexOf('.') != -1) {
