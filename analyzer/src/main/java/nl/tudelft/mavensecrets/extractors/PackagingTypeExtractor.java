@@ -127,6 +127,9 @@ public class PackagingTypeExtractor implements Extractor {
         Set<String> fileTypes = new HashSet<>();
 
         Enumeration<JarEntry> entries = file.entries();
+        if (entries == null) {
+            entries = Collections.emptyEnumeration();
+        }
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
             if (!entry.isDirectory()) {
