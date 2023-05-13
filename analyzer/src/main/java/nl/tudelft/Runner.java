@@ -13,20 +13,16 @@ import java.util.*;
 public class Runner implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);
     private final Database db;
-    private final Map<String, Extractor> extractors;
+    private final Map<Class<?>, Extractor> extractors = new HashMap<>();
 
     Runner(Database db) {
         this.db = db;
-        this.extractors = new TreeMap<>();
     }
 
-    Runner addExtractor(String name, Extractor extractor) throws SQLException {
-        if (this.extractors.containsKey(name))
-            throw new IllegalArgumentException("extractor `" + name + "` already added");
-
-        LOGGER.trace("adding extractor `" + name + "`: " + extractor.getClass().getName());
+    Runner addExtractor(Extractor extractor) throws SQLException {
+        LOGGER.trace("Adding extractor '" + extractor + "': " + extractor.getClass());
         db.updateSchema(extractor.fields());
-        extractors.put(name, extractor);
+        extractors.putIfAbsent(extractor.getClass(), extractor);
 
         return this;
     }
@@ -34,14 +30,17 @@ public class Runner implements Closeable {
     void clear(PackageId[] packages) {}
 
     void run(Maven mvn, Collection<PackageId> packages) throws SQLException, IOException, PackageException {
-        var fields = extractors.values().stream().flatMap(i -> Arrays.stream(i.fields())).toArray(Field[]::new);
+        var fields = extractors.values().stream()
+                .map(Extractor::fields)
+                .flatMap(Arrays::stream)
+                .toArray(Field[]::new);
         if (fields.length == 0)
             return;
 
+        Instant fetchEnd = null;
         List<Object> values = null;
         for (var id : packages) {
             var start = Instant.now();
-            Instant fetchEnd;
             try (var pkg = mvn.getPackage(id)) {
                 fetchEnd = Instant.now();
                 values = extractInto(mvn, pkg);
@@ -59,13 +58,11 @@ public class Runner implements Closeable {
 
     private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
         var list = new LinkedList<>();
-        for (var pair : extractors.entrySet()) {
-            var name = pair.getKey();
-            var extractor = pair.getValue();
+        for (var extractor : extractors.values()) {
 
             var result = extractor.extract(mvn, pkg);
             if (result.length != extractor.fields().length)
-                throw new RuntimeException("extractor `" + name + "` returned unexpected number of values");
+                throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
 
             list.addAll(Arrays.asList(result));
         }
