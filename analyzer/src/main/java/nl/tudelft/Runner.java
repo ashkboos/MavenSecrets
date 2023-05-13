@@ -17,6 +17,7 @@ public class Runner implements Closeable {
     private final Database db;
     private final Map<Class<?>, Extractor> extractors = new HashMap<>();
 
+    // Set this to force all subsequently started threads to skip processing
     private AtomicBoolean cancelled = new AtomicBoolean(false);
 
     Runner(Database db) {
@@ -48,22 +49,53 @@ public class Runner implements Closeable {
         LOGGER.info("Number of cores available = " + cores);
         ExecutorService executor = Executors.newFixedThreadPool(cores);
 
+        // We manually create then manage the future inside the task
+        // since executor.submit() only returns a Future, but we need
+        // a CompletableFuture to be able to use CompletableFutures.allOf()
         List<Future<Void>> futures = new ArrayList<>();
         for (PackageId id : packages) {
             CompletableFuture<Void> future = new CompletableFuture<>();
             executor.submit(new ProcessPackageTask(id, fields, mvn, future));
             futures.add(future);
         }
+
+        // Combine all CompletableFutures into a single CompletableFuture then .get() to wait for all threads
+        // to complete (successfully or exceptionally)
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
         } catch (InterruptedException e) {
             LOGGER.error(e);
-        } catch (ExecutionException e) {}
+        } catch (ExecutionException e) {
+            // No need to log here. We already log inside each thread,
+            // this exception will contain only the exception thrown by
+            // the first Future to throw an exception.
+        }
         finally {
             executor.shutdown();
         }
     }
 
+    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
+        var list = new LinkedList<>();
+        for (var extractor : extractors.values()) {
+
+            var result = extractor.extract(mvn, pkg);
+            if (result.length != extractor.fields().length)
+                throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
+
+            list.addAll(Arrays.asList(result));
+        }
+        return list;
+    }
+
+    @Override
+    public void close() throws IOException {
+        db.close();
+    }
+
+    /**
+     *
+     */
     private class ProcessPackageTask implements Callable{
 
         private final PackageId id;
@@ -99,7 +131,8 @@ public class Runner implements Closeable {
                 values = extractInto(mvn, pkg);
             } catch (PackageException | IOException e) {
                 LOGGER.error(e);
-                future.completeExceptionally(e);
+                future.complete(null);
+                // TODO Put this package in the unresolved table
                 return null;
             }
 
@@ -118,23 +151,5 @@ public class Runner implements Closeable {
             future.complete(null);
             return null;
         }
-    }
-
-    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
-        var list = new LinkedList<>();
-        for (var extractor : extractors.values()) {
-
-            var result = extractor.extract(mvn, pkg);
-            if (result.length != extractor.fields().length)
-                throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
-
-            list.addAll(Arrays.asList(result));
-        }
-        return list;
-    }
-
-    @Override
-    public void close() throws IOException {
-        db.close();
     }
 }
