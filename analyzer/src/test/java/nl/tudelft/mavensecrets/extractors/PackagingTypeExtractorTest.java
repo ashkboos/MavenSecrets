@@ -36,10 +36,13 @@ public class PackagingTypeExtractorTest {
 
     @BeforeAll
     public static void setup() {
+        String homePath = System.getProperty("user.home");
+        File f = new File(homePath + "/.m2/test/mybat/yourbat/4.5");
+        f.mkdirs();
         extractor = new PackagingTypeExtractor();
         maven = new Maven(new DefaultResolver(".m2/test"));
         String child = ".m2/test/mybat/yourbat/4.5";
-        dir = new File(System.getProperty("user.home"), child);
+        dir = new File(homePath, child);
         fileExecutable = new File(dir, "yourbat-4.5.war");
         sourceFile = new File(dir, "yourbat-4.5-sources.jar");
         javadocFile = new File(dir, "yourbat-4.5-javadoc.jar");
