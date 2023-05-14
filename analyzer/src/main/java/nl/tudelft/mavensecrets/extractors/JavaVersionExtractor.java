@@ -30,8 +30,8 @@ public class JavaVersionExtractor implements Extractor {
     private static final Name BUILD_JDK_SPEC = new Name("Build-Jdk-Spec");
 
     private final Field[] fields = {
-            new Field("java_version_manifest_1", "VARCHAR(16)"), // Build-Jdk
-            new Field("java_version_manifest_2", "VARCHAR(16)"), // Build-Jdk-Spec
+            new Field("java_version_manifest_1", "VARCHAR"), // Build-Jdk
+            new Field("java_version_manifest_2", "VARCHAR"), // Build-Jdk-Spec
             new Field("java_version_class_major", "BYTEA"),
             new Field("java_version_class_minor", "BYTEA")
     };
