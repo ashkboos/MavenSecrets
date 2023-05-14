@@ -28,11 +28,13 @@ public class App {
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
         LOGGER.info("Extractors: " + config.getExtractors());
-        
+
+
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
         runIndexerReader(args, db);
         var packages = db.getPackageIds();
+        var packagingTypes = db.getPackagingType();
 
         if (packages.isEmpty()) {
             LOGGER.info("no packages, nothing to do");
@@ -45,7 +47,7 @@ public class App {
         var maven = new Maven(resolver);
 
         try (var runner = builder.build(db)) {
-            runner.run(maven, packages);
+            runner.run(maven, packages, packagingTypes);
             db.addTimestamp();
         }
 

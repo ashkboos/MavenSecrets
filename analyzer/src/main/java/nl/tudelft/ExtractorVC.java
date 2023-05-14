@@ -38,7 +38,7 @@ public class ExtractorVC implements Extractor{
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType) {
         List<Object> values = new LinkedList<>();
 
         values.addAll(extractUrls(mvn, pkg));

@@ -27,6 +27,7 @@ public class JavaVersionExtractorTest {
     private static Extractor extractor = null;
     private static Maven maven = null;
     private static File file = null;
+    private static String pkgName = "";
 
     @TempDir
     private static File dir;
@@ -49,7 +50,7 @@ public class JavaVersionExtractorTest {
     public void test_correct_number_of_fields() throws IOException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
@@ -61,7 +62,7 @@ public class JavaVersionExtractorTest {
             mf.getMainAttributes().put(new Name("Build-Jdk"), "1.8.0_201");
         }), JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             //System.out.println(file.getAbsolutePath());
             //while (true) {}
             Assertions.assertArrayEquals(new Object[] {"1.8.0_201", null, null, null}, results);
@@ -74,7 +75,7 @@ public class JavaVersionExtractorTest {
             mf.getMainAttributes().put(new Name("Build-Jdk-Spec"), "1.8");
         }), JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertArrayEquals(new Object[] {null, "1.8", null, null}, results);
         }
     }
@@ -87,7 +88,7 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
-            Assertions.assertThrows(IOException.class, () -> extractor.extract(maven, pkg));
+            Assertions.assertThrows(IOException.class, () -> extractor.extract(maven, pkg, pkgName));
         }
     }
 
@@ -99,7 +100,7 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
-            Assertions.assertThrows(IOException.class, () -> extractor.extract(maven, pkg));
+            Assertions.assertThrows(IOException.class, () -> extractor.extract(maven, pkg, pkgName));
         }
     }
 
@@ -107,7 +108,7 @@ public class JavaVersionExtractorTest {
     public void test_class_absent() throws IOException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertArrayEquals(new Object[] {null, null, null, null}, results);
         }
     }
@@ -121,7 +122,7 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertArrayEquals(new Object[] {null, null, new byte[] {3, 4}, new byte[] {1, 2}}, results);
         }
     }
@@ -143,7 +144,7 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName);
             Assertions.assertArrayEquals(new Object[] {null, null, new byte[] {7, 8}, new byte[] {5, 6}}, results);
         }
     }
