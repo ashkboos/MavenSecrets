@@ -1,5 +1,8 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -21,10 +24,10 @@ public class PackagingTypeExtractor implements Extractor {
             new Field("packagingtypefromrepo", "VARCHAR(128)"),
             new Field("qualifiersources", "VARCHAR(128)"),
             new Field("qualifierjavadoc", "VARCHAR(128)"),
-            new Field("md5", "VARCHAR(128)"),
-            new Field("sha1", "VARCHAR(128)"),
-            new Field("sha256", "VARCHAR(128)"),
-            new Field("sha512", "VARCHAR(128)"),
+            new Field("md5", "VARCHAR"),
+            new Field("sha1", "VARCHAR"),
+            new Field("sha256", "VARCHAR"),
+            new Field("sha512", "VARCHAR"),
             new Field("typesoffile", "VARCHAR(4096)")
         };
     }
@@ -117,9 +120,14 @@ public class PackagingTypeExtractor implements Extractor {
 
     private void addCheckSumType(List<Object> extractedFields, Artifact artifact, String checksumType) {
         if(artifact != null) {
-            extractedFields.add(checksumType.toUpperCase());
+            try {
+                extractedFields.add(readChecksum(artifact));
+            } catch (IOException e) {
+                LOGGER.error(e);
+                extractedFields.add(null);
+            }
         } else {
-            extractedFields.add("null");
+            extractedFields.add(null);
         }
     }
 
@@ -145,5 +153,15 @@ public class PackagingTypeExtractor implements Extractor {
             }
         }
         return fileTypes;
+    }
+
+    private String readChecksum(Artifact artifact) throws IOException {
+        String file = artifact.getFile().getPath();
+        LOGGER.debug("Jar name = " + file);
+        String checksum;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            checksum = reader.readLine().split("\\s+")[0];
+        }
+        return checksum;
     }
 }
