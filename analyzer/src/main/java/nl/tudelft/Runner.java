@@ -34,7 +34,7 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, Collection<PackageId> packages) {
+    void run(Maven mvn, List<PackageId> packages, List<String> packagingTypes) throws SQLException, IOException, PackageException {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
@@ -48,12 +48,16 @@ public class Runner implements Closeable {
         int cores = Runtime.getRuntime().availableProcessors();
         LOGGER.info("Number of cores available = " + cores);
         ExecutorService executor = Executors.newFixedThreadPool(cores);
+        int count = 0;
+        int check = 0;
 
         // We manually create then manage the future inside the task
         // since executor.submit() only returns a Future, but we need
         // a CompletableFuture to be able to use CompletableFutures.allOf()
         List<Future<Void>> futures = new ArrayList<>();
         for (PackageId id : packages) {
+            String pkgType = packagingTypes.get(count);
+            count++;
             CompletableFuture<Void> future = new CompletableFuture<>();
             executor.submit(new ProcessPackageTask(id, fields, mvn, future));
             futures.add(future);
@@ -75,11 +79,11 @@ public class Runner implements Closeable {
         }
     }
 
-    private List<Object> extractInto(Maven mvn, Package pkg) throws IOException {
+    private List<Object> extractInto(Maven mvn, Package pkg, String pkgType) throws IOException {
         var list = new LinkedList<>();
         for (var extractor : extractors.values()) {
 
-            var result = extractor.extract(mvn, pkg);
+            var result = extractor.extract(mvn, pkg, pkgType);
             if (result.length != extractor.fields().length)
                 throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
 
@@ -101,17 +105,19 @@ public class Runner implements Closeable {
         private final PackageId id;
         private final Field[] fields;
         private final Maven mvn;
+        private final String pkgType;
         private final CompletableFuture<Void> future;
 
-        public ProcessPackageTask(PackageId id, Field[] fields, Maven mvn, CompletableFuture<Void> future) {
+        public ProcessPackageTask(PackageId id, Field[] fields, Maven mvn, CompletableFuture<Void> future, String pkgType) {
             this.id = id;
             this.fields = fields;
             this.mvn = mvn;
             this.future = future;
+            this.pkgType = pkgType;
         }
 
         /**
-         * @return 
+         * @return
          * @throws SQLException
          */
         @Override
@@ -126,9 +132,9 @@ public class Runner implements Closeable {
             List<Object> values;
 
             var start = Instant.now();
-            try (var pkg = mvn.getPackage(id)) {
+            try (var pkg = mvn.getPackage(id, pkgType)) {
                 fetchEnd = Instant.now();
-                values = extractInto(mvn, pkg);
+                values = extractInto(mvn, pkg, pkgType);
             } catch (PackageException | IOException e) {
                 LOGGER.error(e);
                 future.complete(null);
