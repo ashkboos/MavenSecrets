@@ -11,10 +11,11 @@ import java.util.zip.ZipEntry;
 import nl.tudelft.mavensecrets.extractors.SizeExtractor;
 import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.apache.maven.model.Model;
-import org.junit.*;
+
+import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class SizeExtractorTest {

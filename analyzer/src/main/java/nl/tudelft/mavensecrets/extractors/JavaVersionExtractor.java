@@ -15,13 +15,10 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
+import nl.tudelft.*;
+import nl.tudelft.Package;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
 
 /**
  * An extractor fetching Java versions from an artifact.
@@ -37,9 +34,9 @@ public class JavaVersionExtractor implements Extractor {
     private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
 
     private final Field[] fields = {
-            new Field("java_version_manifest_1", "VARCHAR(16)"), // Created-By
-            new Field("java_version_manifest_2", "VARCHAR(16)"), // Build-Jdk
-            new Field("java_version_manifest_3", "VARCHAR(16)"), // Build-Jdk-Spec
+            new Field("java_version_manifest_1", "VARCHAR"), // Created-By
+            new Field("java_version_manifest_2", "VARCHAR"), // Build-Jdk
+            new Field("java_version_manifest_3", "VARCHAR"), // Build-Jdk-Spec
             new Field("java_version_class_major", "BYTEA"),
             new Field("java_version_class_minor", "BYTEA")
     };
@@ -50,7 +47,7 @@ public class JavaVersionExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, Database db) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 
