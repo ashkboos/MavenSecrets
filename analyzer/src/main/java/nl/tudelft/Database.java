@@ -1,19 +1,20 @@
 package nl.tudelft;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.Closeable;
 import java.io.IOException;
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
 import java.util.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // PackageId PKEY, Field 1, Value 1, Field 2, Value 2, etc
 public class Database implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
+    private static final String EXTENSION_TABLE = "extensions";
+    private static final String UNRESOLVED_PACKAGES = "unresolved_packages";
     private static final int BACKOFF_TIME_MS = 1000;
     private static final int BACKOFF_BASE = 2;
     private static final int BACKOFF_RETRIES = 3;
@@ -63,14 +64,34 @@ public class Database implements Closeable {
         }
     }
 
+    public void createExtensionTable(boolean checked) throws SQLException {
+        if(!checked && !tableExists(EXTENSION_TABLE)) {
+            createTable(EXTENSION_TABLE);
+        }
+    }
+
+    public void createUnresolvedTable(boolean checked) throws SQLException {
+        if(!checked && !tableExists(UNRESOLVED_PACKAGES)) {
+            createUnresolvedTable();
+        }
+    }
+
     void updateSchema(Field[] fields) throws SQLException{
         if (!tableExists(PACKAGES_TABLE))
-            createTable();
+            createTable(PACKAGES_TABLE);
 
-        Set<String> cols = listColumns();
+        Set<String> cols = listColumns(PACKAGES_TABLE);
         for (var field : fields)
             if (!cols.contains(field.name()))
-                createColumn(field);
+                createColumn(field, PACKAGES_TABLE);
+    }
+
+    public void updateExtensionSchema(Field[] fields) throws SQLException{
+        Set<String> cols = listColumns(EXTENSION_TABLE);
+        for (var field : fields)
+            if (!cols.contains(field.name())) {
+                createColumn(field, EXTENSION_TABLE);
+            }
     }
 
     private boolean tableExists(String name) throws SQLException {
@@ -81,8 +102,12 @@ public class Database implements Closeable {
         throw new RuntimeException("query didn't result in boolean");
     }
 
-    private void createTable() throws SQLException {
-        execute("CREATE TABLE " + PACKAGES_TABLE + "(id VARCHAR(128) PRIMARY KEY)");
+    private void createUnresolvedTable() throws SQLException {
+        execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(id VARCHAR(128) PRIMARY KEY, error VARCHAR(512))");
+    }
+
+    private void createTable(String tableName) throws SQLException {
+        execute("CREATE TABLE " + tableName + "(id VARCHAR(128) PRIMARY KEY)");
     }
 
     private void createIndexTable() throws SQLException {
@@ -95,8 +120,8 @@ public class Database implements Closeable {
                 "primary key (groupid, artifactid, version))").execute();
     }
 
-    private Set<String> listColumns() throws SQLException {
-        try (var results = query("SELECT column_name FROM information_schema.columns WHERE table_name = '" + PACKAGES_TABLE + "'")) {
+    private Set<String> listColumns(String tableName) throws SQLException {
+        try (var results = query("SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "'")) {
             var columns = new HashSet<String>();
             while (results.next())
                 columns.add(results.getString(1));
@@ -105,12 +130,12 @@ public class Database implements Closeable {
         }
     }
 
-    private void createColumn(Field field) throws SQLException {
-        execute("ALTER TABLE " + PACKAGES_TABLE + " ADD COLUMN " + field.name() + " " + field.type() + " NULL");
+    private void createColumn(Field field, String tableName) throws SQLException {
+        execute("ALTER TABLE " + tableName + " ADD COLUMN " + field.name() + " " + field.type() + " NULL");
     }
 
     // Don't call it without being sure of schema
-    void update(PackageId id, Field[] fields, Object[] values) throws SQLException {
+    public void update(PackageId id, Field[] fields, Object[] values, boolean updatePackageTable) throws SQLException {
         if (fields.length != values.length)
             throw new IllegalArgumentException("number of fields and values is different");
 
@@ -130,18 +155,29 @@ public class Database implements Closeable {
         arguments[0] = id.toString();
         for (var i = 0; i < fields.length; i++)
             arguments[i + fields.length + 1] = arguments[i + 1] = values[i];
-        execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
+        if(updatePackageTable) {
+            execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
+        } else execute("INSERT INTO " + EXTENSION_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
         PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
-                "(groupid, artifactid, version, lastmodified, packagingType) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
+                "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
         query.setString(1, groupId);
         query.setString(2, artifactId);
         query.setString(3, version);
         query.setDate(4, lastModified);
         query.setString(5, packagingType);
         query.execute();
+    }
+
+    void updateUnresolvedTable(String id, String error) throws SQLException {
+        PreparedStatement query = conn.prepareStatement("INSERT INTO " + UNRESOLVED_PACKAGES +
+                "(id, error) VALUES(?,?) ON CONFLICT DO NOTHING");
+        query.setString(1, id);
+        query.setString(2, error);
+        query.execute();
+
     }
 
     /**

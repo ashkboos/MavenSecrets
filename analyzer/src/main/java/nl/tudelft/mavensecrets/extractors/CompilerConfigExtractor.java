@@ -7,16 +7,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
-
+import nl.tudelft.Package;
+import nl.tudelft.*;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
 
 /**
  * An extractor fetching various elements of the Maven compiler plugin configuration if present.
@@ -40,7 +36,7 @@ public class CompilerConfigExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 

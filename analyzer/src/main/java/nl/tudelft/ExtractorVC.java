@@ -1,13 +1,12 @@
 package nl.tudelft;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Scm;
-
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
 
 public class ExtractorVC implements Extractor{
 
@@ -26,7 +25,7 @@ public class ExtractorVC implements Extractor{
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, String pkgType) {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) {
         List<Object> values = new LinkedList<>();
 
         String scmUrl = Optional.ofNullable(pkg.pom())
