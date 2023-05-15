@@ -1,13 +1,26 @@
 package nl.tudelft.mavensecrets.resolver;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.regex.Pattern;
 
+import nl.tudelft.PackageId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.building.DefaultModelBuildingRequest;
+import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
+import org.apache.maven.model.interpolation.StringSearchModelInterpolator;
+import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
+import org.apache.maven.model.io.DefaultModelReader;
+import org.apache.maven.model.io.ModelReader;
+import org.apache.maven.model.path.DefaultUrlNormalizer;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.codehaus.plexus.interpolation.StringSearchInterpolator;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -36,11 +49,17 @@ public class DefaultResolver implements Resolver {
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");
 
     private final RepositorySystemSession session;
+    private final ModelReader modelReader;
     private RepositorySystem repository = null;
 
     public DefaultResolver() {
         this(new File(System.getProperty("user.home"),".m2/repository"));
     }
+
+    public DefaultResolver(String location) {
+        this(new File(System.getProperty("user.home"),location));
+    }
+
 
     /**
      * Create a resolver instance.
@@ -51,6 +70,7 @@ public class DefaultResolver implements Resolver {
         Objects.requireNonNull(local);
         this.repository = createRepositorySystem();
         this.session = createSession(new LocalRepository(local));
+        this.modelReader = new DefaultModelReader();
     }
 
     @Override
@@ -102,37 +122,52 @@ public class DefaultResolver implements Resolver {
     }
 
     @Override
-    public File getJar(Artifact artifact) throws ArtifactResolutionException {
+    public Model loadPom(Artifact artifact) throws ArtifactResolutionException, IOException {
+        Model pomFile = modelReader.read(getPom(artifact), null);
+        Properties properties = new Properties();
+        if (pomFile.getParent() != null) {
+            var parentPom = pomFile.getParent();
+            var parentGroup = parentPom.getGroupId() == null ? artifact.getGroupId() : parentPom.getGroupId();
+            var parentVersion = parentPom.getVersion() == null ? artifact.getVersion() : parentPom.getVersion();
+            var parentId = new PackageId(parentGroup, parentPom.getArtifactId(), parentVersion);
+
+            LOGGER.trace("resolving parent " + PackageId.fromArtifact(artifact) + " -> " + parentId);
+            Model parent;
+            try {
+                parent = loadPom(createArtifact(parentId.group(), parentId.artifact(), parentId.version()));
+            } catch (Throwable ex) {
+                LOGGER.error("failed to resolve parent " + PackageId.fromArtifact(artifact) + " -> " + parentId, ex);
+                throw ex;
+            }
+
+            properties.putAll(parent.getProperties());
+        }
+
+        properties.putAll(pomFile.getProperties());
+
+        var request = new DefaultModelBuildingRequest();
+        request.setUserProperties(properties);
+        request.setProcessPlugins(true);
+
+        return new StringVisitorModelInterpolator()
+                .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
+                .setUrlNormalizer(new DefaultUrlNormalizer())
+                .interpolateModel(pomFile, null, request, new LoggedModelProblemCollector(LOGGER));
+    }
+
+    @Override
+    public File getJar(Artifact artifact, String pkgType) throws ArtifactResolutionException {
         Objects.requireNonNull(artifact);
 
         Artifact artifactType;
         try {
-            artifactType = resolve(new SubArtifact(artifact, null, "jar"));
-        } catch(ArtifactResolutionException e1) {
-            LOGGER.info("Jar packaging for " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
-            try {
-                artifactType = resolve(new SubArtifact(artifact, null, "war"));
-            } catch(ArtifactResolutionException e2) {
-                LOGGER.info("War packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
-                try {
-                    artifactType = resolve(new SubArtifact(artifact, null, "ear"));
-                } catch(ArtifactResolutionException e3) {
-                    LOGGER.info("Ear packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
-                    try {
-                        artifactType = resolve(new SubArtifact(artifact, null, "zip"));
-                    } catch(ArtifactResolutionException e4) {
-                        LOGGER.info("Zip packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
-                        e4.addSuppressed(e3);
-                        e4.addSuppressed(e2);
-                        e4.addSuppressed(e1);
-                        throw e4;
-                    }
-                }
-            }
+            artifactType = resolve(new SubArtifact(artifact, null, pkgType));
+        } catch(ArtifactResolutionException e4) {
+            LOGGER.info(pkgType + "packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
+            throw e4;
         }
 
         return artifactType.getFile();
-
     }
 
     /**

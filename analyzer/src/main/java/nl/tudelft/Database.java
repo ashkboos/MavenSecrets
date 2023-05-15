@@ -116,6 +116,7 @@ public class Database implements Closeable {
                 "artifactid varchar(128)," +
                 "version    varchar(128)," +
                 "lastmodified date," +
+                "packagingtype varchar(128)," +
                 "constraint table_name_pk " +
                 "primary key (groupid, artifactid, version))").execute();
     }
@@ -160,15 +161,15 @@ public class Database implements Closeable {
         } else execute("INSERT INTO " + EXTENSION_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
-    void updateIndexTable(String groupId, String artifactId, String version, Date lastModified) throws SQLException {
+    void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
         PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
-                "(groupid, artifactid, version, lastmodified) VALUES(?,?,?,?) ON CONFLICT DO NOTHING");
+                "(groupid, artifactid, version, lastmodified, packagingType) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
         query.setString(1, groupId);
         query.setString(2, artifactId);
         query.setString(3, version);
         query.setDate(4, lastModified);
+        query.setString(5, packagingType);
         query.execute();
-
     }
 
     void updateUnresolvedTable(String id, String error) throws SQLException {
@@ -188,7 +189,7 @@ public class Database implements Closeable {
         if (!tableExists(PACKAGE_INDEX_TABLE))
             return packageIds;
 
-        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE)) {
+        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
             while (results.next()) {
                 packageIds.add(new PackageId(results.getString("groupid"),
                         results.getString("artifactid"),
@@ -197,6 +198,21 @@ public class Database implements Closeable {
         }
 
         return packageIds;
+    }
+
+    public List<String> getPackagingType() throws SQLException {
+        List<String> packagingTypes = new ArrayList<>();
+        if (!tableExists(PACKAGE_INDEX_TABLE))
+            return packagingTypes;
+
+        try (var results = query("SELECT packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+            while (results.next()) {
+                packagingTypes.add(results.getString("packagingtype"));
+            }
+        }
+
+        return packagingTypes;
+
     }
 
     @Override

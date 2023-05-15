@@ -24,6 +24,7 @@ public class ParentExtractorTest {
     private static Extractor extractor = null;
     private static Maven maven = null;
     private static Database db = mock(Database.class);
+    private static String pkgName = "";
 
     @Test
     public void test_fields_valid() {
@@ -42,7 +43,7 @@ public class ParentExtractorTest {
     @Test
     public void test_correct_number_of_fields() throws IOException, SQLException {
         try (Package pkg = createPackage(new Model())) {
-            Object[] results = extractor.extract(maven, pkg, db);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
@@ -58,7 +59,7 @@ public class ParentExtractorTest {
         model.setParent(parent);
 
         try (Package pkg = createPackage(model)) {
-            Object[] results = extractor.extract(maven, pkg, db);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {"my-group-id", "my-artifact-id", "1.0"}, results);
         }
     }
@@ -66,7 +67,7 @@ public class ParentExtractorTest {
     @Test
     public void test_parent_absent() throws IOException, SQLException  {
         try (Package pkg = createPackage(new Model())) {
-            Object[] results = extractor.extract(maven, pkg, db);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {null, null, null}, results);
         }
     }

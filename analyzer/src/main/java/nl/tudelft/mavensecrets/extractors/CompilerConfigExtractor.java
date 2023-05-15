@@ -8,8 +8,8 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 
-import nl.tudelft.*;
 import nl.tudelft.Package;
+import nl.tudelft.Database;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -37,7 +37,7 @@ public class CompilerConfigExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, Database db) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 

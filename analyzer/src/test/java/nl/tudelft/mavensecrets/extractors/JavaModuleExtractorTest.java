@@ -10,7 +10,6 @@ import java.util.zip.ZipEntry;
 
 import nl.tudelft.*;
 import nl.tudelft.Package;
-import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,6 +27,7 @@ public class JavaModuleExtractorTest {
     private static Maven maven = null;
     private static File file = null;
     private static Database db = mock(Database.class);
+    private static String pkgName = "";
 
     @TempDir
     private static File dir;
@@ -48,10 +48,9 @@ public class JavaModuleExtractorTest {
 
     @Test
     public void test_correct_number_of_fields() throws IOException, SQLException {
-        Database db = mock(Database.class);
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_CONTENT);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg, db);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
@@ -60,7 +59,7 @@ public class JavaModuleExtractorTest {
     @Test
     public void test_no_jar() throws IOException, SQLException {
         try (Package pkg = createPackage(null)) {
-            Object[] results = extractor.extract(maven, pkg, db);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {null}, results);
         }
     }
@@ -73,7 +72,7 @@ public class JavaModuleExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg, db);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true}, results);
         }
     }
@@ -86,7 +85,7 @@ public class JavaModuleExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg, db);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true}, results);
         }
     }
@@ -95,7 +94,7 @@ public class JavaModuleExtractorTest {
     public void test_module_info_present_absent() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_CONTENT);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg, db);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {false}, results);
         }
     }

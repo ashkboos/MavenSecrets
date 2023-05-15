@@ -25,10 +25,12 @@ public class IndexerReader {
             Map<String, String> chunk = itr.next();
             if(chunk.get("u") != null) {
                 String[] tokens = (chunk.get("u").split("\\|"));
-                String [] newList = new String[4];
+                String[] arti = (chunk.get("i").split("\\|"));
+                String [] newList = new String[5];
                 System.arraycopy(tokens, 0, newList, 0, 3);
                 String epochDate = chunk.get("m");
                 newList[3] = epochDate;
+                newList[4] = arti[arti.length - 1];
                 indexInfo.add(newList);
                 i++;
                 if(i == 2048) {
@@ -46,7 +48,7 @@ public class IndexerReader {
     public void putInDatabase(List<String[]> indexedInfo, boolean checked) throws IOException, SQLException {
         db.createIndexesTable(checked);
         for(String[] info : indexedInfo) {
-            db.updateIndexTable(info[0], info[1], info[2], convertToDate(info[3]));
+            db.updateIndexTable(info[0], info[1], info[2], convertToDate(info[3]), info[4]);
         }
 
     }
