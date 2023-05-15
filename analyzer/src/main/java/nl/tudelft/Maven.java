@@ -19,13 +19,13 @@ public class Maven {
         this.resolver = Objects.requireNonNull(resolver);
     }
 
-    public Package getPackage(PackageId id) throws PackageException {
+    public Package getPackage(PackageId id, String pkgType) throws PackageException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         try {
-            JarFile artifactFile = new JarFile(resolver.getJar(artifact));
+            JarFile artifactFile = new JarFile(resolver.getJar(artifact, pkgType));
             Model pomFile = resolver.loadPom(artifact);
 
             return new Package(id, artifactFile, pomFile);

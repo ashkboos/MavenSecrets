@@ -44,7 +44,8 @@ public interface Resolver {
      * Resolve an artifact.
      *
      * @param artifact Artifact.
+     * @param pkgType
      * @return The file location of the artifact or an empty optional if resolution fails.
      */
-    File getJar(Artifact artifact) throws ArtifactResolutionException;
+    File getJar(Artifact artifact, String pkgType) throws ArtifactResolutionException;
 }
