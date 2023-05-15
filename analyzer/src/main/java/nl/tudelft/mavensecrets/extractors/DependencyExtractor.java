@@ -1,20 +1,14 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import nl.tudelft.*;
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
 import nl.tudelft.Package;
-import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+import nl.tudelft.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import org.apache.maven.shared.invoker.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.regex.Pattern;
 
 public class DependencyExtractor implements Extractor {
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);;
@@ -31,7 +25,7 @@ public class DependencyExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, Database db) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
         Object[] result = new Object[2];

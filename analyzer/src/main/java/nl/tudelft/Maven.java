@@ -3,34 +3,28 @@ package nl.tudelft;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.jar.JarFile;
-
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.DefaultModelReader;
-import org.apache.maven.model.io.ModelParseException;
-import org.apache.maven.model.io.ModelReader;
-import org.eclipse.aether.artifact.Artifact;
-
 import nl.tudelft.mavensecrets.resolver.Resolver;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.ModelParseException;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
 public class Maven {
     private final Resolver resolver;
-    private final ModelReader modelReader;
 
     public Maven(Resolver resolver) {
         this.resolver = Objects.requireNonNull(resolver);
-        this.modelReader = new DefaultModelReader();
     }
 
-    public Package getPackage(PackageId id) throws PackageException {
+    public Package getPackage(PackageId id, String pkgType) throws PackageException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         try {
-            JarFile artifactFile = new JarFile(resolver.getJar(artifact));
-            Model pomFile = modelReader.read(resolver.getPom(artifact), null);
+            JarFile artifactFile = new JarFile(resolver.getJar(artifact, pkgType));
+            Model pomFile = resolver.loadPom(artifact);
 
             return new Package(id, artifactFile, pomFile);
         } catch (ArtifactResolutionException ex) {
@@ -47,7 +41,7 @@ public class Maven {
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         try {
-            Model pomFile = modelReader.read(resolver.getPom(artifact), null);
+            Model pomFile = resolver.loadPom(artifact);
             return pomFile;
         } catch (ArtifactResolutionException ex) {
             throw new PackageException(id, "unable to resolve package", ex);

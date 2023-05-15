@@ -1,7 +1,9 @@
 package nl.tudelft.mavensecrets.resolver;
 
 import java.io.File;
+import java.io.IOException;
 
+import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 
@@ -36,11 +38,14 @@ public interface Resolver {
      */
     File getPom(Artifact artifact) throws ArtifactResolutionException;
 
+    Model loadPom(Artifact artifact) throws ArtifactResolutionException, IOException;
+
     /**
      * Resolve an artifact.
      *
      * @param artifact Artifact.
+     * @param pkgType
      * @return The file location of the artifact or an empty optional if resolution fails.
      */
-    File getJar(Artifact artifact) throws ArtifactResolutionException;
+    File getJar(Artifact artifact, String pkgType) throws ArtifactResolutionException;
 }
