@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.mockito.Mockito.mock;
+
 public class PackagingTypeExtractorTest {
 
     private static PackagingTypeExtractor extractor = null;
@@ -30,7 +32,7 @@ public class PackagingTypeExtractorTest {
     private static String pkgName = "";
     private static Model model = null;
     private static PackageId packageId = null;
-
+    private static Database db = mock(Database.class);
 
     private static File dir;
 
@@ -56,7 +58,7 @@ public class PackagingTypeExtractorTest {
     public void testCorrectNumberOfFields() throws IOException {
         JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
@@ -66,7 +68,7 @@ public class PackagingTypeExtractorTest {
     public void testPackagingTypeFromPOM() throws IOException {
         JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("jar", results[0]);
         }
@@ -76,7 +78,7 @@ public class PackagingTypeExtractorTest {
     public void testPackagingTypeFromExecutable() throws IOException {
         JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("war", results[1]);
         }
@@ -86,7 +88,7 @@ public class PackagingTypeExtractorTest {
     public void testSourceQualifier() throws IOException {
         JarUtil.createJar(sourceFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("sources", results[2]);
         }
@@ -96,7 +98,7 @@ public class PackagingTypeExtractorTest {
     public void testJavadocQualifier() throws IOException {
         JarUtil.createJar(javadocFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(javadocFile), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("javadoc", results[3]);
         }
@@ -106,7 +108,7 @@ public class PackagingTypeExtractorTest {
     public void testMd5() throws IOException {
         JarUtil.createJar(md5File, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(md5File), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(".MD5", results[4]);
         }
@@ -116,7 +118,7 @@ public class PackagingTypeExtractorTest {
     public void testSha1() throws IOException {
         JarUtil.createJar(sha1File, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(sha1File), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(".SHA1", results[5]);
         }
@@ -125,7 +127,7 @@ public class PackagingTypeExtractorTest {
     @Test
     public void testSha256() throws IOException {
         try (Package pkg = createPackage(packageId, new JarFile(sha1File), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("null", results[6]);
         }

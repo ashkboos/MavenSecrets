@@ -163,7 +163,7 @@ public class Database implements Closeable {
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
         PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
-                "(groupid, artifactid, version, lastmodified, packagingType) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
+                "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
         query.setString(1, groupId);
         query.setString(2, artifactId);
         query.setString(3, version);

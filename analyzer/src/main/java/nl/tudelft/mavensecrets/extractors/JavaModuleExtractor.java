@@ -5,9 +5,7 @@ import java.util.Objects;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
+import nl.tudelft.*;
 import nl.tudelft.Package;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

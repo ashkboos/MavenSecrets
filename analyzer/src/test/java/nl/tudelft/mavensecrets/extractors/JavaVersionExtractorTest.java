@@ -2,6 +2,7 @@ package nl.tudelft.mavensecrets.extractors;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -9,18 +10,18 @@ import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
+import nl.tudelft.*;
+import nl.tudelft.Package;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
 import nl.tudelft.mavensecrets.JarUtil;
 import nl.tudelft.mavensecrets.NopResolver;
+
+import static org.mockito.Mockito.mock;
 
 public class JavaVersionExtractorTest {
 
@@ -48,7 +49,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_correct_number_of_fields() throws IOException {
+    public void test_correct_number_of_fields() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
@@ -58,7 +59,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_manifest_build_jdk() throws IOException {
+    public void test_manifest_build_jdk() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
             mf.getMainAttributes().put(new Name("Build-Jdk"), "1.8.0_201");
         }), JarUtil.DEFAULT_RESOURCES);
@@ -71,7 +72,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_manifest_build_jdk_spec() throws IOException {
+    public void test_manifest_build_jdk_spec() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
             mf.getMainAttributes().put(new Name("Build-Jdk-Spec"), "1.8");
         }), JarUtil.DEFAULT_RESOURCES);
@@ -106,7 +107,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_absent() throws IOException {
+    public void test_class_absent() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
@@ -115,7 +116,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_single() throws IOException {
+    public void test_class_single() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
             jos.putNextEntry(new ZipEntry("my-class.class"));
             jos.write(new byte[] {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE});
@@ -129,7 +130,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_multiple() throws IOException {
+    public void test_class_multiple() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
             jos.putNextEntry(new ZipEntry("my-class-0.class"));
             jos.write(new byte[] {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE});

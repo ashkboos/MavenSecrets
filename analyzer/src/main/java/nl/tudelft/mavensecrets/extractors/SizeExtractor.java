@@ -31,7 +31,7 @@ public class SizeExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, Database db) throws IOException, SQLException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException, SQLException {
         List<ExtensionTuple> extensionTuples = new ArrayList<>();
         List<Field> extensionFields = new ArrayList<>();
         Objects.requireNonNull(mvn);

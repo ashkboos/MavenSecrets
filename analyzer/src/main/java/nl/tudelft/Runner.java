@@ -112,7 +112,7 @@ public class Runner implements Closeable {
         }
 
         @Override
-        public Void call() {
+        public Void call() throws SQLException {
             if (cancelled.get()) {
                 LOGGER.error("SQL Exception encountered in another thread. Skipping package " + id);
                 future.completeExceptionally(new SQLException("Lost connection to DB!"));
@@ -125,18 +125,18 @@ public class Runner implements Closeable {
             var start = Instant.now();
             try (var pkg = mvn.getPackage(id, pkgType)) {
                 fetchEnd = Instant.now();
-                values = extractInto(mvn, pkg, pkgType);
-            } catch (PackageException | IOException e) {
+                values = extractInto(mvn, pkg, pkgType, db);
+            } catch (PackageException | IOException  | SQLException e) {
                 LOGGER.error(e);
                 future.complete(null);
                 // TODO Put this package in the unresolved table
                 db.createUnresolvedTable(false);
-                db.updateUnresolvedTable(id.toString(), e.getError());
+                db.updateUnresolvedTable(id.toString(), e.getMessage());
                 return null;
             }
 
             try {
-                db.update(id, fields, values.toArray());
+                db.update(id, fields, values.toArray(), true);
             } catch (SQLException e) {
                 LOGGER.error(e);
                 cancelled.set(true);

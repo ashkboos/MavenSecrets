@@ -43,7 +43,7 @@ public class Maven {
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         try {
-            Model pomFile = modelReader.read(resolver.getPom(artifact), null);
+            Model pomFile = resolver.loadPom(artifact);
             return pomFile;
         } catch (ArtifactResolutionException ex) {
             throw new PackageException(id, "unable to resolve package", ex);

@@ -8,8 +8,8 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 
+import nl.tudelft.*;
 import nl.tudelft.Package;
-import nl.tudelft.Database;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
