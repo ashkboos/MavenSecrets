@@ -26,12 +26,12 @@ public class CompilerConfigExtractor implements Extractor {
 
     private final Field[] fields = new Field[] {
             new Field("use_maven_compiler_plugin", "BOOLEAN"),
-            new Field("maven_compiler_plugin_version", "VARCHAR(128)"),
+            new Field("maven_compiler_plugin_version", "VARCHAR"),
             new Field("compiler_args", "BYTEA"), // Not pretty but this is a list
-            new Field("compiler_id", "VARCHAR(128)"),
-            new Field("compiler_encoding", "VARCHAR(128)"),
-            new Field("compiler_version_source", "VARCHAR(128)"),
-            new Field("compiler_version_target", "VARCHAR(128)")
+            new Field("compiler_id", "VARCHAR"),
+            new Field("compiler_encoding", "VARCHAR"),
+            new Field("compiler_version_source", "VARCHAR"),
+            new Field("compiler_version_target", "VARCHAR")
     };
 
     @Override

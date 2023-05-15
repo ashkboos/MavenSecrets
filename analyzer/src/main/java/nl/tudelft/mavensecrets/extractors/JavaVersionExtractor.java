@@ -37,9 +37,9 @@ public class JavaVersionExtractor implements Extractor {
     private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
 
     private final Field[] fields = {
-            new Field("java_version_manifest_1", "VARCHAR(16)"), // Created-By
-            new Field("java_version_manifest_2", "VARCHAR(16)"), // Build-Jdk
-            new Field("java_version_manifest_3", "VARCHAR(16)"), // Build-Jdk-Spec
+            new Field("java_version_manifest_1", "VARCHAR"), // Created-By
+            new Field("java_version_manifest_2", "VARCHAR"), // Build-Jdk
+            new Field("java_version_manifest_3", "VARCHAR"), // Build-Jdk-Spec
             new Field("java_version_class_major", "BYTEA"),
             new Field("java_version_class_minor", "BYTEA")
     };

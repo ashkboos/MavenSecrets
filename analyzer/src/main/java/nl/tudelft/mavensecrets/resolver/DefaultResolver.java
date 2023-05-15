@@ -132,7 +132,6 @@ public class DefaultResolver implements Resolver {
         }
 
         return artifactType.getFile();
-
     }
 
     /**

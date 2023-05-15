@@ -21,9 +21,9 @@ public class ParentExtractor implements Extractor {
     private static final Logger LOGGER = LogManager.getLogger(ParentExtractor.class);
 
     private final Field[] fields = {
-            new Field("parent_group_id", "VARCHAR(128)"),
-            new Field("parent_artifact_id", "VARCHAR(128)"),
-            new Field("parent_version", "VARCHAR(128)")
+            new Field("parent_group_id", "VARCHAR"),
+            new Field("parent_artifact_id", "VARCHAR"),
+            new Field("parent_version", "VARCHAR")
     };
 
     @Override
