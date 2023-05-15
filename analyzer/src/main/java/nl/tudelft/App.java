@@ -10,8 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +39,10 @@ public class App {
         var packages = db.getPackageIds();
         var packagingTypes = db.getPackagingType();
 
+        Map<PackageId, String> pkgTypeMap = IntStream.range(0, packages.size())
+                .boxed()
+                .collect(Collectors.toMap(packages::get, packagingTypes::get));
+
         if (packages.isEmpty()) {
             LOGGER.info("no packages, nothing to do");
             return;
@@ -48,7 +54,7 @@ public class App {
         var maven = new Maven(resolver);
 
         try (var runner = builder.build(db)) {
-            runner.run(maven, packages, packagingTypes);
+            runner.run(maven, packages, pkgTypeMap);
         }
 
         long endTime = System.currentTimeMillis();

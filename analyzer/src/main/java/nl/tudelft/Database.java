@@ -152,7 +152,7 @@ public class Database implements Closeable {
         if (!tableExists(PACKAGE_INDEX_TABLE))
             return packageIds;
 
-        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE)) {
+        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
             while (results.next()) {
                 packageIds.add(new PackageId(results.getString("groupid"),
                         results.getString("artifactid"),
@@ -168,7 +168,7 @@ public class Database implements Closeable {
         if (!tableExists(PACKAGE_INDEX_TABLE))
             return packagingTypes;
 
-        try (var results = query("SELECT packagingtype FROM " + PACKAGE_INDEX_TABLE)) {
+        try (var results = query("SELECT packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
             while (results.next()) {
                 packagingTypes.add(results.getString("packagingtype"));
             }

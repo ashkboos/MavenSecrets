@@ -34,32 +34,29 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, List<PackageId> packages, List<String> packagingTypes) throws SQLException, IOException, PackageException {
+    void run(Maven mvn, List<PackageId> packages, Map<PackageId, String> packagingTypes) {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
                 .toArray(Field[]::new);
         if (fields.length == 0)
             return;
-        processPackages(packages, fields, mvn);
+        processPackages(packages, fields, mvn, packagingTypes);
     }
 
-    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn) {
+    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes) {
         int cores = Runtime.getRuntime().availableProcessors();
         LOGGER.info("Number of cores available = " + cores);
         ExecutorService executor = Executors.newFixedThreadPool(cores);
-        int count = 0;
-        int check = 0;
 
         // We manually create then manage the future inside the task
         // since executor.submit() only returns a Future, but we need
         // a CompletableFuture to be able to use CompletableFutures.allOf()
         List<Future<Void>> futures = new ArrayList<>();
         for (PackageId id : packages) {
-            String pkgType = packagingTypes.get(count);
-            count++;
+            String pkgType = packagingTypes.get(id);
             CompletableFuture<Void> future = new CompletableFuture<>();
-            executor.submit(new ProcessPackageTask(id, fields, mvn, future));
+            executor.submit(new ProcessPackageTask(id, fields, mvn, future, pkgType));
             futures.add(future);
         }
 
