@@ -54,7 +54,7 @@ public class App {
         var maven = new Maven(resolver);
 
         try (var runner = builder.build(db)) {
-            runner.run(maven, packages, pkgTypeMap);
+            runner.run(maven, packages, pkgTypeMap, config);
         }
 
         long endTime = System.currentTimeMillis();

@@ -1,5 +1,6 @@
 package nl.tudelft;
 
+import nl.tudelft.mavensecrets.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,20 +35,19 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, List<PackageId> packages, Map<PackageId, String> packagingTypes) {
+    void run(Maven mvn, List<PackageId> packages, Map<PackageId, String> packagingTypes, Config config) {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
                 .toArray(Field[]::new);
         if (fields.length == 0)
             return;
-        processPackages(packages, fields, mvn, packagingTypes);
+        processPackages(packages, fields, mvn, packagingTypes, config);
     }
 
-    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes) {
-        int cores = Runtime.getRuntime().availableProcessors();
-        LOGGER.info("Number of cores available = " + cores);
-        ExecutorService executor = Executors.newFixedThreadPool(cores);
+    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes, Config config) {
+        LOGGER.debug(config.getThreads());
+        ExecutorService executor = Executors.newFixedThreadPool(config.getThreads());
 
         // We manually create then manage the future inside the task
         // since executor.submit() only returns a Future, but we need
