@@ -198,7 +198,7 @@ public class JavaVersionExtractor implements Extractor {
                     .append(this.getClass().getSimpleName())
                     .append("[major=")
                     .append(Arrays.toString(major))
-                    .append("[minor=")
+                    .append(", minor=")
                     .append(Arrays.toString(minor))
                     .append(']')
                     .toString();

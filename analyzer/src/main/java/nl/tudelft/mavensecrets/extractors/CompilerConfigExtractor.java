@@ -3,26 +3,40 @@ package nl.tudelft.mavensecrets.extractors;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginManagement;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
 
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.resolver.Resolver;
 
 /**
  * An extractor fetching various elements of the Maven compiler plugin configuration if present.
  * Note that placeholders, configurations inherited from parents, user properties and executions are not checked.
  */
 public class CompilerConfigExtractor implements Extractor {
+
+    private static final Logger LOGGER = LogManager.getLogger(CompilerConfigExtractor.class);
 
     private final Field[] fields = new Field[] {
             new Field("use_maven_compiler_plugin", "BOOLEAN"),
@@ -44,12 +58,120 @@ public class CompilerConfigExtractor implements Extractor {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 
-        Model model = pkg.pom();
+        Resolver resolver = mvn.getResolver();
 
-        return Optional.ofNullable(model.getBuild())
+        // Get POM hierarchy
+        PackageId id = pkg.id();
+        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
+        List<ProjectMavenCompilerConfig> list = new ArrayList<>();
+        do {
+            Model model;
+            try {
+                model = resolver.loadPom(artifact);
+            } catch (ArtifactResolutionException | IOException exception) {
+                LOGGER.warn("Could not load POM for artifact {} ({})", artifact, id, exception);
+                break;
+            }
+
+            list.add(fetchProjectConfig(model));
+
+            Parent parent = model.getParent();
+            if (parent != null) {
+                String gid = parent.getGroupId();
+                String aid = parent.getArtifactId();
+                String v = parent.getVersion();
+
+                if (gid != null && aid != null && v != null) {
+                    try {
+                        Artifact oldArtifact = artifact;
+                        artifact = resolver.createArtifact(gid, aid, v);
+                        LOGGER.trace("Loading POM for parent artifact {} of artifact {} ({})", artifact, oldArtifact, id);
+                        continue;
+                    } catch (IllegalArgumentException exception) {
+                        LOGGER.warn("Malformed parent artifact for {} ({})", artifact, id, exception);
+                        break;
+                    }
+                }
+            }
+            break;
+        } while (true);
+
+        // This should not happen
+        if (list.isEmpty()) {
+            LOGGER.warn("No POMs found ({})", id);
+            return new Object[fields.length];
+        }
+
+        // Resolution order: plugin, parent plugin, ..., plugin management, parent plugin management, ..., property, parent property, ...
+        ProjectMavenCompilerConfig pcfg = list.remove(0);
+        Iterator<ProjectMavenCompilerConfig> iterator = list.listIterator(1);
+        while (iterator.hasNext()) {
+            pcfg = mergeConfig(iterator.next(), pcfg);
+        }
+        MavenCompilerConfig config = mergeConfig(pcfg.plugin(), pcfg.pluginManagement());
+        config = new MavenCompilerConfig(config.present(), config.version(), config.args(), config.id(), config.encoding(), config.source() == null ? pcfg.mavenCompilerSourceProperty() : config.source(), config.target() == null ? pcfg.mavenCompilerTargetProperty() : config.target());
+
+        LOGGER.trace("Found compiler configuration {} ({})", config, id);
+        return config.toArray();
+    }
+
+    /**
+     * Find the Maven compiler plugin in a collection of {@link Plugin plugins}.
+     *
+     * @param collection Collection.
+     * @return The plugin instance wrapped in an {@link Optional}.
+     */
+    private Optional<Plugin> findMavenCompilerPlugin(Collection<Plugin> collection) {
+        Objects.requireNonNull(collection);
+
+        return collection.stream()
+                .filter(plugin -> {
+                    String groupId = plugin.getGroupId();
+                    // For maven plugins group id can be omitted as it is a reserved prefix
+                    return groupId == null || groupId.equals("org.apache.maven.plugins");
+                })
+                .filter(plugin -> plugin.getArtifactId().equals("maven-compiler-plugin"))
+                .findAny();
+    }
+
+    /**
+     * Fetch the project configuration from a {@link Model}.
+     *
+     * @param model The model instance.
+     * @return The configuration.
+     */
+    private ProjectMavenCompilerConfig fetchProjectConfig(Model model) {
+        Objects.requireNonNull(model);
+
+        Optional<Build> optional = Optional.ofNullable(model.getBuild());
+        MavenCompilerConfig plugin = optional
                 .map(Build::getPlugins)
                 .flatMap(this::findMavenCompilerPlugin)
-                .<Object[]>map(plugin -> {
+                .map(this::fetchPluginConfig)
+                .orElse(null);
+        MavenCompilerConfig pluginManagement = optional
+                .map(Build::getPluginManagement)
+                .map(PluginManagement::getPlugins)
+                .flatMap(this::findMavenCompilerPlugin)
+                .map(this::fetchPluginConfig)
+                .orElse(null);
+        String source = model.getProperties().getProperty("maven.compiler.source");
+        String target = model.getProperties().getProperty("maven.compiler.target");
+
+        return new ProjectMavenCompilerConfig(plugin, pluginManagement, source, target);
+    }
+
+    /**
+     * Get the compiler configuration from a {@link Plugin}.
+     *
+     * @param compiler The plugin instance.
+     * @return The configuration.
+     */
+    private MavenCompilerConfig fetchPluginConfig(Plugin compiler) {
+        Objects.requireNonNull(compiler);
+
+        return Optional.of(compiler)
+                .map(plugin -> {
                     Optional<Xpp3Dom> optional = Optional.ofNullable(plugin.getConfiguration())
                             .map(object -> object instanceof Xpp3Dom ? (Xpp3Dom) object : null);
                     byte[] cargs;
@@ -67,7 +189,7 @@ public class CompilerConfigExtractor implements Extractor {
                                         throw new AssertionError(exception);
                                     }
                                 });
-
+        
                         cargs = baos.toByteArray();
                     } catch (IOException exception) {
                         throw new AssertionError(exception);
@@ -88,38 +210,162 @@ public class CompilerConfigExtractor implements Extractor {
                             .map(dom -> dom.getChild("target"))
                             .map(Xpp3Dom::getValue)
                             .orElse(null);
-                    return new Object[] {
-                            true,
-                            plugin.getVersion(),
-                            cargs,
-                            cid,
-                            encoding,
-                            source,
-                            target
-                    };
+
+                    return new MavenCompilerConfig(true, plugin.getVersion(), cargs, cid, encoding, source, target);
                 })
-                .orElseGet(() -> {
-                    Object[] results = new Object[fields.length];
-                    results[0] = false;
-                    return results;
-                });
+                .orElseGet(MavenCompilerConfig::new);
     }
 
     /**
-     * Find the Maven compiler plugin in a collection of {@link Plugin plugins}.
-     * @param collection Collection.
-     * @return The plugin instance wrapped in an {@link Optional}.
+     * Merge project configurations.
+     *
+     * @param parent Parent configuration.
+     * @param child Child configuration.
+     * @return The merged configuration.
      */
-    private Optional<Plugin> findMavenCompilerPlugin(Collection<Plugin> collection) {
-        Objects.requireNonNull(collection);
+    private ProjectMavenCompilerConfig mergeConfig(ProjectMavenCompilerConfig parent, ProjectMavenCompilerConfig child) {
+        Objects.requireNonNull(parent);
+        Objects.requireNonNull(child);
 
-        return collection.stream()
-                .filter(plugin -> {
-                    String groupId = plugin.getGroupId();
-                    // For maven plugins group id can be omitted as it is a reserved prefix
-                    return groupId == null || groupId.equals("org.apache.maven.plugins");
-                })
-                .filter(plugin -> plugin.getArtifactId().equals("maven-compiler-plugin"))
-                .findAny();
+        MavenCompilerConfig plugin = mergeConfig(parent.plugin(), child.plugin());
+        MavenCompilerConfig pluginManagement = mergeConfig(parent.pluginManagement(), child.pluginManagement());
+        String mavenCompilerSource = child.mavenCompilerSourceProperty() == null ? parent.mavenCompilerSourceProperty() : child.mavenCompilerSourceProperty();
+        String mavenCompilerTarget = child.mavenCompilerTargetProperty() == null ? parent.mavenCompilerTargetProperty() : child.mavenCompilerTargetProperty();
+        return new ProjectMavenCompilerConfig(plugin, pluginManagement, mavenCompilerSource, mavenCompilerTarget);
+    }
+
+    /**
+     * Merge compiler configurations.
+     *
+     * @param parent Parent configuration.
+     * @param child Child configuration.
+     * @return The merged configuration.
+     */
+    private MavenCompilerConfig mergeConfig(MavenCompilerConfig parent, MavenCompilerConfig child) {
+        Objects.requireNonNull(parent);
+        Objects.requireNonNull(child);
+
+        if (!child.present()) {
+            return parent.present() ? parent : new MavenCompilerConfig();
+        }
+
+        if (!parent.present()) {
+            return child;
+        }
+
+        String version = getMergedField(parent, child, MavenCompilerConfig::version);
+        byte[] args = getMergedField(parent, child, MavenCompilerConfig::args);
+        String id = getMergedField(parent, child, MavenCompilerConfig::id);
+        String encoding = getMergedField(parent, child, MavenCompilerConfig::encoding);
+        String source = getMergedField(parent, child, MavenCompilerConfig::source);
+        String target = getMergedField(parent, child, MavenCompilerConfig::target);
+
+        return new MavenCompilerConfig(true, version, args, id, encoding, source, target);
+    }
+
+    /**
+     * Utility method to get a field value, potentially fetching from parent if no value is set.
+     *
+     * @param <T> Field type.
+     * @param parent Parent instance.
+     * @param child Child instance.
+     * @param getter The function fetching the field.
+     * @return The value.
+     */
+    private <T> T getMergedField(MavenCompilerConfig parent, MavenCompilerConfig child, Function<? super MavenCompilerConfig, ? extends T> getter) {
+        Objects.requireNonNull(parent);
+        Objects.requireNonNull(child);
+        Objects.requireNonNull(getter);
+
+        T t0 = getter.apply(child);
+
+        return t0 == null ? getter.apply(parent) : t0;
+    }
+
+    /**
+     * A Maven compiler plugin configuration record.
+     */
+    private static record MavenCompilerConfig(boolean present, String version, byte[] args, String id, String encoding, String source, String target) {
+
+        /**
+         * Create an empty configuration.
+         */
+        public MavenCompilerConfig() {
+            this(false, null, null, null, null, null, null);
+        }
+
+        @Override
+        public byte[] args() {
+            return args.clone();
+        }
+
+        /**
+         * Wrap the fields in an array.
+         *
+         * @return The array.
+         */
+        public Object[] toArray() {
+            return new Object[] {present, version, args, id, encoding, source, target};
+        }
+
+        /*
+         * Records do not do deep array comparison 
+         */
+
+        @Override
+        public int hashCode() {
+            int result = 37;
+            result = result * 17 + Boolean.hashCode(present);
+            result = result * 17 + Objects.hash(version);
+            result = result * 17 + Arrays.hashCode(args);
+            result = result * 17 + Objects.hash(id);
+            result = result * 17 + Objects.hash(encoding);
+            result = result * 17 + Objects.hash(source);
+            result = result * 17 + Objects.hash(target);
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (object instanceof MavenCompilerConfig other) {
+                return present == other.present()
+                        && Objects.equals(version, other.version())
+                        && Arrays.equals(args, other.args())
+                        && Objects.equals(id, other.id())
+                        && Objects.equals(encoding, other.encoding())
+                        && Objects.equals(source, other.source())
+                        && Objects.equals(target, other.target());
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append(this.getClass().getSimpleName())
+                    .append("[present=")
+                    .append(present)
+                    .append(", version=")
+                    .append(version)
+                    .append(", args=")
+                    .append(Arrays.toString(args))
+                    .append(", id=")
+                    .append(id)
+                    .append(", encoding=")
+                    .append(encoding)
+                    .append(", source=")
+                    .append(source)
+                    .append(", target=")
+                    .append(target)
+                    .append(']')
+                    .toString();
+        }
+    }
+
+    /**
+     * A POM compiler configuration record.
+     */
+    private static record ProjectMavenCompilerConfig(MavenCompilerConfig plugin, MavenCompilerConfig pluginManagement, String mavenCompilerSourceProperty, String mavenCompilerTargetProperty) {
+        // Nothing
     }
 }

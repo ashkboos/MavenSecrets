@@ -2,25 +2,21 @@ package nl.tudelft.mavensecrets.resolver;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-import nl.tudelft.PackageId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
 import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
-import org.apache.maven.model.interpolation.StringSearchModelInterpolator;
 import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
 import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
 import org.apache.maven.model.path.DefaultUrlNormalizer;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.codehaus.plexus.interpolation.StringSearchInterpolator;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -38,6 +34,8 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.SubArtifact;
+
+import nl.tudelft.PackageId;
 
 /**
  * A default artefact {@link Resolver}.
