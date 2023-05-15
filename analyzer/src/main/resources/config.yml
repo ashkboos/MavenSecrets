@@ -5,4 +5,5 @@ extractors:
   - nl.tudelft.mavensecrets.extractors.ParentExtractor
   - nl.tudelft.mavensecrets.extractors.PackagingTypeExtractor
   - nl.tudelft.ExtractorVC
-  - nl.tudelft.DemoExtractor 
+  - nl.tudelft.DemoExtractor
+threads: 12
