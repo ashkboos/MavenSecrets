@@ -28,7 +28,6 @@ public class App {
         Config config = loadConfiguration();
         LOGGER.info("Extractors: " + config.getExtractors());
 
-
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
         runIndexerReader(args, db);

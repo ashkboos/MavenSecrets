@@ -1,8 +1,6 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
+import nl.tudelft.*;
 import nl.tudelft.Package;
 import org.apache.maven.model.Dependency;
 
@@ -27,7 +25,7 @@ public class LanguageExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
         return new Object[]{
                 isScalaLinked(pkg),
                 isKotlinLinked(pkg),

@@ -22,7 +22,7 @@ public class EmbedExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
         // TODO: used vs. unused embeds
         // TODO: identify JARs by magic number
 

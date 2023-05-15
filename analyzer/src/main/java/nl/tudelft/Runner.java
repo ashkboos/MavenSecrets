@@ -1,9 +1,5 @@
 package nl.tudelft;
 
-import nl.tudelft.mavensecrets.Config;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -12,6 +8,9 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import nl.tudelft.mavensecrets.Config;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Runner implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);
@@ -77,11 +76,11 @@ public class Runner implements Closeable {
         }
     }
 
-    private List<Object> extractInto(Maven mvn, Package pkg, String pkgType) throws IOException {
+    private List<Object> extractInto(Maven mvn, Package pkg, String pkgType, Database db) throws IOException, SQLException {
         var list = new LinkedList<>();
         for (var extractor : extractors.values()) {
 
-            var result = extractor.extract(mvn, pkg, pkgType);
+            var result = extractor.extract(mvn, pkg, pkgType, db);
             if (result.length != extractor.fields().length)
                 throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
 
@@ -112,7 +111,7 @@ public class Runner implements Closeable {
         }
 
         @Override
-        public Void call() {
+        public Void call() throws SQLException {
             if (cancelled.get()) {
                 LOGGER.error("SQL Exception encountered in another thread. Skipping package " + id);
                 future.completeExceptionally(new SQLException("Lost connection to DB!"));
@@ -125,17 +124,19 @@ public class Runner implements Closeable {
             var start = Instant.now();
             try (var pkg = mvn.getPackage(id, pkgType)) {
                 fetchEnd = Instant.now();
-                values = extractInto(mvn, pkg, pkgType);
-            } catch (PackageException | IOException e) {
+                values = extractInto(mvn, pkg, pkgType, db);
+            } catch (PackageException | IOException  | SQLException e) {
                 LOGGER.error(e);
                 future.complete(null);
                 // TODO Put this package in the unresolved table
+                db.createUnresolvedTable(false);
+                db.updateUnresolvedTable(id.toString(), e.getMessage());
                 return null;
             }
 
             var dbStart = Instant.now();
             try {
-                db.update(id, fields, values.toArray());
+                db.update(id, fields, values.toArray(), true);
             } catch (SQLException e) {
                 LOGGER.error(e);
                 cancelled.set(true);
