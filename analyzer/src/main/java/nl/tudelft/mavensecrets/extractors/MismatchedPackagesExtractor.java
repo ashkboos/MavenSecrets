@@ -17,7 +17,7 @@ public class MismatchedPackagesExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException {
         var prefix = pkg.id().group().replace(".", "/");
         var mismatched = pkg.jar().stream()
                 .map(i -> JarUtils.packageFromPath(i.getRealName()))

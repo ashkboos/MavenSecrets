@@ -1,6 +1,9 @@
 package nl.tudelft;
 
 public class PackageException extends Exception {
+
+    private static final long serialVersionUID = -3351058050694810249L;
+
     private final PackageId id;
     private final String error;
 

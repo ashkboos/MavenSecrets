@@ -27,7 +27,7 @@ public class LanguageExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException {
         return new Object[]{
                 isScalaLinked(pkg),
                 isKotlinLinked(pkg),

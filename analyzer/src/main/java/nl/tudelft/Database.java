@@ -14,6 +14,19 @@ public class Database implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
+    private static final int BACKOFF_TIME_MS = 1000;
+    private static final int BACKOFF_BASE = 2;
+    private static final int BACKOFF_RETRIES = 3;
+
+    static {
+        // Legacy driver registring because Maven shade does funny things
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException exception) {
+            throw new ExceptionInInitializerError(exception);
+        }
+    }
+
     private final Connection conn;
 
     private Database(Connection conn) {
@@ -21,12 +34,26 @@ public class Database implements Closeable {
     }
 
     public static Database connect(String url, String user, String pass) throws SQLException {
-        try {
-            LOGGER.trace("connecting to " + url);
-            return new Database(DriverManager.getConnection(url, user, pass));
-        } catch (SQLException ex) {
-            LOGGER.error("failed to connect to the database", ex);
-            throw ex;
+        LOGGER.trace("connecting to " + url);
+        var sleep = BACKOFF_TIME_MS;
+        for (var i = 0;; i++) {
+            try {
+                return new Database(DriverManager.getConnection(url, user, pass));
+            } catch (SQLException ex) {
+                LOGGER.error("failed to connect to the database (attempt " + (i + 1) + ")", ex);
+                if (i > BACKOFF_RETRIES)
+                    throw ex;
+            }
+
+            try {
+                // exponential backoff; not a busy wait
+                // noinspection BusyWait
+                Thread.sleep(sleep);
+            } catch (InterruptedException e) {
+                // ignored.
+            }
+
+            sleep *= BACKOFF_BASE;
         }
     }
 
@@ -63,6 +90,7 @@ public class Database implements Closeable {
                 "artifactid varchar(128)," +
                 "version    varchar(128)," +
                 "lastmodified date," +
+                "packagingtype varchar(128)," +
                 "constraint table_name_pk " +
                 "primary key (groupid, artifactid, version))").execute();
     }
@@ -105,15 +133,15 @@ public class Database implements Closeable {
         execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
-    void updateIndexTable(String groupId, String artifactId, String version, Date lastModified) throws SQLException {
+    void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
         PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
-                "(groupid, artifactid, version, lastmodified) VALUES(?,?,?,?) ON CONFLICT DO NOTHING");
+                "(groupid, artifactid, version, lastmodified, packagingType) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
         query.setString(1, groupId);
         query.setString(2, artifactId);
         query.setString(3, version);
         query.setDate(4, lastModified);
+        query.setString(5, packagingType);
         query.execute();
-
     }
 
     /**
@@ -124,7 +152,7 @@ public class Database implements Closeable {
         if (!tableExists(PACKAGE_INDEX_TABLE))
             return packageIds;
 
-        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE)) {
+        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
             while (results.next()) {
                 packageIds.add(new PackageId(results.getString("groupid"),
                         results.getString("artifactid"),
@@ -133,6 +161,21 @@ public class Database implements Closeable {
         }
 
         return packageIds;
+    }
+
+    public List<String> getPackagingType() throws SQLException {
+        List<String> packagingTypes = new ArrayList<>();
+        if (!tableExists(PACKAGE_INDEX_TABLE))
+            return packagingTypes;
+
+        try (var results = query("SELECT packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+            while (results.next()) {
+                packagingTypes.add(results.getString("packagingtype"));
+            }
+        }
+
+        return packagingTypes;
+
     }
 
     @Override

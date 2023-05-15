@@ -4,5 +4,5 @@ import java.io.IOException;
 
 public interface Extractor {
     Field[] fields();
-    Object[] extract(Maven mvn, Package pkg) throws IOException;
+    Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException;
 }

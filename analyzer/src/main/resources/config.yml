@@ -1,0 +1,12 @@
+extractors:
+  - nl.tudelft.mavensecrets.extractors.CompilerConfigExtractor
+  - nl.tudelft.mavensecrets.extractors.JavaModuleExtractor
+  - nl.tudelft.mavensecrets.extractors.JavaVersionExtractor
+  - nl.tudelft.mavensecrets.extractors.ParentExtractor
+  - nl.tudelft.mavensecrets.extractors.PackagingTypeExtractor
+  - nl.tudelft.mavensecrets.extractors.MismatchedPackagesExtractor
+  - nl.tudelft.mavensecrets.extractors.LanguageExtractor
+  - nl.tudelft.mavensecrets.extractors.EmbedExtractor
+  - nl.tudelft.ExtractorVC
+  - nl.tudelft.DemoExtractor
+threads: 12

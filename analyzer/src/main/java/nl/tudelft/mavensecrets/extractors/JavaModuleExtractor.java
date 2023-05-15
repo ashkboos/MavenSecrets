@@ -25,14 +25,18 @@ public class JavaModuleExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 
         JarFile jar = pkg.jar();
         boolean useModules = jar.stream()
                 .map(ZipEntry::getName)
-                .anyMatch(str -> str.equals("module-info.class"));
+                .anyMatch(str -> {
+                    int i = str.lastIndexOf('/');
+                    String s = i == -1 ? str : str.substring(i + 1);
+                    return s.equals("module-info.class");
+                });
         return new Object[] {useModules};
     }
 }
