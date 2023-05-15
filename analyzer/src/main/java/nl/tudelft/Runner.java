@@ -65,11 +65,12 @@ public class Runner implements Closeable {
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             LOGGER.error(e);
         } catch (ExecutionException e) {
-            // No need to log here. We already log inside each thread,
-            // this exception will contain only the exception thrown by
-            // the first Future to throw an exception.
+            // Whenever a package exception occurs at any point during execution,
+            // it will be logged here, so ignore it.
+            LOGGER.error(e);
         }
         finally {
             executor.shutdown();
@@ -94,10 +95,7 @@ public class Runner implements Closeable {
         db.close();
     }
 
-    /**
-     *
-     */
-    private class ProcessPackageTask implements Callable{
+    private class ProcessPackageTask implements Callable<Void> {
 
         private final PackageId id;
         private final Field[] fields;
@@ -113,12 +111,8 @@ public class Runner implements Closeable {
             this.pkgType = pkgType;
         }
 
-        /**
-         * @return
-         * @throws SQLException
-         */
         @Override
-        public Object call() {
+        public Void call() {
             if (cancelled.get()) {
                 LOGGER.error("SQL Exception encountered in another thread. Skipping package " + id);
                 future.completeExceptionally(new SQLException("Lost connection to DB!"));
@@ -142,6 +136,7 @@ public class Runner implements Closeable {
             try {
                 db.update(id, fields, values.toArray());
             } catch (SQLException e) {
+                LOGGER.error(e);
                 cancelled.set(true);
                 future.completeExceptionally(e);
                 return null;
