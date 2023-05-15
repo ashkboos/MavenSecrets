@@ -1,5 +1,12 @@
 package nl.tudelft;
-import java.io.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -7,16 +14,12 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
-
 import nl.tudelft.mavensecrets.extractors.SizeExtractor;
 import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.apache.maven.model.Model;
-
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 public class SizeExtractorTest {
 

@@ -1,13 +1,11 @@
 package nl.tudelft.mavensecrets;
 
 import java.io.File;
-
 import java.io.IOException;
+import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
-
-import nl.tudelft.mavensecrets.resolver.Resolver;
 
 /**
  * A utility no-operation {@link Resolver} implementation.

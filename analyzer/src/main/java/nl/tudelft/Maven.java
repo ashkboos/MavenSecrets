@@ -3,12 +3,10 @@ package nl.tudelft;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.jar.JarFile;
-
+import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.ModelParseException;
 import org.eclipse.aether.artifact.Artifact;
-
-import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.util.artifact.SubArtifact;
 

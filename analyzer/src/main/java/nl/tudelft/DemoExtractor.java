@@ -1,10 +1,9 @@
 package nl.tudelft;
 
-import org.apache.maven.model.Model;
-
 import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import org.apache.maven.model.Model;
 
 public class DemoExtractor implements Extractor {
     private Field[] fields;

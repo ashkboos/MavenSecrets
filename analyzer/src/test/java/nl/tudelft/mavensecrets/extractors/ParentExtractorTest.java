@@ -1,23 +1,21 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import static org.mockito.Mockito.mock;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
-import nl.tudelft.*;
 import nl.tudelft.Package;
+import nl.tudelft.*;
+import nl.tudelft.mavensecrets.NopResolver;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import nl.tudelft.mavensecrets.NopResolver;
-
-import static org.mockito.Mockito.mock;
 
 public class ParentExtractorTest {
 

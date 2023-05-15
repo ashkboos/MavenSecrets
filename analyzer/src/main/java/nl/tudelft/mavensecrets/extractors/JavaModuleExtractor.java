@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-
-import nl.tudelft.*;
 import nl.tudelft.Package;
+import nl.tudelft.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -3,15 +3,13 @@ package nl.tudelft.mavensecrets.extractors;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import nl.tudelft.*;
 import nl.tudelft.Package;
+import nl.tudelft.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
-
-import javax.xml.crypto.Data;
 
 public class PackagingTypeExtractor implements Extractor {
     private static final Logger LOGGER = LogManager.getLogger(PackagingTypeExtractor.class);

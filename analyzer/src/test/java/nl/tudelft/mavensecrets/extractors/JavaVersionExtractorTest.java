@@ -1,5 +1,7 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import static org.mockito.Mockito.mock;
+
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -9,19 +11,15 @@ import java.util.Set;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-
-import nl.tudelft.*;
 import nl.tudelft.Package;
+import nl.tudelft.*;
+import nl.tudelft.mavensecrets.JarUtil;
+import nl.tudelft.mavensecrets.NopResolver;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import nl.tudelft.mavensecrets.JarUtil;
-import nl.tudelft.mavensecrets.NopResolver;
-
-import static org.mockito.Mockito.mock;
 
 public class JavaVersionExtractorTest {
 

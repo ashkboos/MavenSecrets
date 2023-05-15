@@ -1,5 +1,7 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import static org.mockito.Mockito.mock;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -8,8 +10,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-import nl.tudelft.*;
+import nl.tudelft.Database;
+import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import nl.tudelft.PackageId;
 import nl.tudelft.mavensecrets.JarUtil;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 import org.apache.maven.model.Model;
@@ -17,8 +21,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.mockito.Mockito.mock;
 
 public class PackagingTypeExtractorTest {
 

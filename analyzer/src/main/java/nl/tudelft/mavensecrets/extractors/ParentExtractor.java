@@ -2,9 +2,8 @@ package nl.tudelft.mavensecrets.extractors;
 
 import java.io.IOException;
 import java.util.Objects;
-
-import nl.tudelft.*;
 import nl.tudelft.Package;
+import nl.tudelft.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
