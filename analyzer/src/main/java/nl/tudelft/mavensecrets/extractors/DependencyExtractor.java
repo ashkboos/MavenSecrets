@@ -39,37 +39,58 @@ public class DependencyExtractor implements Extractor {
         Model m = pkg.pom();
         List<Dependency> dependencies = m.getDependencies();
         int directDependencies = dependencies.size();
-//        Queue<Model> toVisit = new ArrayDeque<>();
-//        toVisit.add(m);
-//        Set<PackageId> packagesVisited = new HashSet<>();
-//        int nullValue = 0;
-//        int notResolved = 0;
-//        while (!toVisit.isEmpty()) {
-//            Model currentModel = toVisit.poll();
-//
-//            for (Dependency d : currentModel.getDependencies()) {
-//                if (d.getVersion() == null || d.getGroupId() == null || d.getArtifactId() == null) {
-//                    nullValue++;
-//                    continue;
-//                }
-//                PackageId id = new PackageId(d.getGroupId(), d.getArtifactId(), d.getVersion());
-//                try {
-//                    Model p = mvn.getPom(id);
-//                    if (!packagesVisited.contains(id)) {
-//                        packagesVisited.add(id);
-//                        toVisit.add(p);
-//                    }
-//                } catch (PackageException e) {
-//                    packagesVisited.add(id);
-//                    notResolved++;
-//                    LOGGER.error(e);
-//                }
-//            }
-//        }
-//        System.out.println("HELOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+        Queue<Tuple<Model, Integer>> toVisit = new ArrayDeque<>();
+        toVisit.add(new Tuple(m, 0));
+        Set<PackageId> packagesVisited = new HashSet<>();
+        int levels = 3;
+        int nullValue = 0;
+        int notResolved = 0;
+        getTransitiveDeps(mvn, toVisit, packagesVisited, nullValue, notResolved, levels);
+        System.out.println("HELOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
         result[0] = directDependencies;
-        result[1] = -1;
+        result[1] = packagesVisited.size();
         return result;
         //Set<Revision> directDeps = getDependencies(pomFile, true);
+    }
+
+    public void getTransitiveDeps(Maven mvn, Queue<Tuple<Model, Integer>> toVisit, Set<PackageId> packagesVisited, int nullValue, int notResolved, int maxDepth) {
+        if(toVisit.isEmpty()) {
+            return;
+        }
+        Tuple<Model, Integer> current = toVisit.poll();
+        if(current.depth == maxDepth) {
+            return;
+        }
+        Model currentModel = current.x;
+
+        for (Dependency d : currentModel.getDependencies()) {
+            if (d.getVersion() == null || d.getGroupId() == null || d.getArtifactId() == null) {
+                nullValue++;
+                continue;
+            }
+            PackageId id = new PackageId(d.getGroupId(), d.getArtifactId(), d.getVersion());
+            try {
+                Model p = mvn.getPom(id);
+                if (!packagesVisited.contains(id)) {
+                    packagesVisited.add(id);
+                    toVisit.add(new Tuple<>(p, current.depth + 1));
+                }
+            } catch (PackageException e) {
+                packagesVisited.add(id);
+                notResolved++;
+                LOGGER.error(e);
+            }
+        }
+    getTransitiveDeps(mvn, toVisit, packagesVisited, nullValue, notResolved, maxDepth);
+    }
+
+    class Tuple<Model, Integer> {
+        Model x;
+        int depth;
+        public Tuple(Model x, int y) {
+            this.x = x;
+            this.depth = y;
+        }
+
     }
 }
