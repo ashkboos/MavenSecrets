@@ -44,14 +44,24 @@ public class YamlConfig implements Config {
     }
 
     private final Collection<? extends Extractor> extractors;
+    private final int threads;
 
-    private YamlConfig(Collection<? extends Extractor> extractors) {
+    private YamlConfig(Collection<? extends Extractor> extractors, int threads) {
         this.extractors = Objects.requireNonNull(extractors);
+        this.threads = threads;
     }
 
     @Override
     public Collection<? extends Extractor> getExtractors() {
         return Collections.unmodifiableCollection(extractors);
+    }
+
+    /**
+     * @return 
+     */
+    @Override
+    public int getThreads() {
+        return threads;
     }
 
     public static Config fromFile(File file) throws IOException {
@@ -74,7 +84,16 @@ public class YamlConfig implements Config {
                 .map(Optional::get)
                 .toList();
 
-        return new YamlConfig(collection);
+        int threads = Optional.ofNullable(map)
+                .map(x -> x.get("threads"))
+                .map(x -> x instanceof Number ? (Number) x : null)
+                .map(Number::intValue)
+                .stream()
+                .filter(x -> x > 0)
+                .findFirst()
+                .orElse(8); // Default
+
+        return new YamlConfig(collection, threads);
     }
 
     private static Optional<Extractor> createExtractor(String name) {

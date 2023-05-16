@@ -12,6 +12,8 @@ import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An extractor fetching whether or not an artifact uses Java modules.
@@ -30,7 +32,7 @@ public class JavaModuleExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 

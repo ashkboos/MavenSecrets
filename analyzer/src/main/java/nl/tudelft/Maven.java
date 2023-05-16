@@ -3,12 +3,10 @@ package nl.tudelft;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.jar.JarFile;
-
+import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.ModelParseException;
 import org.eclipse.aether.artifact.Artifact;
-
-import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
@@ -19,16 +17,32 @@ public class Maven {
         this.resolver = Objects.requireNonNull(resolver);
     }
 
-    public Package getPackage(PackageId id) throws PackageException {
+    public Package getPackage(PackageId id, String pkgType) throws PackageException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         try {
-            JarFile artifactFile = new JarFile(resolver.getJar(artifact));
+            JarFile artifactFile = new JarFile(resolver.getJar(artifact, pkgType));
             Model pomFile = resolver.loadPom(artifact);
 
             return new Package(id, artifactFile, pomFile);
+        } catch (ArtifactResolutionException ex) {
+            throw new PackageException(id, "unable to resolve package", ex);
+        } catch (ModelParseException ex) {
+            throw new PackageException(id, "unable to parse POM", ex);
+        } catch (IOException ex) {
+            throw new PackageException(id, "unable to read artifact", ex);
+        }
+    }
+
+    public Model getPom(PackageId id) throws PackageException {
+        Objects.requireNonNull(id);
+        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
+
+        try {
+            Model pomFile = resolver.loadPom(artifact);
+            return pomFile;
         } catch (ArtifactResolutionException ex) {
             throw new PackageException(id, "unable to resolve package", ex);
         } catch (ModelParseException ex) {

@@ -1,31 +1,32 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import static org.mockito.Mockito.mock;
+
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-
+import nl.tudelft.Package;
+import nl.tudelft.*;
+import nl.tudelft.mavensecrets.JarUtil;
+import nl.tudelft.mavensecrets.NopResolver;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.mavensecrets.JarUtil;
-import nl.tudelft.mavensecrets.NopResolver;
-
 public class JavaVersionExtractorTest {
 
     private static Extractor extractor = null;
     private static Maven maven = null;
     private static File file = null;
+    private static String pkgName = "";
+    private static Database db = mock(Database.class);
 
     @TempDir
     private static File dir;
@@ -45,7 +46,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_no_jar() throws IOException {
+    public void test_no_jar() throws IOException, SQLException {
         try (Package pkg = createPackage(null)) {
             Object[] results = extractor.extract(maven, pkg);
             Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
@@ -53,17 +54,17 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_correct_number_of_fields() throws IOException {
+    public void test_correct_number_of_fields() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
     }
 
     @Test
-    public void test_manifest_created_by() throws IOException {
+    public void test_manifest_created_by() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
             mf.getMainAttributes().put(new Name("Created-By"), "1.7.0_06");
         }), JarUtil.DEFAULT_RESOURCES);
@@ -74,7 +75,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_manifest_build_jdk() throws IOException {
+    public void test_manifest_build_jdk() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
             mf.getMainAttributes().put(new Name("Build-Jdk"), "1.8.0_201");
         }), JarUtil.DEFAULT_RESOURCES);
@@ -85,7 +86,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_manifest_build_jdk_spec() throws IOException {
+    public void test_manifest_build_jdk_spec() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
             mf.getMainAttributes().put(new Name("Build-Jdk-Spec"), "1.8");
         }), JarUtil.DEFAULT_RESOURCES);
@@ -96,7 +97,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_malformed_length() throws IOException {
+    public void test_class_malformed_length() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
             jos.putNextEntry(new ZipEntry("my-class.class"));
             jos.write(new byte[1]);
@@ -109,7 +110,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_malformed_magic() throws IOException {
+    public void test_class_malformed_magic() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
             jos.putNextEntry(new ZipEntry("my-class.class"));
             jos.write(new byte[8]);
@@ -122,7 +123,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_malformed_and_valid() throws IOException {
+    public void test_class_malformed_and_valid() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
             jos.putNextEntry(new ZipEntry("my-class-0.class"));
             jos.write(new byte[1]);
@@ -139,7 +140,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_absent() throws IOException {
+    public void test_class_absent() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg);
@@ -148,7 +149,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_single() throws IOException {
+    public void test_class_single() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
             jos.putNextEntry(new ZipEntry("my-class.class"));
             jos.write(new byte[] {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE});
@@ -162,7 +163,7 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
-    public void test_class_multiple() throws IOException {
+    public void test_class_multiple() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
             jos.putNextEntry(new ZipEntry("my-class-0.class"));
             jos.write(new byte[] {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE});

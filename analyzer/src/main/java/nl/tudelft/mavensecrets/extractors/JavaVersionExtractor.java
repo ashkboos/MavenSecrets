@@ -2,11 +2,6 @@ package nl.tudelft.mavensecrets.extractors;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.jar.Attributes;
@@ -22,6 +17,8 @@ import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An extractor fetching Java versions from an artifact.
@@ -50,7 +47,7 @@ public class JavaVersionExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 

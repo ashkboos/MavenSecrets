@@ -14,6 +14,7 @@ import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import nl.tudelft.Package;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -62,7 +63,7 @@ public class CompilerConfigExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
 
