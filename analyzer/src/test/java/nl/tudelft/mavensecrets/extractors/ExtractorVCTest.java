@@ -1,5 +1,7 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets.extractors;
 
+import nl.tudelft.*;
+import nl.tudelft.Package;
 import nl.tudelft.mavensecrets.NopResolver;
 import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
