@@ -3,6 +3,7 @@ package nl.tudelft.mavensecrets.extractors;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,7 +15,6 @@ import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import nl.tudelft.Package;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -24,6 +24,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 
+import nl.tudelft.Database;
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
@@ -63,9 +64,11 @@ public class CompilerConfigExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException, SQLException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
+        Objects.requireNonNull(pkgType);
+        Objects.requireNonNull(db);
 
         Resolver resolver = mvn.getResolver();
 

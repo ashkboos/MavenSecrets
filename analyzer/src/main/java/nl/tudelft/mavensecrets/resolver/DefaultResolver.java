@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
-import nl.tudelft.PackageId;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
@@ -47,9 +47,9 @@ public class DefaultResolver implements Resolver {
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");
 
+    private final RepositorySystem repository;
     private final RepositorySystemSession session;
-    private final ModelReader modelReader =  = new DefaultModelReader();
-    private RepositorySystem repository = null;
+    private final ModelReader modelReader = new DefaultModelReader();
 
     public DefaultResolver() {
         this(new File(System.getProperty("user.home"),".m2/repository"));

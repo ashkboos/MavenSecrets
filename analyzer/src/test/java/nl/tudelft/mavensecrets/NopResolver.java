@@ -34,11 +34,6 @@ public class NopResolver implements Resolver {
     }
 
     @Override
-    public Model loadPom(Artifact artifact) throws ArtifactResolutionException, IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public File getJar(Artifact artifact, String pkgType) throws ArtifactResolutionException {
         throw new UnsupportedOperationException();
     }

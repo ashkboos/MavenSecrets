@@ -1,6 +1,7 @@
 package nl.tudelft.mavensecrets.extractors;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,7 +22,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import nl.tudelft.Database;
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
@@ -34,6 +37,8 @@ public class CompilerConfigExtractorTest {
 
     private static Extractor extractor = null;
     private static PackageId pid = null;
+    private static String pkgName = null;
+    private static Database db = null;
 
     @Test
     public void test_fields_valid() {
@@ -50,33 +55,33 @@ public class CompilerConfigExtractorTest {
     }
 
     @Test
-    public void test_correct_number_of_fields() throws IOException {
+    public void test_correct_number_of_fields() throws IOException, SQLException {
         Resolver resolver = createResolver(artifact -> {
             throw new ArtifactResolutionException(null);
         });
         Maven maven = new Maven(resolver);
 
         try (Package pkg = createPackage(new Model())) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
     }
 
     @Test
-    public void test_no_parent() throws IOException {
+    public void test_no_parent() throws IOException, SQLException {
         Resolver resolver = createResolver(artifact -> {
             throw new ArtifactResolutionException(null);
         });
         Maven maven = new Maven(resolver);
         try (Package pkg = createPackage(new Model())) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {false, null, null, null, null, null, null}, results);
         }
     }
 
     @Test
-    public void test_no_parent_with_plugin() throws IOException {
+    public void test_no_parent_with_plugin() throws IOException, SQLException {
         Resolver resolver = createResolver(artifact -> {
             throw new ArtifactResolutionException(null);
         });
@@ -86,13 +91,13 @@ public class CompilerConfigExtractorTest {
         model.setBuild(createBuild(createPlugin(true, createConfig(List.of("a", "b", "c"), "javac", "UTF-8", "1.8", "17")), null));
         
         try (Package pkg = createPackage(model)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true, "3.11.0", new byte[] {0, 1, 97, 0, 1, 98, 0, 1, 99}, "javac", "UTF-8", "1.8", "17"}, results);
         }
     }
 
     @Test
-    public void test_no_parent_with_plugin_no_group_id() throws IOException {
+    public void test_no_parent_with_plugin_no_group_id() throws IOException, SQLException {
         Resolver resolver = createResolver(artifact -> {
             throw new ArtifactResolutionException(null);
         });
@@ -102,13 +107,13 @@ public class CompilerConfigExtractorTest {
         model.setBuild(createBuild(createPlugin(false, null), null));
         
         try (Package pkg = createPackage(model)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, null}, results);
         }
     }
 
     @Test
-    public void test_parent_merge_1() throws IOException {
+    public void test_parent_merge_1() throws IOException, SQLException {
         Map<Artifact, Model> map = new HashMap<>();
         Resolver resolver = createResolver(artifact -> {
             Model model = map.get(artifact);
@@ -134,13 +139,13 @@ public class CompilerConfigExtractorTest {
         child.setParent(p);
 
         try (Package pkg = createPackage(child)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, null}, results);
         }
     }
 
     @Test
-    public void test_parent_merge_2() throws IOException {
+    public void test_parent_merge_2() throws IOException, SQLException {
         Map<Artifact, Model> map = new HashMap<>();
         Resolver resolver = createResolver(artifact -> {
             Model model = map.get(artifact);
@@ -173,13 +178,13 @@ public class CompilerConfigExtractorTest {
         child.setBuild(createBuild(p2, p3));
 
         try (Package pkg = createPackage(child)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true, "3.11.0", new byte[] {0, 1, 97, 0, 1, 98, 0, 1, 99}, "javac", "UTF-8", "1.8", "17"}, results);
         }
     }
 
     @Test
-    public void test_parent_merge_plugin_plugin() throws IOException {
+    public void test_parent_merge_plugin_plugin() throws IOException, SQLException {
         Map<Artifact, Model> map = new HashMap<>();
         Resolver resolver = createResolver(artifact -> {
             Model model = map.get(artifact);
@@ -209,13 +214,13 @@ public class CompilerConfigExtractorTest {
         child.setBuild(createBuild(p1, null));
 
         try (Package pkg = createPackage(child)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "2"}, results);
         }
     }
 
     @Test
-    public void test_parent_merge_plugin_pluginmanagement() throws IOException {
+    public void test_parent_merge_plugin_pluginmanagement() throws IOException, SQLException {
         Map<Artifact, Model> map = new HashMap<>();
         Resolver resolver = createResolver(artifact -> {
             Model model = map.get(artifact);
@@ -237,13 +242,13 @@ public class CompilerConfigExtractorTest {
         map.put(resolver.createArtifact(model.getGroupId(), model.getArtifactId(), model.getVersion()), model);
 
         try (Package pkg = createPackage(model)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "1"}, results);
         }
     }
 
     @Test
-    public void test_parent_merge_pluginmanagement_pluginmanagement() throws IOException {
+    public void test_parent_merge_pluginmanagement_pluginmanagement() throws IOException, SQLException {
         Map<Artifact, Model> map = new HashMap<>();
         Resolver resolver = createResolver(artifact -> {
             Model model = map.get(artifact);
@@ -273,13 +278,13 @@ public class CompilerConfigExtractorTest {
         child.setBuild(createBuild(null, p1));
 
         try (Package pkg = createPackage(child)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "2"}, results);
         }
     }
 
     @Test
-    public void test_parent_merge_pluginmanagement_property() throws IOException {
+    public void test_parent_merge_pluginmanagement_property() throws IOException, SQLException {
         Map<Artifact, Model> map = new HashMap<>();
         Resolver resolver = createResolver(artifact -> {
             Model model = map.get(artifact);
@@ -301,13 +306,13 @@ public class CompilerConfigExtractorTest {
         map.put(resolver.createArtifact(model.getGroupId(), model.getArtifactId(), model.getVersion()), model);
 
         try (Package pkg = createPackage(model)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "1"}, results);
         }
     }
 
     @Test
-    public void test_parent_merge_property_property() throws IOException {
+    public void test_parent_merge_property_property() throws IOException, SQLException {
         Map<Artifact, Model> map = new HashMap<>();
         Resolver resolver = createResolver(artifact -> {
             Model model = map.get(artifact);
@@ -334,7 +339,7 @@ public class CompilerConfigExtractorTest {
         child.getProperties().setProperty("maven.compiler.target", "2");
 
         try (Package pkg = createPackage(child)) {
-            Object[] results = extractor.extract(maven, pkg);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(new Object[] {false, null, null, null, null, null, "2"}, results);
         }
     }
@@ -343,12 +348,16 @@ public class CompilerConfigExtractorTest {
     public static void setup() {
         extractor = new CompilerConfigExtractor();
         pid = new PackageId("my-group", "my-artifact", "1.0");
+        pkgName = "";
+        db = Mockito.mock(Database.class);
     }
 
     @AfterAll
     public static void teardown() throws IOException {
         extractor = null;
         pid = null;
+        pkgName = null;
+        db = null;
     }
 
     private static Package createPackage(Model model) {
