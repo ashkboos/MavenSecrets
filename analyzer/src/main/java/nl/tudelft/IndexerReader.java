@@ -1,10 +1,15 @@
 package nl.tudelft;
-import org.apache.maven.index.reader.ChunkReader;
 
-import java.io.*;
-import java.sql.SQLException;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.Date;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import org.apache.maven.index.reader.ChunkReader;
 
 public class IndexerReader {
     private final Database db;

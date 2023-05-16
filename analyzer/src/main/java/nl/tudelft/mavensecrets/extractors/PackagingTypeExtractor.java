@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import nl.tudelft.*;
 import nl.tudelft.Package;
+import nl.tudelft.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
@@ -38,7 +38,7 @@ public class PackagingTypeExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, String pkgType) {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) {
         List<Object> extractedFields = new ArrayList<>();
         Model model = pkg.pom();
         JarFile file = pkg.jar();

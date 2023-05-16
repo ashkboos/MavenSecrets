@@ -1,13 +1,20 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import static org.mockito.Mockito.mock;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-import nl.tudelft.*;
+import nl.tudelft.Database;
+import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import nl.tudelft.PackageId;
 import nl.tudelft.mavensecrets.JarUtil;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 import org.apache.maven.model.Model;
@@ -29,7 +36,7 @@ public class PackagingTypeExtractorTest {
     private static String pkgName = "";
     private static Model model = null;
     private static PackageId packageId = null;
-
+    private static Database db = mock(Database.class);
 
     private static File dir;
 
@@ -57,7 +64,7 @@ public class PackagingTypeExtractorTest {
     public void testCorrectNumberOfFields() throws IOException {
         JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
@@ -67,7 +74,7 @@ public class PackagingTypeExtractorTest {
     public void testPackagingTypeFromPOM() throws IOException {
         JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("jar", results[0]);
         }
@@ -77,7 +84,7 @@ public class PackagingTypeExtractorTest {
     public void testPackagingTypeFromExecutable() throws IOException {
         JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("war", results[1]);
         }
@@ -87,7 +94,7 @@ public class PackagingTypeExtractorTest {
     public void testSourceQualifier() throws IOException {
         JarUtil.createJar(sourceFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("sources", results[2]);
         }
@@ -97,7 +104,7 @@ public class PackagingTypeExtractorTest {
     public void testJavadocQualifier() throws IOException {
         JarUtil.createJar(javadocFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(javadocFile), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals("javadoc", results[3]);
         }

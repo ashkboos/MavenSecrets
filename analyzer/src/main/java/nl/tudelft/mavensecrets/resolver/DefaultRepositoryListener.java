@@ -1,7 +1,6 @@
 package nl.tudelft.mavensecrets.resolver;
 
 import java.util.Objects;
-
 import org.apache.logging.log4j.Logger;
 import org.eclipse.aether.AbstractRepositoryListener;
 
