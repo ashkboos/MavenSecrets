@@ -4,7 +4,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
-import nl.tudelft.*;
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Field;
+import nl.tudelft.Maven;
 import nl.tudelft.Package;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
