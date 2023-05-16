@@ -1,7 +1,9 @@
 package nl.tudelft.mavensecrets;
 
 import java.io.File;
+import java.io.IOException;
 
+import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 
@@ -14,7 +16,7 @@ public class NopResolver implements Resolver {
 
     private static final Resolver INSTANCE = new NopResolver();
 
-    private NopResolver() {
+    protected NopResolver() {
         // Nothing
     }
 
@@ -35,6 +37,11 @@ public class NopResolver implements Resolver {
 
     @Override
     public File getJar(Artifact artifact) throws ArtifactResolutionException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Model loadPom(Artifact artifact) throws ArtifactResolutionException, IOException {
         throw new UnsupportedOperationException();
     }
 

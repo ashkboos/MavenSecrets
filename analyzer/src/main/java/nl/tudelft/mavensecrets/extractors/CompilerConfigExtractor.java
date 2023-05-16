@@ -32,7 +32,15 @@ import nl.tudelft.mavensecrets.resolver.Resolver;
 
 /**
  * An extractor fetching various elements of the Maven compiler plugin configuration if present.
- * Note that placeholders, configurations inherited from parents, user properties and executions are not checked.
+ * This extractor looks at <code>plugin</code>, <code>pluginManagement</code> and user properties for Maven compiler plugin configurations.
+ * It has some flaws:
+ * <ul>
+ * <li>compile:compile/compile:testCompile release parameter is not used (including its user property <code>maven.compiler.release</code>).
+ * <li>The legacy <code>java.version</code> property is not used.
+ * <li>No maven compiler plugin version is specified, in which cases Maven (depending on the Maven version) will resolve different plugin versions, which all have slight behavioural changes.
+ * <li>Executions are ignored.
+ * <li>No <code>source</code> or <code>target</code> is specified, in which case a default depending on the plugin version is used.
+ * </ul>
  */
 public class CompilerConfigExtractor implements Extractor {
 
@@ -61,11 +69,39 @@ public class CompilerConfigExtractor implements Extractor {
         Resolver resolver = mvn.getResolver();
 
         // Get POM hierarchy
-        PackageId id = pkg.id();
-        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
         List<ProjectMavenCompilerConfig> list = new ArrayList<>();
-        do {
-            Model model;
+        PackageId id = pkg.id();
+        Model model = pkg.pom();
+        list.add(fetchProjectConfig(model));
+        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
+        while (true) {
+            Parent parent = model.getParent();
+
+            // No parent
+            if (parent == null) {
+                break;
+            }
+
+            // Fetch parent artifact
+            String gid = parent.getGroupId();
+            String aid = parent.getArtifactId();
+            String v = parent.getVersion();
+            if (gid == null || aid == null || v == null) {
+                LOGGER.warn("Invalid parent of artifact {}: missing groupId/artifactId/version ({})", artifact, id);
+                break;
+            }
+
+            Artifact oldArtifact = artifact;
+            try {
+                artifact = resolver.createArtifact(gid, aid, v);
+            } catch (IllegalArgumentException exception) {
+                LOGGER.warn("Malformed parent artifact for {} ({})", artifact, id, exception);
+                break;
+            }
+
+            LOGGER.trace("Loading POM for parent artifact {} of artifact {} ({})", artifact, oldArtifact, id);
+
+            // Load parent model
             try {
                 model = resolver.loadPom(artifact);
             } catch (ArtifactResolutionException | IOException exception) {
@@ -74,41 +110,15 @@ public class CompilerConfigExtractor implements Extractor {
             }
 
             list.add(fetchProjectConfig(model));
-
-            Parent parent = model.getParent();
-            if (parent != null) {
-                String gid = parent.getGroupId();
-                String aid = parent.getArtifactId();
-                String v = parent.getVersion();
-
-                if (gid != null && aid != null && v != null) {
-                    try {
-                        Artifact oldArtifact = artifact;
-                        artifact = resolver.createArtifact(gid, aid, v);
-                        LOGGER.trace("Loading POM for parent artifact {} of artifact {} ({})", artifact, oldArtifact, id);
-                        continue;
-                    } catch (IllegalArgumentException exception) {
-                        LOGGER.warn("Malformed parent artifact for {} ({})", artifact, id, exception);
-                        break;
-                    }
-                }
-            }
-            break;
-        } while (true);
-
-        // This should not happen
-        if (list.isEmpty()) {
-            LOGGER.warn("No POMs found ({})", id);
-            return new Object[fields.length];
         }
 
         // Resolution order: plugin, parent plugin, ..., plugin management, parent plugin management, ..., property, parent property, ...
         ProjectMavenCompilerConfig pcfg = list.remove(0);
-        Iterator<ProjectMavenCompilerConfig> iterator = list.listIterator(1);
+        Iterator<ProjectMavenCompilerConfig> iterator = list.iterator();
         while (iterator.hasNext()) {
             pcfg = mergeConfig(iterator.next(), pcfg);
         }
-        MavenCompilerConfig config = mergeConfig(pcfg.plugin(), pcfg.pluginManagement());
+        MavenCompilerConfig config = mergeConfig(pcfg.pluginManagement(), pcfg.plugin());
         config = new MavenCompilerConfig(config.present(), config.version(), config.args(), config.id(), config.encoding(), config.source() == null ? pcfg.mavenCompilerSourceProperty() : config.source(), config.target() == null ? pcfg.mavenCompilerTargetProperty() : config.target());
 
         LOGGER.trace("Found compiler configuration {} ({})", config, id);
@@ -148,13 +158,13 @@ public class CompilerConfigExtractor implements Extractor {
                 .map(Build::getPlugins)
                 .flatMap(this::findMavenCompilerPlugin)
                 .map(this::fetchPluginConfig)
-                .orElse(null);
+                .orElseGet(MavenCompilerConfig::new);
         MavenCompilerConfig pluginManagement = optional
                 .map(Build::getPluginManagement)
                 .map(PluginManagement::getPlugins)
                 .flatMap(this::findMavenCompilerPlugin)
                 .map(this::fetchPluginConfig)
-                .orElse(null);
+                .orElseGet(MavenCompilerConfig::new);
         String source = model.getProperties().getProperty("maven.compiler.source");
         String target = model.getProperties().getProperty("maven.compiler.target");
 
@@ -191,6 +201,11 @@ public class CompilerConfigExtractor implements Extractor {
                                 });
         
                         cargs = baos.toByteArray();
+
+                        // Nothing was written
+                        if (cargs.length == 0) {
+                            cargs = null;
+                        }
                     } catch (IOException exception) {
                         throw new AssertionError(exception);
                     }
@@ -296,7 +311,7 @@ public class CompilerConfigExtractor implements Extractor {
 
         @Override
         public byte[] args() {
-            return args.clone();
+            return args == null ? null : args.clone();
         }
 
         /**
