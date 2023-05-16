@@ -6,13 +6,16 @@ import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
+import java.sql.SQLException;
+
+import static org.mockito.Mockito.mock;
 
 class ExtractorVCTest {
     private static Extractor extractor;
     private static Maven maven;
     private static File file;
     private static String pkgName = "";
+    private static Database db = mock(Database.class);
 
     @BeforeAll
     static void setUp() {
@@ -25,9 +28,9 @@ class ExtractorVCTest {
     }
 
     @Test
-    public void testNumFields () throws IOException {
+    public void testNumFields () throws IOException, SQLException {
         try (Package pkg = createPackage(new Model())) {
-            Object[] results = extractor.extract(maven, pkg, pkgName);
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
             Assertions.assertEquals(extractor.fields().length, results.length);
         }
