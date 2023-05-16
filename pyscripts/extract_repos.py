@@ -15,6 +15,8 @@ import re
 class Extractor:
 
     def __init__(self, db) -> None:
+        self.SRC_TABLE = 'packages_big'
+        self.DEST_TABLE = 'hosts'
         self.conn: connection = db.connect()
 
     def extract(self):
@@ -28,10 +30,11 @@ class Extractor:
         # process_url('homepage_url', cur)
         self.conn.commit()
 
+        # REDO THESE TO CHOOSE DISTINCT VERSIONS
         print('*' * 50)
-        cur.execute('SELECT COUNT(*) FROM packages WHERE scm_url IS NULL')
+        cur.execute(f'SELECT COUNT(*) FROM {self.SRC_TABLE} WHERE scm_url IS NULL')
         print('scm_url is NULL =', cur.fetchall()[0][0])
-        cur.execute('SELECT COUNT(*) FROM packages WHERE homepage_url IS NULL')
+        cur.execute(f'SELECT COUNT(*) FROM {self.SRC_TABLE} WHERE homepage_url IS NULL')
         print('homepage_url is NULL =', cur.fetchall()[0][0])
 
         # cleanup
@@ -41,8 +44,20 @@ class Extractor:
     # every 100 records, insert the hostnames into new database
 
     def process_url(self, field: str, cur: DictCursor):
+        # cur.execute(
+        #     'SELECT id, {0} FROM packages_old WHERE {0} IS NOT NULL ORDER BY {0}'.format(field))
+
         cur.execute(
-            'SELECT id, {0} FROM packages_old WHERE {0} IS NOT NULL ORDER BY {0}'.format(field))
+            f'''
+            SELECT DISTINCT ON (split_part(id, ':', 1), split_part(id, ':', 2))
+                split_part(id, ':', 1) AS groupid,
+                split_part(id, ':', 2) AS artifactid,
+                split_part(id, ':', 3) AS version,
+                scm_url
+            FROM {self.SRC_TABLE}
+            WHERE scm_url IS NOT NULL AND scm_url != '';
+            '''
+        )
 
         urls = []
         hosts = []
@@ -50,6 +65,7 @@ class Extractor:
 
         # if not enough memory, look into server-side cursors
         for record in cur.fetchall():
+
             url = record[field]
 
             if field == 'scm_url':
@@ -95,13 +111,13 @@ class Extractor:
         return parsed_url.hostname
 
     def insert_hosts(self, urls: list, hostnames: list, cur: DictCursor):
-        query = "INSERT INTO hosts (url, hostname) VALUES (%s, %s)"
+        query = f"INSERT INTO {self.DEST_TABLE} (url, hostname) VALUES (%s, %s)"
         data = list(zip(urls, hostnames))
         execute_batch(cur, query, data)
 
     def create_table(self, cur: DictCursor):
-        query = '''
-        CREATE TABLE IF NOT EXISTS hosts(
+        query = f'''
+        CREATE TABLE IF NOT EXISTS {self.DEST_TABLE}(
             url VARCHAR,
             hostname VARCHAR
         )
