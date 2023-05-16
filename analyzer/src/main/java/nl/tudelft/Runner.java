@@ -135,7 +135,7 @@ public class Runner implements Closeable {
             }
 
             try {
-                db.update(id, fields, values.toArray(), true);
+                db.update(id, fields, values.toArray());
             } catch (SQLException e) {
                 LOGGER.error(e);
                 cancelled.set(true);

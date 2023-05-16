@@ -72,26 +72,23 @@ public class SizeExtractor implements Extractor {
         for(Map.Entry<String, ExtensionInfo> t : extensionInfo.entrySet()) {
             String extension = t.getKey();
             ExtensionInfo info = t.getValue();
-            extensionFields.add(new Field(extension, "INTEGER"));
-            extensionFields.add(new Field(extension + "size", "BIGINT"));
-            extensionFields.add(new Field(extension + "min", "BIGINT"));
-            extensionFields.add(new Field(extension + "max", "BIGINT"));
-            extensionFields.add(new Field(extension + "median", "BIGINT"));
-            result.add(info.count);
-            result.add(info.total);
-            result.add(info.min);
-            result.add(info.max);
-            result.add(info.median);
+            extensionDatabase(db, checked, extension, info.count, info.total, info.min, info.max, info.median, pkg.id());
         }
-        extensionDatabase(db, checked, extensionFields.toArray(new Field[0]), result.toArray(), pkg.id());
+//        extensionDatabase(db, checked, extensionFields.toArray(new Field[0]), result.toArray(), pkg.id());
         checked = true;
         return sizeAndNumber;
     }
 
-    public void extensionDatabase(Database db, boolean checked, Field[] fields, Object[] values, PackageId id) throws SQLException {
-        db.createExtensionTable(checked);
-        db.updateExtensionSchema(fields);
-        db.update(id, fields, values, false);
+    public void extensionDatabase(Database db, boolean checked, String extension, long count, long total, long min, long max, long median, PackageId id) throws SQLException {
+        if(!checked) db.createExtensionsTable();
+        db.updateExtensionTable(id.toString(),
+                extension,
+                count,
+                total,
+                min,
+                max,
+                median
+        );
     }
 
     private Map<String, ExtensionInfo> computeExtensionInfo (List<ExtensionTuple> extensionTuples) {

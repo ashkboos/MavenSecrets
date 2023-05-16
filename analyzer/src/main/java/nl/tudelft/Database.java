@@ -64,9 +64,9 @@ public class Database implements Closeable {
         }
     }
 
-    public void createExtensionTable(boolean checked) throws SQLException {
-        if(!checked && !tableExists(EXTENSION_TABLE)) {
-            createTable(EXTENSION_TABLE);
+    public void createExtensionsTable() throws SQLException {
+        if(!tableExists(EXTENSION_TABLE)) {
+            createExtensionTable();
         }
     }
 
@@ -84,14 +84,6 @@ public class Database implements Closeable {
         for (var field : fields)
             if (!cols.contains(field.name()))
                 createColumn(field, PACKAGES_TABLE);
-    }
-
-    public void updateExtensionSchema(Field[] fields) throws SQLException{
-        Set<String> cols = listColumns(EXTENSION_TABLE);
-        for (var field : fields)
-            if (!cols.contains(field.name())) {
-                createColumn(field, EXTENSION_TABLE);
-            }
     }
 
     private boolean tableExists(String name) throws SQLException {
@@ -120,6 +112,18 @@ public class Database implements Closeable {
                 "primary key (groupid, artifactid, version))").execute();
     }
 
+    private void createExtensionTable() throws SQLException {
+        conn.prepareStatement("CREATE TABLE " + EXTENSION_TABLE + "(id varchar(128)," +
+                "extension varchar(128)," +
+                "count BIGINT," +
+                "size BIGINT," +
+                "min BIGINT," +
+                "max BIGINT," +
+                "median BIGINT," +
+                "constraint extension_table_name_pk " +
+                "primary key (id, extension))").execute();
+    }
+
     private Set<String> listColumns(String tableName) throws SQLException {
         try (var results = query("SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "'")) {
             var columns = new HashSet<String>();
@@ -135,7 +139,7 @@ public class Database implements Closeable {
     }
 
     // Don't call it without being sure of schema
-    public void update(PackageId id, Field[] fields, Object[] values, boolean updatePackageTable) throws SQLException {
+    public void update(PackageId id, Field[] fields, Object[] values) throws SQLException {
         if (fields.length != values.length)
             throw new IllegalArgumentException("number of fields and values is different");
 
@@ -155,9 +159,7 @@ public class Database implements Closeable {
         arguments[0] = id.toString();
         for (var i = 0; i < fields.length; i++)
             arguments[i + fields.length + 1] = arguments[i + 1] = values[i];
-        if(updatePackageTable) {
-            execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
-        } else execute("INSERT INTO " + EXTENSION_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
+        execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
@@ -178,6 +180,19 @@ public class Database implements Closeable {
         query.setString(2, error);
         query.execute();
 
+    }
+
+    public void updateExtensionTable(String id, String extension, long count, long size, long min, long max, long median) throws SQLException {
+        PreparedStatement query = conn.prepareStatement("INSERT INTO " + EXTENSION_TABLE +
+                "(id, extension, count, size, min, max, median) VALUES(?,?,?,?,?,?,?) ON CONFLICT DO NOTHING");
+        query.setString(1, id);
+        query.setString(2, extension);
+        query.setLong(3, count);
+        query.setLong(4, size);
+        query.setLong(5, min);
+        query.setLong(6, max);
+        query.setLong(7, median);
+        query.execute();
     }
 
     /**

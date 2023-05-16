@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class SizeExtractorTest {
+    private static String pkgType = "jar";
 
     @Test
     public void test() throws Exception {
@@ -48,12 +49,16 @@ public class SizeExtractorTest {
         Mockito.doNothing().when(sizeExtractor).extensionDatabase(
                 Mockito.any(Database.class),
                 Mockito.anyBoolean(),
-                Mockito.any(Field[].class),
-                Mockito.any(Object[].class),
+                Mockito.anyString(),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
                 Mockito.any(PackageId.class));
-        when(sizeExtractor.extract(mvn, pkg, db)).thenCallRealMethod();
+        when(sizeExtractor.extract(mvn, pkg, pkgType, db)).thenCallRealMethod();
         //verify(sizeExtractor).extensionDatabase(Mockito.any(Database.class), Mockito.anyBoolean(), fields.capture(), values.capture(), Mockito.any(PackageId.class));
-        Object[] obj = sizeExtractor.extract(mvn, pkg, db);
+        Object[] obj = sizeExtractor.extract(mvn, pkg, pkgType, db);
         //Field[] o = fields.getValue();
         assertEquals(files.size(), obj[1]);
 
@@ -80,11 +85,15 @@ public class SizeExtractorTest {
         checked.setAccessible(true);
         Mockito.doNothing().when(sizeExtractor).extensionDatabase(Mockito.any(Database.class),
                 Mockito.anyBoolean(),
-                Mockito.any(Field[].class),
-                Mockito.any(Object[].class),
+                Mockito.anyString(),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
+                Mockito.anyLong(),
                 Mockito.any(PackageId.class));
-        when(sizeExtractor.extract(mvn, pkg, db)).thenCallRealMethod();
-        Object[] obj = sizeExtractor.extract(mvn, pkg, db);
+        when(sizeExtractor.extract(mvn, pkg, pkgType, db)).thenCallRealMethod();
+        Object[] obj = sizeExtractor.extract(mvn, pkg, pkgType, db);
         assertEquals(jarFile.size() - countDirectories(jarFile), obj[1]);
         assertEquals((long) 881724, obj[0]);
     }

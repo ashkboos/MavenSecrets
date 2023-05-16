@@ -97,6 +97,12 @@
 			<version>5.2.0</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.jboss.shrinkwrap.resolver</groupId>
+			<artifactId>shrinkwrap-resolver-depchain</artifactId>
+			<version>3.1.4</version>
+			<type>pom</type>
+		</dependency>
 
 		<!-- Other -->
 		<dependency>
@@ -151,6 +157,12 @@
 										<exclude>META-INF/**</exclude>
 										<exclude>META-INF.versions.9.module-info</exclude>
                                         <exclude>**/module-info.class</exclude>
+									</excludes>
+								</filter>
+								<filter>
+									<artifact>maven-resolver-provider</artifact>
+									<excludes>
+										<exclude>nl.tudelft.mavensecrets.extractors.DependencyExtractorTest</exclude>
 									</excludes>
 								</filter>
 								<filter>
