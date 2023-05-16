@@ -1,29 +1,26 @@
 package nl.tudelft;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import io.github.cdimascio.dotenv.Dotenv;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Objects;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import io.github.cdimascio.dotenv.Dotenv;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import nl.tudelft.mavensecrets.Config;
 import nl.tudelft.mavensecrets.YamlConfig;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
 
-    public static void main(String[] args) throws IOException, SQLException, PackageException {
+    public static void main(String[] args) throws IOException, SQLException {
         // Config
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
@@ -36,6 +33,10 @@ public class App {
         var packages = db.getPackageIds();
         var packagingTypes = db.getPackagingType();
 
+        Map<PackageId, String> pkgTypeMap = IntStream.range(0, packages.size())
+                .boxed()
+                .collect(Collectors.toMap(packages::get, packagingTypes::get));
+
         if (packages.isEmpty()) {
             LOGGER.info("no packages, nothing to do");
             return;
@@ -47,8 +48,9 @@ public class App {
         var maven = new Maven(resolver);
 
         try (var runner = builder.build(db)) {
-            runner.run(maven, packages, packagingTypes);
+            runner.run(maven, packages, pkgTypeMap, config);
         }
+
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;
 

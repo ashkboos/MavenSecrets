@@ -1,8 +1,9 @@
 package nl.tudelft;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 public interface Extractor {
     Field[] fields();
-    Object[] extract(Maven mvn, Package pkg, String pkgType) throws IOException;
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException, SQLException;
 }
