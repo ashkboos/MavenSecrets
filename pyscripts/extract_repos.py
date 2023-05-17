@@ -59,6 +59,10 @@ class Extractor:
             '''
         )
 
+        #TODO make this into an class
+        groupids = []
+        artifactids = []
+        versions = []
         urls = []
         hosts = []
         unparseable = []
@@ -66,6 +70,9 @@ class Extractor:
         # if not enough memory, look into server-side cursors
         for record in cur.fetchall():
 
+            groupid = record['groupid']
+            artifactid = record['artifactid']
+            version = record['version']
             url = record[field]
 
             if field == 'scm_url':
@@ -76,11 +83,17 @@ class Extractor:
             if host:
                 urls.append(url)
                 hosts.append(host)
+                groupids.append(groupid)
+                artifactids.append(artifactid)
+                versions.append(version)
             else:
                 unparseable.append(host)
 
             if (len(hosts) == 100):
-                self.insert_hosts(urls, hosts, cur)
+                self.insert_hosts(groupids, artifactids, versions, urls, hosts, cur)
+                groupids.clear()
+                artifactids.clear()
+                versions.clear()
                 urls.clear()
                 hosts.clear()
 
@@ -110,14 +123,17 @@ class Extractor:
             print(url)
         return parsed_url.hostname
 
-    def insert_hosts(self, urls: list, hostnames: list, cur: DictCursor):
-        query = f"INSERT INTO {self.DEST_TABLE} (url, hostname) VALUES (%s, %s)"
-        data = list(zip(urls, hostnames))
+    def insert_hosts(self, groupids: list, artifactids: list, versions: list, urls: list, hostnames: list, cur: DictCursor):
+        query = f"INSERT INTO {self.DEST_TABLE} (groupid,artifactid,version,url,hostname) VALUES (%s,%s,%s,%s,%s)"
+        data = list(zip(groupids, artifactids, versions, urls, hostnames))
         execute_batch(cur, query, data)
 
     def create_table(self, cur: DictCursor):
         query = f'''
         CREATE TABLE IF NOT EXISTS {self.DEST_TABLE}(
+            groupid VARCHAR,
+            artifactid VARCHAR,
+            version VARCHAR,
             url VARCHAR,
             hostname VARCHAR
         )
