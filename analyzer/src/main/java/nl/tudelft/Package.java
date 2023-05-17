@@ -9,6 +9,8 @@ public record Package(PackageId id, JarFile jar, Model pom) implements Closeable
 
     @Override
     public void close() throws IOException {
-        jar.close();
+        if (jar != null) {
+            jar.close();
+        }
     }
 }

@@ -52,3 +52,4 @@ buildNumber.properties
 .settings/
 
 __pycache__/
+/config.yml
