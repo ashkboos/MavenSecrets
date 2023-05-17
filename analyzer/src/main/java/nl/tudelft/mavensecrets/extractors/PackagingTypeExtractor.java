@@ -1,18 +1,29 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import nl.tudelft.Package;
-import nl.tudelft.*;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
+
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Field;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
+import nl.tudelft.PackageException;
 
 public class PackagingTypeExtractor implements Extractor {
     private static final Logger LOGGER = LogManager.getLogger(PackagingTypeExtractor.class);

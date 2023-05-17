@@ -1,13 +1,19 @@
 package nl.tudelft.mavensecrets.extractors;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Objects;
-import nl.tudelft.Package;
-import nl.tudelft.*;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
+
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Field;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
 
 /**
  * An extractor fetching parent information if available.
@@ -17,9 +23,9 @@ public class ParentExtractor implements Extractor {
     private static final Logger LOGGER = LogManager.getLogger(ParentExtractor.class);
 
     private final Field[] fields = {
-            new Field("parent_group_id", "VARCHAR(128)"),
-            new Field("parent_artifact_id", "VARCHAR(128)"),
-            new Field("parent_version", "VARCHAR(128)")
+            new Field("parent_group_id", "VARCHAR"),
+            new Field("parent_artifact_id", "VARCHAR"),
+            new Field("parent_version", "VARCHAR")
     };
 
     @Override
@@ -28,9 +34,11 @@ public class ParentExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException, SQLException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
+        Objects.requireNonNull(pkgType);
+        Objects.requireNonNull(db);
 
         Object[] results = new Object[fields.length];
 
