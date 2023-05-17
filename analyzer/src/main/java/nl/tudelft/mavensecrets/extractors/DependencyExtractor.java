@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
 //import org.jboss.shrinkwrap.resolver.api.maven;
 
 public class DependencyExtractor implements Extractor {
@@ -37,9 +38,23 @@ public class DependencyExtractor implements Extractor {
         List<Dependency> dependencies = m.getDependencies();
         int directDependencies = dependencies.size();
         String id = pkg.id().group() + ":" + pkg.id().artifact() + ":" + pkg.id().version();
-        File[] files = org.jboss.shrinkwrap.resolver.api.maven.Maven.resolver().resolve(id).withTransitivity().asFile();
+        List<MavenCoordinate> files = resolve(id);
         result[0] = directDependencies;
-        result[1] = files.length;
+        result[1] = files.size();
+        return result;
+    }
+
+    private static List<org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate> resolve(
+            final String row) {
+        List<MavenCoordinate> result =
+                new ArrayList<>();
+        try {
+            result = org.jboss.shrinkwrap.resolver.api.maven.Maven.resolver().resolve(row).withTransitivity()
+                    .asList(org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate.class);
+        } catch (Exception e) {
+            System.out.println("Exception occurred while resolving " + row + ", " + e);
+            System.out.println(e);
+        }
         return result;
     }
 }
