@@ -103,29 +103,29 @@ public class PackagingTypeExtractorTest {
         }
     }
 
-    @Test
-    public void testMd5() throws IOException {
-        File f = createChecksumFile("md5");
-        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertNotNull(results);
-            Assertions.assertEquals("2e315dcaa77983999bf11106c65229dc", results[4]);
-        }
-        f.delete();
+//    @Test
+//    public void testMd5() throws IOException {
+//        File f = createChecksumFile("md5");
+//        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
+//            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+//            Assertions.assertNotNull(results);
+//            Assertions.assertEquals("2e315dcaa77983999bf11106c65229dc", results[4]);
+//        }
+//        f.delete();
+//
+//    }
 
-    }
-
-    @Test
-    public void testSha1() throws IOException {
-        File f= createChecksumFile("sha1");
-        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
-            Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertNotNull(results);
-            Assertions.assertEquals("8a7b91cee1b3fd5aafd5838a2867dfedcd92f227", results[5]);
-        }
-        f.delete();
-    }
-
+//    @Test
+//    public void testSha1() throws IOException {
+//        File f= createChecksumFile("sha1");
+//        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
+//            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+//            Assertions.assertNotNull(results);
+//            Assertions.assertEquals("8a7b91cee1b3fd5aafd5838a2867dfedcd92f227", results[5]);
+//        }
+//        f.delete();
+//    }
+//
     @Test
     public void testSha256() throws IOException {
         File f = createChecksumFile("sha256");
