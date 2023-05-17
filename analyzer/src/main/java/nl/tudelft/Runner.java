@@ -4,6 +4,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,7 +29,7 @@ public class Runner implements Closeable {
         return this;
     }
 
-    void run(Maven mvn, Collection<ArtifactId> packages) throws SQLException {
+    void run(Maven mvn, Collection<ArtifactId> packages, int threads) throws SQLException, InterruptedException {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
@@ -34,8 +38,14 @@ public class Runner implements Closeable {
             return;
 
         db.createUnresolvedTable(false);
-        packages.parallelStream()
-                .forEach(id -> execute(mvn, fields, id));
+        var pool = new ForkJoinPool(threads);
+        try {
+            pool.submit(() -> packages.parallelStream().forEach(id -> execute(mvn, fields, id))).get();
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } finally {
+            pool.shutdown();
+        }
     }
 
     private void execute(Maven mvn, Field[] fields, ArtifactId id) {

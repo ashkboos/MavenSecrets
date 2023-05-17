@@ -22,6 +22,7 @@ import nl.tudelft.mavensecrets.YamlConfig;
 
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
+    private static final int PAGE_SIZE = 512;
 
     public static void main(String[] args) throws IOException, SQLException {
         // Config
@@ -37,12 +38,17 @@ public class App {
         var builder = extractors(config, new RunnerBuilder());
         var maven = new Maven(resolver);
 
-        var i = 0;
-        Collection<ArtifactId> artifacts;
-        while ((artifacts = db.getArtifactIds(i++, 512)).size() > 0) {
-            try (var runner = builder.build(db)) {
-                runner.run(maven, artifacts);
+        try (var runner = builder.build(db)) {
+            var i = 0;
+            Collection<ArtifactId> artifacts;
+            while ((artifacts = db.getArtifactIds(i++, PAGE_SIZE)).size() > 0) {
+                runner.run(maven, artifacts, config.getThreads());
+
+                if (artifacts.size() < PAGE_SIZE)
+                    break;
             }
+        } catch (InterruptedException ex) {
+            LOGGER.warn("run interrupted");
         }
 
         long endTime = System.currentTimeMillis();
