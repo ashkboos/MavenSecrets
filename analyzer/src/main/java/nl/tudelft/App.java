@@ -20,13 +20,13 @@ import org.apache.logging.log4j.Logger;
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
 
-    public static void main(String[] args) throws IOException, SQLException {
+    public static void main(String[] args) throws IOException, SQLException, PackageException {
         // Config
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
         LOGGER.info("Extractors: " + config.getExtractors());
 
-        
+
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
         runIndexerReader(args, db);
@@ -49,6 +49,7 @@ public class App {
 
         try (var runner = builder.build(db)) {
             runner.run(maven, packages, pkgTypeMap, config);
+            db.addTimestamp();
         }
 
         long endTime = System.currentTimeMillis();

@@ -3,24 +3,29 @@ package nl.tudelft.mavensecrets.extractors;
 import static org.mockito.Mockito.mock;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+
+import org.apache.maven.model.Model;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 import nl.tudelft.Database;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
 import nl.tudelft.PackageId;
 import nl.tudelft.mavensecrets.JarUtil;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import org.apache.maven.model.Model;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 public class PackagingTypeExtractorTest {
 
@@ -29,36 +34,36 @@ public class PackagingTypeExtractorTest {
     private static File fileExecutable = null;
     private static File sourceFile = null;
     private static File javadocFile = null;
-    private static File md5File = null;
-    private static File sha1File = null;
     private static String pkgName = "";
     private static Model model = null;
     private static PackageId packageId = null;
     private static Database db = mock(Database.class);
 
+    @TempDir
     private static File dir;
 
     @BeforeAll
-    public static void setup() {
+    public static void setup() throws IOException {
+        File f = new File(dir, ".m2/test/mybat/yourbat/4.5");
+        f.mkdirs();
         extractor = new PackagingTypeExtractor();
-        maven = new Maven(new DefaultResolver(".m2/test"));
-        String child = ".m2/test/mybat/yourbat/4.5";
-        dir = new File(System.getProperty("user.home"), child);
-        fileExecutable = new File(dir, "yourbat-4.5.war");
-        sourceFile = new File(dir, "yourbat-4.5-sources.jar");
-        javadocFile = new File(dir, "yourbat-4.5-javadoc.jar");
-        md5File = new File(dir, "yourbat-4.5.war.md5");
-        sha1File = new File(dir, "yourbat-4.5.war.sha1");
+        maven = new Maven(new DefaultResolver(new File(dir, ".m2/test")));
+        fileExecutable = new File(f, "yourbat-4.5.war");
+        sourceFile = new File(f, "yourbat-4.5-sources.jar");
+        javadocFile = new File(f, "yourbat-4.5-javadoc.jar");
         model = new Model();
         model.setPackaging("jar");
         packageId = new PackageId("mybat", "yourbat", "4.5");
         pkgName = "war";
+
+        JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
+        JarUtil.createJar(sourceFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
+        JarUtil.createJar(javadocFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
     }
 
 
     @Test
     public void testCorrectNumberOfFields() throws IOException {
-        JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
@@ -68,7 +73,6 @@ public class PackagingTypeExtractorTest {
 
     @Test
     public void testPackagingTypeFromPOM() throws IOException {
-        JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
@@ -78,7 +82,6 @@ public class PackagingTypeExtractorTest {
 
     @Test
     public void testPackagingTypeFromExecutable() throws IOException {
-        JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(fileExecutable), model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
@@ -88,7 +91,6 @@ public class PackagingTypeExtractorTest {
 
     @Test
     public void testSourceQualifier() throws IOException {
-        JarUtil.createJar(sourceFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
@@ -98,7 +100,6 @@ public class PackagingTypeExtractorTest {
 
     @Test
     public void testJavadocQualifier() throws IOException {
-        JarUtil.createJar(javadocFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(packageId, new JarFile(javadocFile), model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
@@ -108,31 +109,79 @@ public class PackagingTypeExtractorTest {
 
     @Test
     public void testMd5() throws IOException {
-        JarUtil.createJar(md5File, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
-        try (Package pkg = createPackage(packageId, new JarFile(md5File), model)) {
+        File f = createChecksumFile("md5");
+        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
-            Assertions.assertEquals(".MD5", results[4]);
+            Assertions.assertEquals("2e315dcaa77983999bf11106c65229dc", results[4]);
         }
+        f.delete();
+
     }
 
     @Test
     public void testSha1() throws IOException {
-        JarUtil.createJar(sha1File, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
-        try (Package pkg = createPackage(packageId, new JarFile(sha1File), model)) {
+        File f= createChecksumFile("sha1");
+        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
-            Assertions.assertEquals(".SHA1", results[5]);
+            Assertions.assertEquals("8a7b91cee1b3fd5aafd5838a2867dfedcd92f227", results[5]);
         }
+        f.delete();
     }
 
     @Test
     public void testSha256() throws IOException {
-        try (Package pkg = createPackage(packageId, new JarFile(sha1File), model)) {
+        File f = createChecksumFile("sha256");
+        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertNotNull(results);
-            Assertions.assertEquals("null", results[6]);
+            Assertions.assertEquals("408f31d86c6bf4a8aff4ea682ad002278f8cb39dc5f37b53d343e63a61f3cc4f", results[6]);
         }
+        f.delete();
+    }
+
+    @Test
+    public void testSha512() throws IOException {
+        File f = createChecksumFile("sha512");
+        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals("322c832910d962188db403fd8e0c5b026aba8e2daec603d191b00ef907896bf990bc605f7caa84d164450bf8f9797b5f32d38e5af96f7e0e577b89c15a9da689", results[7]);
+        }
+        f.delete();
+    }
+
+    @Test
+    void testNoHash() throws IOException {
+        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertNull(results[4]);
+            Assertions.assertNull(results[5]);
+            Assertions.assertNull(results[6]);
+            Assertions.assertNull(results[7]);
+        }
+    }
+
+    @Test
+    void testAllHashes() throws IOException {
+        File f1 = createChecksumFile("md5");
+        File f2 = createChecksumFile("sha1");
+        File f3 = createChecksumFile("sha256");
+        File f4 = createChecksumFile("sha512");
+        try (Package pkg = createPackage(packageId, new JarFile(sourceFile), model)) {
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals("2e315dcaa77983999bf11106c65229dc", results[4]);
+            Assertions.assertEquals("8a7b91cee1b3fd5aafd5838a2867dfedcd92f227", results[5]);
+            Assertions.assertEquals("408f31d86c6bf4a8aff4ea682ad002278f8cb39dc5f37b53d343e63a61f3cc4f", results[6]);
+            Assertions.assertEquals("322c832910d962188db403fd8e0c5b026aba8e2daec603d191b00ef907896bf990bc605f7caa84d164450bf8f9797b5f32d38e5af96f7e0e577b89c15a9da689", results[7]);
+        }
+        f1.delete();
+        f2.delete();
+        f3.delete();
+        f4.delete();
+
     }
 
     @Test
@@ -162,8 +211,6 @@ public class PackagingTypeExtractorTest {
         fileExecutable = null;
         sourceFile = null;
         javadocFile = null;
-        sha1File = null;
-        md5File = null;
         packageId = null;
     }
 
@@ -171,6 +218,28 @@ public class PackagingTypeExtractorTest {
         Objects.requireNonNull(jar);
 
         return new Package(id, jar, pom);
+    }
+
+    private static File createChecksumFile(String checksumType) {
+        File path = new File(dir, "/.m2/test/mybat/yourbat/4.5/yourbat-4.5.war." + checksumType);
+        Map<String, String> hash = Map.of(
+                "md5",
+                "2e315dcaa77983999bf11106c65229dc",
+                "sha1",
+                "8a7b91cee1b3fd5aafd5838a2867dfedcd92f227",
+                "sha256",
+                "408f31d86c6bf4a8aff4ea682ad002278f8cb39dc5f37b53d343e63a61f3cc4f",
+                "sha512",
+                "322c832910d962188db403fd8e0c5b026aba8e2daec603d191b00ef907896bf990bc605f7caa84d164450bf8f9797b5f32d38e5af96f7e0e577b89c15a9da689"
+        );
+
+        try (FileWriter fileWriter = new FileWriter(path)) {
+            fileWriter.write(hash.get(checksumType));
+            System.out.println("Text file created successfully.");
+        } catch (IOException e) {
+            System.out.println("An error occurred while creating the text file: " + e.getMessage());
+        }
+        return path;
     }
 
 }
