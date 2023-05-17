@@ -1,12 +1,13 @@
 package nl.tudelft;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.sql.Date;
-import java.sql.*;
-import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.sql.*;
+import java.sql.Date;
+import java.util.*;
 
 // PackageId PKEY, Field 1, Value 1, Field 2, Value 2, etc
 public class Database implements Closeable {
@@ -56,6 +57,13 @@ public class Database implements Closeable {
 
             sleep *= BACKOFF_BASE;
         }
+    }
+
+    void addTimestamp() throws SQLException {
+        updateSchema(new Field[] {new Field("lastmodified", "DATE")});
+        execute("UPDATE packages p SET lastmodified = pl.lastmodified " +
+                        "FROM package_list pl " +
+                        "WHERE CONCAT(pl.groupid, ':', pl.artifactid, ':', pl.version) = p.id ");
     }
 
     void createIndexesTable(boolean checked) throws SQLException {

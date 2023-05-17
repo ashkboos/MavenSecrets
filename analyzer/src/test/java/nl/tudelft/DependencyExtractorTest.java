@@ -2,20 +2,19 @@ package nl.tudelft;
 
 import java.io.File;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
-import java.util.jar.JarFile;
-import nl.tudelft.mavensecrets.extractors.DependencyExtractor;
-import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import nl.tudelft.mavensecrets.extractors.DependencyExtractor;
+
 public class DependencyExtractorTest {
     private static Extractor extractor = null;
-    private static Maven maven = null;
-    private static File file = null;
+    //private static Maven maven = null;
+    //private static File file = null;
 
     @TempDir
     private static File dir;
@@ -37,13 +36,13 @@ public class DependencyExtractorTest {
     @BeforeAll
     public static void setup() {
         extractor = new DependencyExtractor();
-        maven = new Maven(new DefaultResolver());
-        file = new File(dir, "my-jar.jar");
+        //maven = new Maven(new DefaultResolver());
+        //file = new File(dir, "my-jar.jar");
     }
 
-    private static Package createPackage(JarFile jar) {
-        Objects.requireNonNull(jar);
+    //private static Package createPackage(JarFile jar) {
+    //    Objects.requireNonNull(jar);
 
-        return new Package(null, jar, null);
-    }
+    //    return new Package(null, jar, null);
+    //}
 }

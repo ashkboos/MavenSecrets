@@ -14,7 +14,7 @@ public class NopResolver implements Resolver {
 
     private static final Resolver INSTANCE = new NopResolver();
 
-    private NopResolver() {
+    protected NopResolver() {
         // Nothing
     }
 
@@ -34,16 +34,14 @@ public class NopResolver implements Resolver {
     }
 
     @Override
-    public Model loadPom(Artifact artifact) throws ArtifactResolutionException, IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public File getJar(Artifact artifact, String pkgType) throws ArtifactResolutionException {
         throw new UnsupportedOperationException();
     }
 
-
+    @Override
+    public Model loadPom(Artifact artifact) throws ArtifactResolutionException, IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Get the resolver instance.
