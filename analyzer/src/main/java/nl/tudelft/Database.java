@@ -103,21 +103,21 @@ public class Database implements Closeable {
     }
 
     private void createUnresolvedTable() throws SQLException {
-        execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(id VARCHAR(128) PRIMARY KEY, error VARCHAR(512))");
+        execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(groupid VARCHAR(128), artifactid VARCHAR(128), version VARCHAR(128), error TEXT, PRIMARY KEY (groupid, artifactid, version))");
     }
 
     private void createTable(String tableName) throws SQLException {
-        execute("CREATE TABLE " + tableName + "(id VARCHAR(128) PRIMARY KEY)");
+        execute("CREATE TABLE " + tableName + "(groupid VARCHAR(128), artifactid VARCHAR(128), version VARCHAR(128), PRIMARY KEY (groupid, artifactid, version))");
     }
 
     private void createIndexTable() throws SQLException {
-        conn.prepareStatement("CREATE TABLE " + PACKAGE_INDEX_TABLE + "(groupid varchar(128)," +
+        execute("CREATE TABLE " + PACKAGE_INDEX_TABLE + "(groupid varchar(128)," +
                 "artifactid varchar(128)," +
                 "version    varchar(128)," +
                 "lastmodified date," +
                 "packagingtype varchar(128)," +
                 "constraint table_name_pk " +
-                "primary key (groupid, artifactid, version))").execute();
+                "primary key (groupid, artifactid, version))");
     }
 
     private Set<String> listColumns(String tableName) throws SQLException {
@@ -139,8 +139,8 @@ public class Database implements Closeable {
         if (fields.length != values.length)
             throw new IllegalArgumentException("number of fields and values is different");
 
-        StringBuilder names = new StringBuilder("id");
-        StringBuilder qe = new StringBuilder("?");
+        StringBuilder names = new StringBuilder("groupid,artifactid,version");
+        StringBuilder qe = new StringBuilder("?,?,?");
         StringBuilder upd = new StringBuilder();
         for (var field : fields) {
             names.append(",").append(field.name());
@@ -151,67 +151,44 @@ public class Database implements Closeable {
             upd.append(field.name()).append("=?");
         }
 
-        Object[] arguments = new Object[fields.length * 2 + 1];
-        arguments[0] = id.toString();
+        Object[] arguments = new Object[fields.length * 2 + 3];
+        arguments[0] = id.group();
+        arguments[1] = id.artifact();
+        arguments[2] = id.version();
         for (var i = 0; i < fields.length; i++)
-            arguments[i + fields.length + 1] = arguments[i + 1] = values[i];
-        if(updatePackageTable) {
-            execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
-        } else execute("INSERT INTO " + EXTENSION_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
+            arguments[i + fields.length + 3] = arguments[i + 3] = values[i];
+
+        var table = updatePackageTable ? PACKAGES_TABLE : EXTENSION_TABLE;
+        execute("INSERT INTO " + table + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(groupid,artifactid,version) DO UPDATE SET " + upd, arguments);
     }
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
-        PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
-                "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
-        query.setString(1, groupId);
-        query.setString(2, artifactId);
-        query.setString(3, version);
-        query.setDate(4, lastModified);
-        query.setString(5, packagingType);
-        query.execute();
+        execute("INSERT INTO " + PACKAGE_INDEX_TABLE + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING", new Object[] {groupId,artifactId,version,lastModified,packagingType});
     }
 
-    void updateUnresolvedTable(String id, String error) throws SQLException {
-        PreparedStatement query = conn.prepareStatement("INSERT INTO " + UNRESOLVED_PACKAGES +
-                "(id, error) VALUES(?,?) ON CONFLICT DO NOTHING");
-        query.setString(1, id);
-        query.setString(2, error);
-        query.execute();
-
+    void updateUnresolvedTable(ArtifactId id, String error) throws SQLException {
+        execute("INSERT INTO " + UNRESOLVED_PACKAGES + "(groupid,artifactid,version, error) VALUES(?,?,?,?) ON CONFLICT DO NOTHING",
+                new Object[] { id.group(), id.artifact(), id.version(), error });
     }
 
     /**
      * @return list of package ids of packages to be fed to the runner
      */
-    public List<PackageId> getPackageIds() throws SQLException {
-        List<PackageId> packageIds = new LinkedList<>();
+    public List<ArtifactId> getArtifactIds(int page, int pageSize) throws SQLException {
+        List<ArtifactId> artifacts = new LinkedList<>();
         if (!tableExists(PACKAGE_INDEX_TABLE))
-            return packageIds;
+            return artifacts;
 
-        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+        try (var results = query("SELECT groupid, artifactid, version, packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY groupid, artifactid, version LIMIT " + pageSize + " OFFSET " + pageSize * page)) {
             while (results.next()) {
-                packageIds.add(new PackageId(results.getString("groupid"),
+                artifacts.add(new ArtifactId(results.getString("groupid"),
                         results.getString("artifactid"),
-                        results.getString("version")));
+                        results.getString("version"),
+                        results.getString("packagingtype")));
             }
         }
 
-        return packageIds;
-    }
-
-    public List<String> getPackagingType() throws SQLException {
-        List<String> packagingTypes = new ArrayList<>();
-        if (!tableExists(PACKAGE_INDEX_TABLE))
-            return packagingTypes;
-
-        try (var results = query("SELECT packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
-            while (results.next()) {
-                packagingTypes.add(results.getString("packagingtype"));
-            }
-        }
-
-        return packagingTypes;
-
+        return artifacts;
     }
 
     @Override

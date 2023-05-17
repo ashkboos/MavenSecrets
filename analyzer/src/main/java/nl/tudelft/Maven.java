@@ -17,13 +17,13 @@ public class Maven {
         this.resolver = Objects.requireNonNull(resolver);
     }
 
-    public Package getPackage(PackageId id, String pkgType) throws PackageException {
+    public Package getPackage(ArtifactId id) throws PackageException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         try {
-            JarFile artifactFile = new JarFile(resolver.getJar(artifact, pkgType));
+            JarFile artifactFile = new JarFile(resolver.getJar(artifact, id.extension()));
             Model pomFile = resolver.loadPom(artifact);
 
             return new Package(id, artifactFile, pomFile);
@@ -50,15 +50,6 @@ public class Maven {
         } catch (IOException ex) {
             throw new PackageException(id, "unable to read artifact", ex);
         }
-    }
-
-    public Artifact getArtifact(PackageId id, String executableType) throws ArtifactResolutionException {
-        Objects.requireNonNull(id);
-
-        Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
-        Artifact sub = new SubArtifact(artifact, "", executableType);
-
-        return resolver.resolve(sub);
     }
 
     public Artifact getArtifactChecksum(PackageId id, String checksumType) throws PackageException, ArtifactResolutionException {

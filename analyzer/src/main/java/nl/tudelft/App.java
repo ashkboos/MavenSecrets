@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -31,25 +32,17 @@ public class App {
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
         runIndexerReader(args, db);
-        var packages = db.getPackageIds();
-        var packagingTypes = db.getPackagingType();
-
-        Map<PackageId, String> pkgTypeMap = IntStream.range(0, packages.size())
-                .boxed()
-                .collect(Collectors.toMap(packages::get, packagingTypes::get));
-
-        if (packages.isEmpty()) {
-            LOGGER.info("no packages, nothing to do");
-            return;
-        } else
-            LOGGER.info("found " + packages.size() + " packages");
 
         var resolver = new DefaultResolver();
         var builder = extractors(config, new RunnerBuilder());
         var maven = new Maven(resolver);
 
-        try (var runner = builder.build(db)) {
-            runner.run(maven, packages, pkgTypeMap, config);
+        var i = 0;
+        Collection<ArtifactId> artifacts;
+        while ((artifacts = db.getArtifactIds(i++, 512)).size() > 0) {
+            try (var runner = builder.build(db)) {
+                runner.run(maven, artifacts);
+            }
         }
 
         long endTime = System.currentTimeMillis();
