@@ -5,24 +5,30 @@ import static org.mockito.Mockito.mock;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+
+import org.apache.maven.model.Model;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 import nl.tudelft.Database;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
 import nl.tudelft.PackageId;
 import nl.tudelft.mavensecrets.JarUtil;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import org.apache.maven.model.Model;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 public class PackagingTypeExtractorTest {
 
-    private static String homePath = System.getProperty("user.home");
     private static PackagingTypeExtractor extractor = null;
     private static Maven maven = null;
     private static File fileExecutable = null;
@@ -33,19 +39,18 @@ public class PackagingTypeExtractorTest {
     private static PackageId packageId = null;
     private static Database db = mock(Database.class);
 
+    @TempDir
     private static File dir;
 
     @BeforeAll
     public static void setup() {
-        File f = new File(homePath + "/.m2/test/mybat/yourbat/4.5");
+        File f = new File(dir, ".m2/test/mybat/yourbat/4.5");
         f.mkdirs();
         extractor = new PackagingTypeExtractor();
-        maven = new Maven(new DefaultResolver(".m2/test"));
-        String child = ".m2/test/mybat/yourbat/4.5";
-        dir = new File(homePath, child);
-        fileExecutable = new File(dir, "yourbat-4.5.war");
-        sourceFile = new File(dir, "yourbat-4.5-sources.jar");
-        javadocFile = new File(dir, "yourbat-4.5-javadoc.jar");
+        maven = new Maven(new DefaultResolver(new File(dir, ".m2/test")));
+        fileExecutable = new File(f, "yourbat-4.5.war");
+        sourceFile = new File(f, "yourbat-4.5-sources.jar");
+        javadocFile = new File(f, "yourbat-4.5-javadoc.jar");
         model = new Model();
         model.setPackaging("jar");
         packageId = new PackageId("mybat", "yourbat", "4.5");
@@ -217,7 +222,7 @@ public class PackagingTypeExtractorTest {
     }
 
     private static File createChecksumFile(String checksumType) {
-        String path = homePath + "/.m2/test/mybat/yourbat/4.5/yourbat-4.5.war." + checksumType;
+        File path = new File(dir, "/.m2/test/mybat/yourbat/4.5/yourbat-4.5.war." + checksumType);
         Map<String, String> hash = Map.of(
                 "md5",
                 "2e315dcaa77983999bf11106c65229dc",
@@ -228,7 +233,6 @@ public class PackagingTypeExtractorTest {
                 "sha512",
                 "322c832910d962188db403fd8e0c5b026aba8e2daec603d191b00ef907896bf990bc605f7caa84d164450bf8f9797b5f32d38e5af96f7e0e577b89c15a9da689"
         );
-        File f = new File(path);
 
         try (FileWriter fileWriter = new FileWriter(path)) {
             fileWriter.write(hash.get(checksumType));
@@ -236,7 +240,7 @@ public class PackagingTypeExtractorTest {
         } catch (IOException e) {
             System.out.println("An error occurred while creating the text file: " + e.getMessage());
         }
-        return f;
+        return path;
     }
 
 }
