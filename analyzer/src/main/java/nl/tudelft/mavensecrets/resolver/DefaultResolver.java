@@ -11,7 +11,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
 import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
 import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
@@ -146,7 +145,6 @@ public class DefaultResolver implements Resolver {
         request.setProcessPlugins(true);
 
         return new StringVisitorModelInterpolator()
-                .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
                 .setUrlNormalizer(new DefaultUrlNormalizer())
                 .interpolateModel(pomFile, null, request, new LoggedModelProblemCollector(LOGGER));
     }

@@ -5,6 +5,7 @@ import nl.tudelft.Package;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -14,10 +15,7 @@ import org.mockito.ArgumentMatcher;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -62,37 +60,24 @@ public class DependencyExtractorTest {
         }
 
     @Test
-    public void test_transitive_dependencies() throws IOException, SQLException, PackageException {
-//        Model m = new Model();
-//        Model m2 = new Model();
-//        Model m3 = new Model();
-//        Model m4 = new Model();
-//        PackageId id = new PackageId("a", "b", "1.0");
-//        PackageId id2 = new PackageId("c", "d", "1.0");
-//        PackageId id3 = new PackageId("e", "f", "1.0");
-//        PackageId id4 = new PackageId("g", "h", "1.0");
-//        PackageId id5 = new PackageId("g", "h", "1.1");
-//        Dependency dependency = createDependency(id);
-//        Dependency dependency2 = createDependency(id2);
-//        Dependency dependency3 = createDependency(id3);
-//        Dependency dependency4 = createDependency(id4);
-//        Dependency dependency5 = createDependency(id5);
-//        m.addDependency(dependency);
-//        m.addDependency(dependency4);
-//        m2.addDependency(dependency2);
-//        m3.addDependency(dependency3);
-//        m3.addDependency(dependency5);
-
-//        org.jboss.shrinkwrap.resolver.api.maven.Maven mvn = mock(org.jboss.shrinkwrap.resolver.api.maven.Maven.class);
-//        //when(org.jboss.shrinkwrap.resolver.api.maven.Maven.resolver()).thenReturn();
-//        try (Package pkg = createPackage(m)) {
-//            Object[] results = extractor.extract(maven, pkg, pkgType, db);
-//            Assertions.assertArrayEquals(new Object[] {2, 5, 0, 0}, results);
-//        }
-
+    public void test_transitive_dependencies() {
         String id = "top.infra:spring-boot-starter-redisson:1.0.0";
-        File[] files = org.jboss.shrinkwrap.resolver.api.maven.Maven.resolver().resolve(id).withTransitivity().asFile();
-        System.out.println(files.length);
+        List<MavenCoordinate> files = resolve(id);
+        System.out.println(files.size());
+    }
+
+    private static List<org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate> resolve(
+            final String row) {
+        List<MavenCoordinate> result =
+                new ArrayList<>();
+        try {
+            result = org.jboss.shrinkwrap.resolver.api.maven.Maven.resolver().resolve(row).withTransitivity()
+                    .asList(org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate.class);
+        } catch (Exception e) {
+            System.out.println("Exception occurred while resolving " + row + ", " + e);
+            System.out.println(e);
+        }
+        return result;
     }
 
     @Test

@@ -36,7 +36,8 @@ public class DependencyExtractor implements Extractor {
         Model m = pkg.pom();
         List<Dependency> dependencies = m.getDependencies();
         int directDependencies = dependencies.size();
-        File[] files = org.jboss.shrinkwrap.resolver.api.maven.Maven.resolver().resolve(pkg.toString()).withTransitivity().asFile();
+        String id = pkg.id().group() + ":" + pkg.id().artifact() + ":" + pkg.id().version();
+        File[] files = org.jboss.shrinkwrap.resolver.api.maven.Maven.resolver().resolve(id).withTransitivity().asFile();
         result[0] = directDependencies;
         result[1] = files.length;
         return result;
