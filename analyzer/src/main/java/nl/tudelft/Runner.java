@@ -60,7 +60,7 @@ public class Runner implements Closeable {
     }
 
     private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes, Config config) {
-        LOGGER.debug(config.getThreads());
+        LOGGER.debug("running on " + config.getThreads() + " threads");
         ExecutorService executor = Executors.newFixedThreadPool(config.getThreads());
 
         // We manually create then manage the future inside the task
@@ -149,6 +149,7 @@ public class Runner implements Closeable {
                 return null;
             }
 
+            var dbStart = Instant.now();
             try {
                 db.update(id, fields, values.toArray(), true);
             } catch (SQLException e) {
@@ -158,9 +159,12 @@ public class Runner implements Closeable {
                 return null;
             }
 
-            var time = Duration.between(start, Instant.now());
+            var end = Instant.now();
+            var time = Duration.between(start, end);
             var fetchTime = Duration.between(start, fetchEnd);
-            LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
+            var extractTime = Duration.between(fetchEnd, dbStart);
+            var dbTime = Duration.between(dbStart, end);
+            LOGGER.info("processed " + id + " in " + time.toMillis() + " ms (fetch: " + fetchTime.toMillis() + " ms, extract: " + extractTime.toMillis() + " ms, db: " + dbTime.toMillis() + " ms)");
 
             future.complete(null);
             return null;
