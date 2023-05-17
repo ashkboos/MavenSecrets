@@ -1,7 +1,8 @@
 package nl.tudelft;
 
-import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
+
+import java.util.Optional;
 
 public record PackageId(String group, String artifact, String version) {
     @Override

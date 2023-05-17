@@ -1,18 +1,17 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
-
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
-
 import nl.tudelft.Database;
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Objects;
 
 public class DependencyExtractor implements Extractor {
 

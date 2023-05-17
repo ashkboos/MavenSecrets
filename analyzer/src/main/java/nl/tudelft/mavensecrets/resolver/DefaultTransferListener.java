@@ -1,10 +1,11 @@
 package nl.tudelft.mavensecrets.resolver;
 
-import java.util.Objects;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transfer.TransferCancelledException;
 import org.eclipse.aether.transfer.TransferEvent;
+
+import java.util.Objects;
 
 public class DefaultTransferListener extends AbstractTransferListener {
     private final Logger log;

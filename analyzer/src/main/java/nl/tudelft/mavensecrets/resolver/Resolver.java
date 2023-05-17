@@ -1,11 +1,11 @@
 package nl.tudelft.mavensecrets.resolver;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * An artifact resolver.

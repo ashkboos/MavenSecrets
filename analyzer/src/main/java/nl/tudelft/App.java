@@ -1,7 +1,17 @@
 package nl.tudelft;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import java.io.*;
+import nl.tudelft.mavensecrets.Config;
+import nl.tudelft.mavensecrets.YamlConfig;
+import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,11 +21,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import nl.tudelft.mavensecrets.Config;
-import nl.tudelft.mavensecrets.YamlConfig;
-import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);

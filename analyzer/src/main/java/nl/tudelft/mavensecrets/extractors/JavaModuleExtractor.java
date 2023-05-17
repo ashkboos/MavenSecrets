@@ -1,19 +1,18 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.Objects;
-import java.util.jar.JarFile;
-import java.util.zip.ZipEntry;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import nl.tudelft.Database;
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Objects;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 /**
  * An extractor fetching whether or not an artifact uses Java modules.

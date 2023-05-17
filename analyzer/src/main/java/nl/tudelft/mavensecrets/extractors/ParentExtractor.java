@@ -1,19 +1,18 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.Objects;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Parent;
-
 import nl.tudelft.Database;
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Objects;
 
 /**
  * An extractor fetching parent information if available.

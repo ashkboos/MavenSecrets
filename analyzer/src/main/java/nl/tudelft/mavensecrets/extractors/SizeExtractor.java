@@ -1,12 +1,23 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Field;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
+import nl.tudelft.PackageId;
+
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import nl.tudelft.Package;
-import nl.tudelft.*;
 
 /**
  * An extractor fetching Jar Size and number of files

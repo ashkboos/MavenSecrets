@@ -1,14 +1,13 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Field;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
+import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.NopResolver;
+import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -24,14 +23,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.PackageId;
-import nl.tudelft.mavensecrets.NopResolver;
-import nl.tudelft.mavensecrets.resolver.Resolver;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class CompilerConfigExtractorTest {
 

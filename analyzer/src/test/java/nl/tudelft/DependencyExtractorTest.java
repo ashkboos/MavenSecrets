@@ -1,15 +1,14 @@
 package nl.tudelft;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
-
+import nl.tudelft.mavensecrets.extractors.DependencyExtractor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import nl.tudelft.mavensecrets.extractors.DependencyExtractor;
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DependencyExtractorTest {
     private static Extractor extractor = null;

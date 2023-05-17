@@ -9,7 +9,6 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.Scm;
 import org.junit.jupiter.api.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -19,7 +18,6 @@ class ExtractorVCTest {
     private static Extractor extractor;
     private static Maven maven;
     private static Model testModel;
-    private static File file;
     private static String pkgName = "";
     private static Database db = mock(Database.class);
 

@@ -1,14 +1,15 @@
 package nl.tudelft;
 
-import java.io.IOException;
-import java.util.Objects;
-import java.util.jar.JarFile;
 import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.ModelParseException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.util.artifact.SubArtifact;
+
+import java.io.IOException;
+import java.util.Objects;
+import java.util.jar.JarFile;
 
 public class Maven {
     private final Resolver resolver;

@@ -1,5 +1,23 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Field;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
+import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.resolver.Resolver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.maven.model.Build;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginManagement;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -12,25 +30,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.maven.model.Build;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Parent;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginManagement;
-import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.PackageId;
-import nl.tudelft.mavensecrets.resolver.Resolver;
 
 /**
  * An extractor fetching various elements of the Maven compiler plugin configuration if present.

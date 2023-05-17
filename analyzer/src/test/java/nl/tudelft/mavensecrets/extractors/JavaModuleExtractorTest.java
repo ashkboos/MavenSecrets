@@ -1,20 +1,5 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.jar.JarFile;
-import java.util.zip.ZipEntry;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mockito;
-
 import nl.tudelft.Database;
 import nl.tudelft.Extractor;
 import nl.tudelft.Field;
@@ -22,6 +7,20 @@ import nl.tudelft.Maven;
 import nl.tudelft.Package;
 import nl.tudelft.mavensecrets.JarUtil;
 import nl.tudelft.mavensecrets.NopResolver;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 public class JavaModuleExtractorTest {
 
