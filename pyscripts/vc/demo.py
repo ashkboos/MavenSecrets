@@ -23,7 +23,7 @@ def main():
     print("Connected")
     # cur = conn.cursor()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute('SELECT * FROM packages')
+    cur.execute('SELECT * FROM packages_big')
 
     results = cur.fetchall()
 
