@@ -15,6 +15,7 @@ class Database:
         self.PKG_TABLE = "packages_big"
         self.HOST_TABLE = 'hosts'
     
+
     def get_distinct_urls(self, fieldname):
         self.cur.execute(
             f'''
@@ -29,13 +30,18 @@ class Database:
         )
         return self.cur.fetchall()
 
+    
+    def get_all(self):
+        self.cur.execute(f'SELECT * FROM {self.HOST_TABLE}')
+        return self.cur.fetchall()
+
 
     def insert_hosts(self, groupids: list, artifactids: list, versions: list, urls: list, hostnames: list):
-        print(urls)
         query = f"INSERT INTO {self.HOST_TABLE} (groupid,artifactid,version,url,hostname) VALUES (%s,%s,%s,%s,%s)"
         data = list(zip(groupids, artifactids, versions, urls, hostnames))
         execute_batch(self.cur, query, data)
         self.conn.commit()
+
 
     def create_table(self):
         query = f'''
@@ -44,12 +50,14 @@ class Database:
             artifactid VARCHAR,
             version VARCHAR,
             url VARCHAR,
-            hostname VARCHAR
+            hostname VARCHAR,
+            PRIMARY KEY(groupid,artifactid,version)
         )
         '''
         self.cur.execute(query)
         self.conn.commit()
     
+
     def close(self):
         self.cur.close()
         self.conn.close()
