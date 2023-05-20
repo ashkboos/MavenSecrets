@@ -1,7 +1,5 @@
 from urllib.parse import urlparse
 
-from psycopg2.extensions import connection
-from psycopg2.extras import DictCursor, execute_batch
 from database import *
 import re
 
@@ -9,7 +7,9 @@ import re
 # 1. ONLY scm_url
 # 2. ONLY homepage_url
 # 3. scm_url & homepage_url are the same
+# 3. scm_url & homepage_url are different
 # 4. BOTH null
+
 
 
 class Extractor:

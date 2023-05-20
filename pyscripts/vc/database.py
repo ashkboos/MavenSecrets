@@ -32,7 +32,7 @@ class Database:
 
     
     def get_all(self):
-        self.cur.execute(f'SELECT * FROM {self.HOST_TABLE}')
+        self.cur.execute(f'SELECT * FROM {self.HOST_TABLE} ORDER BY url DESC')
         return self.cur.fetchall()
 
 

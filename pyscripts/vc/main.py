@@ -3,7 +3,6 @@ from extract_repos import Extractor
 from verify_hosts import VerifyHost
 
 
-
 def main():
     db = Database('localhost', '5432', 'postgres', 'SuperSekretPassword')
     extractor = Extractor(db)

@@ -1,7 +1,7 @@
 import subprocess
-import re
 
 from database import *
+from utils import *
 
 class VerifyHost:
 
@@ -9,7 +9,7 @@ class VerifyHost:
         self.db = db
         self.TABLE = 'hosts'
         self.timeout = 30
-        self.funcs = [lambda x : x, self.git_to_https, self.http_to_https]
+        self.funcs = [lambda x : x, scm_to_url, git_to_https, http_to_https]
 
     # TODO add to errortable
     # TODO mark them as processed
@@ -32,7 +32,6 @@ class VerifyHost:
             if success:
                 valid += 1
 
-        
         print(f'There were {valid} repos out of {len(records)}')
 
 
@@ -61,21 +60,6 @@ class VerifyHost:
             return False
         
 
-    # https://maven.apache.org/scm/scm-url-format.html
-    # https://maven.apache.org/scm/git.html
-    # TODO convert scm urls
-    def git_to_https(self, url: str) -> str:
-        n_url = re.sub(r"git://", "https://", url)
-        n_url = re.sub(r"git@", "https://", n_url)
-        return n_url
-
-
-    def http_to_https(self, url: str) -> str:
-        https_url = re.sub(r'^http://', 'https://', url)
-        return https_url
-
-
-
 
 # Exceptions:
 
@@ -103,6 +87,9 @@ class VerifyHost:
 # remote: Please upgrade your git client.
 # remote: GitHub.com no longer supports git over dumb-http: https://github.com/blog/809-git-dumb-http-transport-to-be-turned-off-in-90-days
 # fatal: unable to access 'https://github.com/cerner/ccl-testing/tree/master/ftp-util/': The requested URL returned error: 403
+
+# Ideas:
+# - Try scm_url, homepage_url, etc (all regex'd) until something hits
 
 
 
