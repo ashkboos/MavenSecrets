@@ -36,8 +36,10 @@ public class IndexerReader {
                 String epochDate = chunk.get("m");
                 newList[3] = epochDate;
                 newList[4] = arti[arti.length - 1];
-                indexInfo.add(newList);
-                i++;
+                if(!newList[4].contains(".")) {
+                    indexInfo.add(newList);
+                    i++;
+                }
                 if(i == 2048) {
                     putInDatabase(indexInfo, checked);
                     checked = true;
