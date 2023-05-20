@@ -27,6 +27,12 @@ def main():
         count = row[1]
         packaging_type_counts[packaging_type] = count
 
+    s = 0
+    for r in packaging_type_counts:
+        s = s + packaging_type_counts[r]
+        print(f'Actual Packaging type (from POM) : {r}, Count: {packaging_type_counts[r]}')
+
+    print('Total:', {s})
     # Create a bar chart
     plt.bar(packaging_type_counts.keys(), packaging_type_counts.values())
 
