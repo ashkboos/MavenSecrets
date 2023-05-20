@@ -9,23 +9,25 @@ class VerifyHost:
         self.db = db
         self.TABLE = 'hosts'
         self.timeout = 30
-        self.funcs = [lambda x : x, lambda x: self.git_to_https(x), lambda x: self.http_to_https(x)]
+        self.funcs = [lambda x : x, self.git_to_https, self.http_to_https]
 
     # TODO add to errortable
     # TODO mark them as processed
+    # TODO write tests to try different formats
     def verify_hosts(self):
         records = self.db.get_all()
         valid = 0
 
-        for record in records:
+        for i, record in enumerate(records):
+            print(f'{i}/{len(records)}')
             success = False
             print('-'*50)
             url = record['url']
-            print(url)
 
             for func in self.funcs:
-                if self.tryWith(url, func):
+                if self.try_with(url, func):
                     success = True
+                    break
             
             if success:
                 valid += 1
@@ -39,12 +41,14 @@ class VerifyHost:
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=self.timeout)
     
 
-    def tryWith(self, url: str, convert):
+    def try_with(self, url: str, convert) -> bool:
         try:
            url = convert(url)
+           print(f"Trying with {url}")
            process = self.run_cmd(url)
         except subprocess.TimeoutExpired:
             print(f'TIMED OUT after {self.timeout}s!')
+            return False
 
         output = process.stdout.decode()
         err = process.stderr.decode()
@@ -55,8 +59,11 @@ class VerifyHost:
         else:
             print(err)
             return False
+        
 
-
+    # https://maven.apache.org/scm/scm-url-format.html
+    # https://maven.apache.org/scm/git.html
+    # TODO convert scm urls
     def git_to_https(self, url: str) -> str:
         n_url = re.sub(r"git://", "https://", url)
         n_url = re.sub(r"git@", "https://", n_url)
@@ -64,7 +71,8 @@ class VerifyHost:
 
 
     def http_to_https(self, url: str) -> str:
-        pass
+        https_url = re.sub(r'^http://', 'https://', url)
+        return https_url
 
 
 
@@ -88,6 +96,14 @@ class VerifyHost:
 # git://github.com/instaclustr/instaclustr-icarus.git TIMES OUT
 # BUT
 # https://github.com/instaclustr/instaclustr-icarus.git WORKS
+
+
+# Trying with https://github.com/cerner/ccl-testing/tree/master/ftp-util
+# Exit code: 128
+# remote: Please upgrade your git client.
+# remote: GitHub.com no longer supports git over dumb-http: https://github.com/blog/809-git-dumb-http-transport-to-be-turned-off-in-90-days
+# fatal: unable to access 'https://github.com/cerner/ccl-testing/tree/master/ftp-util/': The requested URL returned error: 403
+
 
 
 
