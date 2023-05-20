@@ -18,38 +18,37 @@ public class IndexerReader {
         this.db = db;
     }
 
-    public List<String[]> indexerReader(String indexFile) throws IOException, SQLException {
+    public void indexerReader(String indexFile) throws IOException, SQLException {
         boolean checked = false;
         File file = new File(indexFile);
-        FileInputStream fileInputStream = new FileInputStream(file);
-        ChunkReader reader = new ChunkReader("index", fileInputStream);
-        Iterator<Map<String, String>> itr = reader.iterator();
         List<String[]> indexInfo = new ArrayList<>();
-        int i = 0;
-        while (itr.hasNext() && i < 2048) {
-            Map<String, String> chunk = itr.next();
-            if(chunk.get("u") != null) {
-                String[] tokens = (chunk.get("u").split("\\|"));
-                String[] arti = (chunk.get("i").split("\\|"));
-                String [] newList = new String[5];
-                System.arraycopy(tokens, 0, newList, 0, 3);
-                String epochDate = chunk.get("m");
-                newList[3] = epochDate;
-                newList[4] = arti[arti.length - 1];
-                if(!newList[4].contains(".")) {
-                    indexInfo.add(newList);
-                    i++;
-                }
-                if(i == 2048) {
-                    putInDatabase(indexInfo, checked);
-                    checked = true;
-                    i = 0;
-                    indexInfo = new ArrayList<>();
+        try (FileInputStream fileInputStream = new FileInputStream(file);
+             ChunkReader reader = new ChunkReader("index", fileInputStream)) {
+            Iterator<Map<String, String>> itr = reader.iterator();
+            int i = 0;
+            while (itr.hasNext() && i < 2048) {
+                Map<String, String> chunk = itr.next();
+                if (chunk.get("u") != null) {
+                    String[] tokens = (chunk.get("u").split("\\|"));
+                    String[] arti = (chunk.get("i").split("\\|"));
+                    String[] newList = new String[5];
+                    System.arraycopy(tokens, 0, newList, 0, 3);
+                    String epochDate = chunk.get("m");
+                    newList[3] = epochDate;
+                    newList[4] = arti[arti.length - 1];
+                    if (!newList[4].contains(".")) {
+                        indexInfo.add(newList);
+                        i++;
+                    }
+                    if (i == 2048) {
+                        putInDatabase(indexInfo, checked);
+                        checked = true;
+                        i = 0;
+                        indexInfo = new ArrayList<>();
+                    }
                 }
             }
         }
-        reader.close();
-        return indexInfo;
     }
 
     public void putInDatabase(List<String[]> indexedInfo, boolean checked) throws IOException, SQLException {
