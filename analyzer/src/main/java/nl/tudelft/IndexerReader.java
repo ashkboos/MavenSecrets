@@ -36,7 +36,11 @@ public class IndexerReader {
                     String epochDate = chunk.get("m");
                     newList[3] = epochDate;
                     newList[4] = arti[arti.length - 1];
-                    if (!newList[4].contains(".")) {
+                    //TODO - DELETE BEFORE MERGING IN DEV
+                    if(newList[1].equals("yamcs-api")) {
+                        System.out.println("kkkk");
+                    }
+                    if (!newList[4].contains(".") && tokens[3].equals("NA")) {
                         indexInfo.add(newList);
                         i++;
                     }
