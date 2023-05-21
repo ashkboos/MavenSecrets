@@ -69,4 +69,8 @@ public class Maven {
 
         return resolver.resolve(subArtifact);
     }
+
+    public Resolver getResolver() {
+        return resolver;
+    }
 }

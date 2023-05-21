@@ -7,8 +7,7 @@ extractors:
   - nl.tudelft.mavensecrets.extractors.MismatchedPackagesExtractor
   - nl.tudelft.mavensecrets.extractors.LanguageExtractor
   - nl.tudelft.mavensecrets.extractors.EmbedExtractor
-  - nl.tudelft.ExtractorVC
+  - nl.tudelft.mavensecrets.extractors.ExtractorVC
   - nl.tudelft.mavensecrets.extractors.DependencyExtractor
   - nl.tudelft.mavensecrets.extractors.SizeExtractor
-  - nl.tudelft.DemoExtractor
 threads: 12

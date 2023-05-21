@@ -24,7 +24,7 @@ public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
     private static final int PAGE_SIZE = 512;
 
-    public static void main(String[] args) throws IOException, SQLException {
+    public static void main(String[] args) throws IOException, SQLException, PackageException {
         // Config
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
@@ -47,6 +47,8 @@ public class App {
                 if (artifacts.size() < PAGE_SIZE)
                     break;
             }
+
+            db.addTimestamp();
         } catch (InterruptedException ex) {
             LOGGER.warn("run interrupted");
         }

@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
-import nl.tudelft.PackageId;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
@@ -39,6 +39,8 @@ import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
+import nl.tudelft.PackageId;
+
 /**
  * A default artefact {@link Resolver}.
  * This implementation pulls from Maven Central.
@@ -48,11 +50,11 @@ public class DefaultResolver implements Resolver {
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");
 
+    private final RepositorySystem repository;
     private final RepositorySystemSession session;
     private final ModelReader modelReader;
     private final ModelMerger merger;
     private final ModelInterpolator interpolator;
-    private RepositorySystem repository = null;
 
     public DefaultResolver() {
         this(new File(System.getProperty("user.home"),".m2/repository"));
@@ -113,7 +115,7 @@ public class DefaultResolver implements Resolver {
             throw ex;
         }
 
-        if(result == null) {
+        if (result == null) {
             return null;
         }
 
