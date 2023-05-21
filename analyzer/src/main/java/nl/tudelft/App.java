@@ -47,8 +47,6 @@ public class App {
                 if (artifacts.size() < PAGE_SIZE)
                     break;
             }
-
-            db.addTimestamp();
         } catch (InterruptedException ex) {
             LOGGER.warn("run interrupted");
         }

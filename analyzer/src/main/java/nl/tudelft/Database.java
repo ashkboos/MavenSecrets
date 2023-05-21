@@ -59,13 +59,6 @@ public class Database implements Closeable {
         }
     }
 
-    void addTimestamp() throws SQLException {
-        updateSchema(new Field[] {new Field("lastmodified", "DATE")});
-        execute("UPDATE packages p SET lastmodified = pl.lastmodified " +
-                        "FROM package_list pl " +
-                        "WHERE CONCAT(pl.groupid, ':', pl.artifactid, ':', pl.version) = p.id ");
-    }
-
     void createIndexesTable(boolean checked) throws SQLException {
         if(!checked && !tableExists(PACKAGE_INDEX_TABLE)) {
             createIndexTable();
@@ -115,7 +108,7 @@ public class Database implements Closeable {
     }
 
     private void createTable(String tableName) throws SQLException {
-        execute("CREATE TABLE " + tableName + "(groupid VARCHAR(128), artifactid VARCHAR(128), version VARCHAR(128), PRIMARY KEY (groupid, artifactid, version))");
+        execute("CREATE TABLE " + tableName + "(groupid VARCHAR(128), artifactid VARCHAR(128), version VARCHAR(128), updated TIMESTAMP NOT NULL DEFAULT NOW(), PRIMARY KEY (groupid, artifactid, version))");
     }
 
     private void createIndexTable() throws SQLException {
@@ -167,7 +160,7 @@ public class Database implements Closeable {
             arguments[i + fields.length + 3] = arguments[i + 3] = values[i];
 
         var table = updatePackageTable ? PACKAGES_TABLE : EXTENSION_TABLE;
-        execute("INSERT INTO " + table + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(groupid,artifactid,version) DO UPDATE SET " + upd, arguments);
+        execute("INSERT INTO " + table + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(groupid,artifactid,version) DO UPDATE SET updated = DEFAULT," + upd, arguments);
     }
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
