@@ -35,7 +35,7 @@ class Extractor:
         hosts = []
         unparseable = []
 
-        records = self.db.get_distinct_urls('scm_url')
+        records = self.db.get_distinct_urls(field)
 
         # if not enough memory, look into server-side cursors
         for record in records:

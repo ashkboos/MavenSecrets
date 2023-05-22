@@ -11,7 +11,6 @@ class VerifyHost:
         self.timeout = 30
         self.funcs = [lambda x : x, scm_to_url, git_to_https, http_to_https]
 
-    # TODO add to errortable
     # TODO mark them as processed
     # TODO write tests to try different formats
     def verify_hosts(self):
@@ -21,16 +20,24 @@ class VerifyHost:
         for i, record in enumerate(records):
             print(f'{i}/{len(records)}')
             success = False
+            errs = []
             print('-'*50)
             url = record['url']
 
-            for func in self.funcs:
-                if self.try_with(url, func):
+            for convert_func in self.funcs:
+                converted_url = convert_func(url)
+                err = self.try_with(converted_url)
+                if err is None:
                     success = True
                     break
+                else:
+                    errs.append(err)
+                    # TODO add to errortable
             
             if success:
                 valid += 1
+            else:
+                print(errs)
 
         print(f'There were {valid} repos out of {len(records)}')
 
@@ -40,24 +47,22 @@ class VerifyHost:
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=self.timeout)
     
 
-    def try_with(self, url: str, convert) -> bool:
+    def try_with(self, url: str) -> str:
         try:
-           url = convert(url)
            print(f"Trying with {url}")
            process = self.run_cmd(url)
         except subprocess.TimeoutExpired:
             print(f'TIMED OUT after {self.timeout}s!')
-            return False
+            return 'TIMED OUT'
 
         output = process.stdout.decode()
         err = process.stderr.decode()
         print(output)
         print(f'Exit code: {process.returncode}')
-        if not err:
-            return True
+        if process.returncode == 0:
+            return None
         else:
-            print(err)
-            return False
+            return err
         
 
 

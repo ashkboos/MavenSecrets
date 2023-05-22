@@ -16,7 +16,7 @@ class Database:
         self.HOST_TABLE = 'hosts'
     
 
-    def get_distinct_urls(self, fieldname):
+    def get_distinct_urls(self, fieldname: str):
         self.cur.execute(
             f'''
             SELECT DISTINCT ON (split_part(id, ':', 1), split_part(id, ':', 2))
@@ -51,6 +51,20 @@ class Database:
             version VARCHAR,
             url VARCHAR,
             hostname VARCHAR,
+            PRIMARY KEY(groupid,artifactid,version)
+        )
+        '''
+        self.cur.execute(query)
+        self.conn.commit()
+
+    def create_err_table(self):
+        query = f'''
+        CREATE TABLE IF NOT EXISTS {self.HOST_TABLE}(
+            groupid VARCHAR,
+            artifactid VARCHAR,
+            version VARCHAR,
+            url VARCHAR,
+            errors VARCHAR[],
             PRIMARY KEY(groupid,artifactid,version)
         )
         '''
