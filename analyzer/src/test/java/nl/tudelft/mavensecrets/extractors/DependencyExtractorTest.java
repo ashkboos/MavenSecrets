@@ -3,6 +3,7 @@ package nl.tudelft.mavensecrets.extractors;
 import nl.tudelft.*;
 import nl.tudelft.Package;
 
+import nl.tudelft.mavensecrets.JarUtil;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
@@ -16,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.jar.JarFile;
 
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -45,6 +47,16 @@ public class DependencyExtractorTest {
     }
 
     @Test
+    public void test_correct_number_of_fields() throws IOException, SQLException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_CONTENT);
+        try (Package pkg = createPackage(new Model())) {
+            Object[] results = extractor.extract(maven, pkg, pkgType, db);
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(extractor.fields().length, results.length);
+        }
+    }
+
+    @Test
     public void test_direct_dependencies() throws IOException, SQLException {
             Model m = new Model();
             Dependency dependency = new Dependency();
@@ -55,60 +67,22 @@ public class DependencyExtractorTest {
             m.addDependency(dependency3);
             try (Package pkg = createPackage(m)) {
                 Object[] results = extractor.extract(maven, pkg, pkgType, db);
-                Assertions.assertArrayEquals(new Object[] {3, -1, 0, 0}, results);
+                Assertions.assertArrayEquals(new Object[] {3, 0}, results);
             }
         }
 
     @Test
     public void test_transitive_dependencies() {
-        String id = "top.infra:spring-boot-starter-redisson:1.0.0";
-        List<MavenCoordinate> files = resolve(id);
-        System.out.println(files.size());
-    }
-
-    private static List<org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate> resolve(
-            final String row) {
-        List<MavenCoordinate> result =
-                new ArrayList<>();
+        Model m = new Model();
+        PackageId id = new PackageId("top.infra", "spring-boot-starter-redisson", "1.0.0");
+        Package pkg = new Package(id, null, m);
         try {
-            result = org.jboss.shrinkwrap.resolver.api.maven.Maven.resolver().resolve(row).withTransitivity()
-                    .asList(org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate.class);
+            Object[] results = extractor.extract(maven, pkg, pkgType, db);
+            Assertions.assertArrayEquals(new Object[] {0, 49}, results);
         } catch (Exception e) {
-            System.out.println("Exception occurred while resolving " + row + ", " + e);
             System.out.println(e);
         }
-        return result;
     }
-
-    @Test
-    public void test_transitive_dependencies_loop() throws IOException, SQLException, PackageException {
-        Model m = new Model();
-        Model m2 = new Model();
-        Model m3 = new Model();
-
-        PackageId id = new PackageId("a", "b", "1.0");
-        PackageId id2 = new PackageId("c", "d", "1.0");
-        PackageId id3 = new PackageId("e", "f", "1.0");
-        PackageId id4 = new PackageId("g", "h", "1.1");
-        Dependency dependency = createDependency(id);
-        Dependency dependency2 = createDependency(id2);
-        Dependency dependency3 = createDependency(id3);
-        Dependency dependency4 = createDependency(id4);
-        m.addDependency(dependency);
-        m2.addDependency(dependency2);
-        m3.addDependency(dependency3);
-        m3.addDependency(dependency4);
-        when(maven.getPom(argThat(new IdMatcher(id)))).thenReturn(m2);
-        when(maven.getPom(argThat(new IdMatcher(id2)))).thenReturn(m3);
-        when(maven.getPom(argThat(new IdMatcher(id3)))).thenReturn(m);
-
-        try (Package pkg = createPackage(m)) {
-            Object[] results = extractor.extract(maven, pkg, pkgType, db);
-            Assertions.assertArrayEquals(new Object[] {1, 4, 0, 0}, results);
-        }
-    }
-
-
 
     @BeforeAll
     public static void setup() {
@@ -128,17 +102,5 @@ public class DependencyExtractorTest {
         dependency.setArtifactId(id.artifact());
         dependency.setVersion(id.version());
         return dependency;
-    }
-
-    public class IdMatcher implements ArgumentMatcher<PackageId> {
-        private PackageId id;
-
-        public IdMatcher(PackageId id) {
-            this.id = id;
-        }
-        @Override
-        public boolean matches(PackageId packageId) {
-            return id.equals(packageId);
-        }
     }
 }

@@ -31,6 +31,7 @@ public class App {
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
         runIndexerReader(args, db);
+        db.createExtensionsTable();
         var packages = db.getPackageIds();
         var packagingTypes = db.getPackagingType();
 

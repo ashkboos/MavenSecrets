@@ -12,7 +12,8 @@ import nl.tudelft.*;
  * An extractor fetching Jar Size and number of files
  */
 public class SizeExtractor implements Extractor {
-    public Boolean checked;
+    //for test purposes only
+    private Map<String, ExtensionInfo> extensionsTesting;
 
     private final Field[] fields = {
             new Field("size", "BIGINT"),
@@ -20,7 +21,7 @@ public class SizeExtractor implements Extractor {
     };
 
     public SizeExtractor() {
-        checked = false;
+        extensionsTesting = new HashMap<>();
     }
 
     @Override
@@ -35,6 +36,9 @@ public class SizeExtractor implements Extractor {
         Objects.requireNonNull(pkg);
         Object[] sizeAndNumber = new Object[2];
         JarFile jar = pkg.jar();
+        if(jar == null) {
+            return new Object[fields.length];
+        }
         jar.size();
         long size = 0;
         Enumeration<JarEntry> enumerator = jar.entries();
@@ -67,18 +71,16 @@ public class SizeExtractor implements Extractor {
         sizeAndNumber[0] = size;
         sizeAndNumber[1] = numberOfFiles;
         Map<String, ExtensionInfo> extensionInfo = computeExtensionInfo(extensionTuples);
+        extensionsTesting = extensionInfo;
         for(Map.Entry<String, ExtensionInfo> t : extensionInfo.entrySet()) {
             String extension = t.getKey();
             ExtensionInfo info = t.getValue();
-            extensionDatabase(db, checked, extension, info.count, info.total, info.min, info.max, info.median, pkg.id());
+            extensionDatabase(db, extension, info.count, info.total, info.min, info.max, info.median, pkg.id());
         }
-//        extensionDatabase(db, checked, extensionFields.toArray(new Field[0]), result.toArray(), pkg.id());
-        checked = true;
         return sizeAndNumber;
     }
 
-    public void extensionDatabase(Database db, boolean checked, String extension, long count, long total, long min, long max, long median, PackageId id) throws SQLException {
-        if(!checked) db.createExtensionsTable();
+    public void extensionDatabase(Database db, String extension, long count, long total, long min, long max, long median, PackageId id) throws SQLException {
         db.updateExtensionTable(id.toString(),
                 extension,
                 count,
@@ -124,6 +126,11 @@ public class SizeExtractor implements Extractor {
             result.get(entry.getKey()).updateMedian(median);
         }
         return result;
+    }
+
+    //for test purposes only
+    public Map<String, ExtensionInfo> getExtensionsTesting() {
+        return this.extensionsTesting;
     }
 
     public class ExtensionTuple {
