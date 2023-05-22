@@ -111,8 +111,8 @@ public class SizeExtractor implements Extractor {
 
         //Compute median for every extension
         for(Map.Entry<String, ArrayList<Long>> entry  : sizes.entrySet()) {
-            ExtensionInfo info = result.get(entry.getKey());
-            long mean = info.total / info.count;
+            //ExtensionInfo info = result.get(entry.getKey());
+            //long mean = info.total / info.count;
             List<Long> entrySizes = entry.getValue();
             Collections.sort(entrySizes);
             long median;

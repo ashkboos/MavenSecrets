@@ -50,3 +50,4 @@ buildNumber.properties
 .vscode/
 .idea/
 .settings/
+/config.yml

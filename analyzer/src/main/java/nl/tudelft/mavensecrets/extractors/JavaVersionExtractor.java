@@ -2,17 +2,28 @@ package nl.tudelft.mavensecrets.extractors;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.jar.Attributes;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import nl.tudelft.Package;
-import nl.tudelft.*;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Field;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
 
 /**
  * An extractor fetching Java versions from an artifact.
@@ -41,9 +52,11 @@ public class JavaVersionExtractor implements Extractor {
     }
 
     @Override
-    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException {
+    public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) throws IOException, SQLException {
         Objects.requireNonNull(mvn);
         Objects.requireNonNull(pkg);
+        Objects.requireNonNull(pkgType);
+        Objects.requireNonNull(db);
 
         JarFile jar = pkg.jar();
         LOGGER.trace("Found jar: {} ({})", jar != null, pkg.id());
@@ -189,7 +202,7 @@ public class JavaVersionExtractor implements Extractor {
                     .append(this.getClass().getSimpleName())
                     .append("[major=")
                     .append(Arrays.toString(major))
-                    .append("[minor=")
+                    .append(", minor=")
                     .append(Arrays.toString(minor))
                     .append(']')
                     .toString();

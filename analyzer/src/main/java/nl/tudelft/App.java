@@ -1,6 +1,9 @@
 package nl.tudelft;
 
-import io.github.cdimascio.dotenv.Dotenv;
+import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
@@ -11,22 +14,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import io.github.cdimascio.dotenv.Dotenv;
 import nl.tudelft.mavensecrets.Config;
 import nl.tudelft.mavensecrets.YamlConfig;
-import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class App {
     private static final Logger LOGGER = LogManager.getLogger(App.class);
 
-    public static void main(String[] args) throws IOException, SQLException {
+    public static void main(String[] args) throws IOException, SQLException, PackageException {
         // Config
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
         LOGGER.info("Extractors: " + config.getExtractors());
 
-        
         long startTime = System.currentTimeMillis();
         var db = openDatabase();
         runIndexerReader(args, db);
@@ -49,6 +50,7 @@ public class App {
 
         try (var runner = builder.build(db)) {
             runner.run(maven, packages, pkgTypeMap, config);
+            db.addTimestamp();
         }
 
         long endTime = System.currentTimeMillis();

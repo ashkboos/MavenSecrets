@@ -5,15 +5,30 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import nl.tudelft.mavensecrets.Config;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import nl.tudelft.mavensecrets.Config;
+
 public class Runner implements Closeable {
+
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);
+
     private final Database db;
     private final Map<Class<?>, Extractor> extractors = new HashMap<>();
 
@@ -45,7 +60,7 @@ public class Runner implements Closeable {
     }
 
     private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes, Config config) {
-        LOGGER.debug(config.getThreads());
+        LOGGER.debug("running on " + config.getThreads() + " threads");
         ExecutorService executor = Executors.newFixedThreadPool(config.getThreads());
 
         // We manually create then manage the future inside the task
@@ -134,6 +149,7 @@ public class Runner implements Closeable {
                 return null;
             }
 
+            var dbStart = Instant.now();
             try {
                 db.update(id, fields, values.toArray());
             } catch (SQLException e) {
@@ -143,9 +159,12 @@ public class Runner implements Closeable {
                 return null;
             }
 
-            var time = Duration.between(start, Instant.now());
+            var end = Instant.now();
+            var time = Duration.between(start, end);
             var fetchTime = Duration.between(start, fetchEnd);
-            LOGGER.trace("processed " + id + " in " + time.toMillis() + " ms (fetch " + fetchTime.toMillis() + " ms)");
+            var extractTime = Duration.between(fetchEnd, dbStart);
+            var dbTime = Duration.between(dbStart, end);
+            LOGGER.info("processed " + id + " in " + time.toMillis() + " ms (fetch: " + fetchTime.toMillis() + " ms, extract: " + extractTime.toMillis() + " ms, db: " + dbTime.toMillis() + " ms)");
 
             future.complete(null);
             return null;

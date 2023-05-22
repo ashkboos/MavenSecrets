@@ -8,16 +8,13 @@ import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
-import nl.tudelft.*;
-import nl.tudelft.Package;
-import nl.tudelft.mavensecrets.resolver.Resolver;
 import org.apache.maven.model.Model;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import nl.tudelft.mavensecrets.extractors.SizeExtractor;
+import nl.tudelft.mavensecrets.resolver.Resolver;
 
 public class SizeExtractorTest {
     private static String pkgType = "jar";
@@ -44,8 +41,8 @@ public class SizeExtractorTest {
         java.lang.reflect.Field checked = SizeExtractor.class.getDeclaredField("checked");
         checked.set(sizeExtractor, true);
         checked.setAccessible(true);
-        ArgumentCaptor<Field[]> fields = ArgumentCaptor.forClass(Field[].class);
-        ArgumentCaptor<Object[]> values = ArgumentCaptor.forClass(Object[].class);
+        //ArgumentCaptor<Field[]> fields = ArgumentCaptor.forClass(Field[].class);
+        //ArgumentCaptor<Object[]> values = ArgumentCaptor.forClass(Object[].class);
         Mockito.doNothing().when(sizeExtractor).extensionDatabase(
                 Mockito.any(Database.class),
                 Mockito.anyBoolean(),
