@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import nl.tudelft.mavensecrets.Config;
+import nl.tudelft.mavensecrets.config.Config;
 
 public class Runner implements Closeable {
 

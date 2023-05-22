@@ -1,16 +1,24 @@
 package nl.tudelft;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.jar.JarFile;
-import nl.tudelft.mavensecrets.resolver.Resolver;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.ModelParseException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
+import nl.tudelft.mavensecrets.resolver.Resolver;
+
 public class Maven {
+
+    private static final Logger LOGGER = LogManager.getLogger(Maven.class);
+
     private final Resolver resolver;
 
     public Maven(Resolver resolver) {
@@ -22,18 +30,30 @@ public class Maven {
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
+        File jar;
         try {
-            JarFile artifactFile = new JarFile(resolver.getJar(artifact, pkgType));
-            Model pomFile = resolver.loadPom(artifact);
-
-            return new Package(id, artifactFile, pomFile);
-        } catch (ArtifactResolutionException ex) {
-            throw new PackageException(id, "unable to resolve package", ex);
-        } catch (ModelParseException ex) {
-            throw new PackageException(id, "unable to parse POM", ex);
-        } catch (IOException ex) {
-            throw new PackageException(id, "unable to read artifact", ex);
+            jar = resolver.getJar(artifact, pkgType);
+        } catch (ArtifactResolutionException exception) {
+            LOGGER.warn("Could not fetch archive ({})", id, exception);
+            jar = null;
         }
+
+        JarFile jf;
+        try {
+            jf = jar == null ? null : new JarFile(jar);
+        } catch (IOException exception) {
+            LOGGER.warn("Could not open archive {} ({})", jar.getAbsolutePath(), id, exception);
+            jf = null;
+        }
+
+        Model pomFile;
+        try {
+            pomFile = resolver.loadPom(artifact);
+        } catch (ArtifactResolutionException | IOException exception) {
+            throw new PackageException(id, "Could not fetch POM", exception);
+        }
+
+        return new Package(id, jf, pomFile);
     }
 
     public Model getPom(PackageId id) throws PackageException {

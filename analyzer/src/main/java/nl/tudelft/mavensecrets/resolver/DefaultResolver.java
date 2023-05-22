@@ -51,15 +51,6 @@ public class DefaultResolver implements Resolver {
     private final RepositorySystemSession session;
     private final ModelReader modelReader = new DefaultModelReader();
 
-    public DefaultResolver() {
-        this(new File(System.getProperty("user.home"),".m2/repository"));
-    }
-
-    public DefaultResolver(String location) {
-        this(new File(System.getProperty("user.home"),location));
-    }
-
-
     /**
      * Create a resolver instance.
      *

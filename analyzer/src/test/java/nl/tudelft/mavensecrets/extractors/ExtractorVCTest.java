@@ -1,19 +1,25 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import nl.tudelft.*;
-import nl.tudelft.Package;
-import nl.tudelft.mavensecrets.NopResolver;
+import static org.mockito.Mockito.mock;
+
+import java.io.IOException;
+import java.sql.SQLException;
+
 import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Scm;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
-
-import static org.mockito.Mockito.mock;
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
+import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.NopResolver;
 
 class ExtractorVCTest {
     private static Extractor extractor;

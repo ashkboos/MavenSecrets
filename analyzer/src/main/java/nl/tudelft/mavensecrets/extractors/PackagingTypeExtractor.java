@@ -1,14 +1,13 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -143,6 +142,11 @@ public class PackagingTypeExtractor implements Extractor {
     }
 
     public Set<String> getFilesFromExecutable(JarFile file) {
+        // Sanity check
+        if (file == null) {
+            return new HashSet<>();
+        }
+
         Set<String> fileTypes = new HashSet<>();
 
         Enumeration<JarEntry> entries = file.entries();

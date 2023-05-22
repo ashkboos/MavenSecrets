@@ -10,4 +10,16 @@ extractors:
   - nl.tudelft.mavensecrets.extractors.MismatchedPackagesExtractor
   - nl.tudelft.mavensecrets.extractors.LanguageExtractor
   - nl.tudelft.mavensecrets.extractors.EmbedExtractor
+
 threads: 12
+
+database:
+  hostname: localhost
+  port: 5432
+  name: postgres
+  username: postgres
+  password: SuperSekretPassword
+
+indexfile: ~
+
+m2-dir: ~
