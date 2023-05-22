@@ -125,7 +125,7 @@ public class Runner implements Closeable {
             try (var pkg = mvn.getPackage(id, pkgType)) {
                 fetchEnd = Instant.now();
                 values = extractInto(mvn, pkg, pkgType, db);
-            } catch (PackageException | IOException  | SQLException e) {
+            } catch (PackageException | IOException | SQLException | NullPointerException e) {
                 LOGGER.error(e);
                 future.complete(null);
                 // TODO Put this package in the unresolved table

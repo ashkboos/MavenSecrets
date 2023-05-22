@@ -1,6 +1,5 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -19,7 +18,7 @@ public class DependencyExtractor implements Extractor {
     private static final Logger LOGGER = LogManager.getLogger(Runner.class);;
     private final Field[] fields = {
             new Field("directdependencies", "INTEGER"),
-            new Field("transitivedependencies", "INTEGER"),
+            new Field("transitivedependencies", "INTEGER")
 //            new Field("idisnull", "INTEGER"),
 //            new Field("transitivenotresolved", "INTEGER")
     };
@@ -37,10 +36,12 @@ public class DependencyExtractor implements Extractor {
         Model m = pkg.pom();
         List<Dependency> dependencies = m.getDependencies();
         int directDependencies = dependencies.size();
-        String id = pkg.id().group() + ":" + pkg.id().artifact() + ":" + pkg.id().version();
+        String id = pkg.id().group() + ":" + pkg.id().artifact() + ":" + pkgType + ":" + pkg.id().version();
         List<MavenCoordinate> files = resolve(id);
+        int a = files.size() - 1;
+        if(a < 0) a = 0;
         result[0] = directDependencies;
-        result[1] = files.size();
+        result[1] = a;
         return result;
     }
 
@@ -54,6 +55,7 @@ public class DependencyExtractor implements Extractor {
         } catch (Exception e) {
             System.out.println("Exception occurred while resolving " + row + ", " + e);
             System.out.println(e);
+            return result;
         }
         return result;
     }
