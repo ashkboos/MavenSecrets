@@ -66,7 +66,7 @@ public class App {
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;
 
-        LOGGER.info("Elapsed time: " + elapsedTime + " milliseconds");
+        LOGGER.info("Elapsed time: {}ms", elapsedTime);
     }
 
     private static void runIndexerReader(Collection<? extends String> indices, String[] args, Database db) throws SQLException {
@@ -164,6 +164,7 @@ public class App {
     private static Database openDatabase(Config.Database config) throws SQLException {
         Objects.requireNonNull(config);
 
+        // Not sanitized
         return Database.connect("jdbc:postgresql://" + config.getHostname() + ':' + config.getPort() + '/' + config.getName(), config.getUsername(), config.getPassword());
     }
 

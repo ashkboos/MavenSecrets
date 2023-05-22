@@ -104,7 +104,7 @@ public class PackagingTypeExtractor implements Extractor {
         try {
             artifact = mvn.getArtifactChecksum(pkg.id(), fileExtension + checksumType);
         } catch (PackageException | ArtifactResolutionException e) {
-            LOGGER.error(checksumType + " artifact not found", e);
+            LOGGER.error("{} artifact not found", checksumType, e);
         }
         return artifact;
     }
@@ -115,7 +115,7 @@ public class PackagingTypeExtractor implements Extractor {
             // The source files and javadoc files are always packaged as "jar"
             artifact = mvn.getArtifactQualifier(pkg.id(), qualifierName, "jar");
         } catch (PackageException | ArtifactResolutionException e) {
-            LOGGER.error(qualifierName + " artifact not found", e);
+            LOGGER.error("{} artifact not found", qualifierName, e);
         }
         return artifact;
     }
@@ -172,7 +172,7 @@ public class PackagingTypeExtractor implements Extractor {
 
     private String readChecksum(Artifact artifact) throws IOException {
         String file = artifact.getFile().getPath();
-        LOGGER.debug("Jar name = " + file);
+        LOGGER.debug("Jar name = {}", file);
         String checksum;
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             checksum = reader.readLine().split("\\s+")[0];

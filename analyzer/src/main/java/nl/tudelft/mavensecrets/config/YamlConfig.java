@@ -155,7 +155,7 @@ public class YamlConfig {
 
             return Optional.of((Extractor) instance);
         } catch (ClassCastException | ReflectiveOperationException exception) {
-            LOGGER.warn("Could not create extractor '" + name + "'", exception);
+            LOGGER.warn("Could not create extractor '{}'", name, exception);
             return Optional.empty();
         }
     }

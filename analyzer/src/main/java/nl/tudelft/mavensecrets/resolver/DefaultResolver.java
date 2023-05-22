@@ -92,7 +92,7 @@ public class DefaultResolver implements Resolver {
         try {
             result = repository.resolveArtifact(session, request);
         } catch (ArtifactResolutionException ex) {
-            LOGGER.error("failed to resolve artifact " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getExtension() + ":" + artifact.getVersion(), ex);
+            LOGGER.error("Failed to resolve artifact {}", artifact, ex);
             throw ex;
         }
 
@@ -120,12 +120,12 @@ public class DefaultResolver implements Resolver {
             var parentVersion = parentPom.getVersion() == null ? artifact.getVersion() : parentPom.getVersion();
             var parentId = new PackageId(parentGroup, parentPom.getArtifactId(), parentVersion);
 
-            LOGGER.trace("resolving parent " + PackageId.fromArtifact(artifact) + " -> " + parentId);
+            LOGGER.trace("Resolving parent {} -> {}", PackageId.fromArtifact(artifact), parentId);
             Model parent;
             try {
                 parent = loadPom(createArtifact(parentId.group(), parentId.artifact(), parentId.version()));
             } catch (Throwable ex) {
-                LOGGER.error("failed to resolve parent " + PackageId.fromArtifact(artifact) + " -> " + parentId, ex);
+                LOGGER.error("Failed to resolve parent {} -> {}", PackageId.fromArtifact(artifact), parentId, ex);
                 throw ex;
             }
 
@@ -152,7 +152,7 @@ public class DefaultResolver implements Resolver {
         try {
             artifactType = resolve(new SubArtifact(artifact, null, pkgType));
         } catch(ArtifactResolutionException e4) {
-            LOGGER.info(pkgType + "packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
+            LOGGER.info("{} packaging for {} not found", pkgType, artifact);
             throw e4;
         }
 
@@ -174,7 +174,7 @@ public class DefaultResolver implements Resolver {
         locator.setErrorHandler(new org.eclipse.aether.impl.DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                LOGGER.error("Service creation failed for " + type + " with implementation " + impl, exception);
+                LOGGER.error("Service creation failed for {} with implementation {}", type, impl, exception);
             }
         });
 
