@@ -124,7 +124,6 @@ public class Database implements Closeable {
                 "version    varchar(128)," +
                 "lastmodified date," +
                 "packagingtype varchar(128)," +
-                "constraint table_name_pk " +
                 "primary key (groupid, artifactid, version))").execute();
     }
 

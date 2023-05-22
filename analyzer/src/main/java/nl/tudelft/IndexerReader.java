@@ -9,9 +9,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.maven.index.reader.ChunkReader;
 
 public class IndexerReader {
+    Logger LOGGER = LogManager.getLogger(IndexerReader.class);
     private final Database db;
 
     IndexerReader(Database db) {
@@ -52,6 +56,7 @@ public class IndexerReader {
                     }
                 }
             }
+            putInDatabase(indexInfo, checked);
         }
     }
 
