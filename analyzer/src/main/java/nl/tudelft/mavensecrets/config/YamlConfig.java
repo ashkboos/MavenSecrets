@@ -133,7 +133,7 @@ public class YamlConfig {
                 .map(x -> x.get("m2-dir"))
                 .map(x -> x instanceof String ? (String) x : null)
                 .map(File::new)
-                .orElseGet(() -> new File(System.getProperty("user.home"),".m2/repository"));
+                .orElseGet(() -> new File(System.getProperty("user.home"), ".m2/repository"));
 
         return new MemoryConfig(collection, threads, db, indices, m2);
     }
