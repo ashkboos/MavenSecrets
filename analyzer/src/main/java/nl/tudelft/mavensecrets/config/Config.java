@@ -51,6 +51,13 @@ public interface Config {
      */
     long getSeed();
 
+
+    /**
+     * Get the percentage of the dataset to be sampled.
+     * @return The sample percentage.
+     */
+    float getSamplePercent();
+
     /**
      * A database configuration.
      */

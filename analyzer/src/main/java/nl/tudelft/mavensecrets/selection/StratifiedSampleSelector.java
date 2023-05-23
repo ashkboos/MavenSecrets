@@ -10,19 +10,22 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 public class StratifiedSampleSelector implements PackageSelector{
     private Logger LOGGER = LogManager.getLogger(StratifiedSampleSelector.class);
-    private final int seed;
-    private Database db;
-    private Map<Integer, Integer> yearPopulationMap;
+    private final Database db;
 
-    public StratifiedSampleSelector(Database db, int seed, float samplePercent) throws SQLException {
+    public StratifiedSampleSelector(Database db, long seed, float samplePercent) throws SQLException {
+        Objects.requireNonNull(db);
+        if (samplePercent < 0 || samplePercent > 100) {
+            throw new IllegalArgumentException("Sample percent must be between 0 and 100");
+        }
+
         this.db = db;
-        this.yearPopulationMap = db.getYearCounts();
-        this.seed = seed;
+        Map<Integer, Integer> yearPopulationMap = db.getYearCounts();
         db.createSelectedTable();
-        for (var kvPair : this.yearPopulationMap.entrySet()) {
+        for (var kvPair : yearPopulationMap.entrySet()) {
             int year = kvPair.getKey();
             db.extractStrataSample(seed, samplePercent, year);
         }
@@ -35,8 +38,7 @@ public class StratifiedSampleSelector implements PackageSelector{
      */
 
     @Override
-    public Collection<? extends PackageId> getPackages() throws IOException, SQLException {
-        LOGGER.debug(yearPopulationMap.toString());
+    public Collection<? extends PackageId> getPackages() throws SQLException {
         return Collections.unmodifiableCollection(db.getSelectedPkgs());
     }
 }

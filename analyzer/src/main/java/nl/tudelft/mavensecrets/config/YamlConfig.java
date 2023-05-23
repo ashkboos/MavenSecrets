@@ -141,8 +141,16 @@ public class YamlConfig {
                 .map(Number::longValue)
                 .orElseGet(System::currentTimeMillis);
 
+        float samplePercent = Optional.ofNullable(map)
+                .map(x -> x.get("sample-percentage"))
+                .map(x -> x instanceof Number ? (Number) x : null)
+                .map(Number::floatValue)
+                .stream()
+                .filter(x -> x > 0 && x <= 100)
+                .findFirst()
+                .orElse(0.1f);
 
-        return new MemoryConfig(collection, threads, db, indices, m2, seed);
+        return new MemoryConfig(collection, threads, db, indices, m2, seed, samplePercent);
     }
 
     /**

@@ -12,7 +12,7 @@ import nl.tudelft.mavensecrets.config.Config.Database;
 /**
  * An in-memory {@link Config}.
  */
-public record MemoryConfig(Collection<? extends Extractor> extractors, int threads, Database databaseConfig, Collection<? extends String> indices, File repository, long seed) implements Config {
+public record MemoryConfig(Collection<? extends Extractor> extractors, int threads, Database databaseConfig, Collection<? extends String> indices, File repository, long seed, float samplePercent) implements Config {
 
     /**
      * Create a configuration instance.
@@ -22,13 +22,14 @@ public record MemoryConfig(Collection<? extends Extractor> extractors, int threa
      * @param databaseConfig Database configuration.
      * @param indices Index file names to run.
      */
-    public MemoryConfig(Collection<? extends Extractor> extractors, int threads, Database databaseConfig, Collection<? extends String> indices, File repository, long seed) {
+    public MemoryConfig(Collection<? extends Extractor> extractors, int threads, Database databaseConfig, Collection<? extends String> indices, File repository, long seed, float samplePercent) {
         this.extractors = Collections.unmodifiableCollection(new ArrayList<>(Objects.requireNonNull(extractors)));
         this.threads = threads;
         this.databaseConfig = Objects.requireNonNull(databaseConfig);
         this.indices = Collections.unmodifiableCollection(new ArrayList<>(Objects.requireNonNull(indices)));
         this.repository = Objects.requireNonNull(repository);
         this.seed = seed;
+        this.samplePercent = samplePercent;
         if (threads <= 0) {
             throw new IllegalArgumentException("Invalid thread count: " + threads);
         }
@@ -67,6 +68,10 @@ public record MemoryConfig(Collection<? extends Extractor> extractors, int threa
         return seed();
     }
 
+    @Override
+    public float getSamplePercent() {
+        return samplePercent;
+    }
 
     /**
      * An in-memory {@link Database} configuration.

@@ -276,7 +276,7 @@ public class Database implements Closeable {
         return yearCounts;
     }
 
-    public void extractStrataSample(int seed, float percent, int year) throws SQLException {
+    public void extractStrataSample(long seed, float percent, int year) throws SQLException {
        String sql = "INSERT INTO selected_packages SELECT * FROM " + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent
                +") REPEATABLE ("+ seed + ") WHERE date_part('year', lastmodified) = " + year;
 //        String sql = "INSERT INTO selected_packages SELECT * FROM " + "package_list_huge" + " TABLESAMPLE bernoulli(" + percent
