@@ -24,3 +24,5 @@ database:
 indexfile: ~
 
 m2-dir: ~
+
+seed: 69420

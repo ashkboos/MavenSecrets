@@ -135,7 +135,14 @@ public class YamlConfig {
                 .map(File::new)
                 .orElseGet(() -> new File(System.getProperty("user.home"), ".m2/repository"));
 
-        return new MemoryConfig(collection, threads, db, indices, m2);
+        long seed = Optional.ofNullable(map)
+                .map(x -> x.get("seed"))
+                .map(x -> x instanceof Number ? (Number) x : null)
+                .map(Number::longValue)
+                .orElseGet(System::currentTimeMillis);
+
+
+        return new MemoryConfig(collection, threads, db, indices, m2, seed);
     }
 
     /**

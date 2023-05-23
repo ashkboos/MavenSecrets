@@ -46,6 +46,12 @@ public interface Config {
     File getLocalRepository();
 
     /**
+     * Get the seed for the random sampling.
+     * @return The seed.
+     */
+    long getSeed();
+
+    /**
      * A database configuration.
      */
     public static interface Database {

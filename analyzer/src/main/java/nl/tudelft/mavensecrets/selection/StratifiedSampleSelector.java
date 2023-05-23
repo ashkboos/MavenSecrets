@@ -7,8 +7,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 public class StratifiedSampleSelector implements PackageSelector{
@@ -21,6 +21,7 @@ public class StratifiedSampleSelector implements PackageSelector{
         this.db = db;
         this.yearPopulationMap = db.getYearCounts();
         this.seed = seed;
+        db.createSelectedTable();
         for (var kvPair : this.yearPopulationMap.entrySet()) {
             int year = kvPair.getKey();
             db.extractStrataSample(seed, samplePercent, year);
@@ -36,7 +37,6 @@ public class StratifiedSampleSelector implements PackageSelector{
     @Override
     public Collection<? extends PackageId> getPackages() throws IOException, SQLException {
         LOGGER.debug(yearPopulationMap.toString());
-
-        return new ArrayList<>();
+        return Collections.unmodifiableCollection(db.getSelectedPkgs());
     }
 }

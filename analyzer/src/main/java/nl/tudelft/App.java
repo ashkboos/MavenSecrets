@@ -37,6 +37,7 @@ public class App {
         LOGGER.info("Database configuration: {}", config.getDatabaseConfig());
         LOGGER.info("Index files: {}", config.getIndexFiles());
         LOGGER.info("Local repository: {}", config.getLocalRepository().getAbsolutePath());
+        LOGGER.info("Seed: {}", config.getSeed());
 
         long startTime = System.currentTimeMillis();
         var db = openDatabase(config.getDatabaseConfig());

@@ -14,6 +14,7 @@ public class Database implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
+    private static final String SELECTED_INDEX_TABLE = "selected_packages";
     private static final String EXTENSION_TABLE = "extensions";
     private static final String UNRESOLVED_PACKAGES = "unresolved_packages";
     private static final int BACKOFF_TIME_MS = 1000;
@@ -127,6 +128,22 @@ public class Database implements Closeable {
                 "primary key (groupid, artifactid, version))").execute();
     }
 
+    public void createSelectedTable() throws SQLException {
+        conn.prepareStatement("DROP TABLE IF EXISTS " + SELECTED_INDEX_TABLE).execute();
+        conn.prepareStatement(
+                "create table " + SELECTED_INDEX_TABLE + """
+                (
+                groupid       varchar(128) not null,
+                artifactid    varchar(128) not null,
+                version       varchar(128) not null,
+                lastmodified  date,
+                packagingtype varchar(128),
+                primary key (groupid, artifactid, version)
+                );
+                """
+        ).execute();
+    }
+
     private Set<String> listColumns(String tableName) throws SQLException {
         try (var results = query("SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "'")) {
             var columns = new HashSet<String>();
@@ -199,6 +216,22 @@ public class Database implements Closeable {
             return packageIds;
 
         try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+            while (results.next()) {
+                packageIds.add(new PackageId(results.getString("groupid"),
+                        results.getString("artifactid"),
+                        results.getString("version")));
+            }
+        }
+
+        return packageIds;
+    }
+
+    public List<PackageId> getSelectedPkgs() throws SQLException {
+        List<PackageId> packageIds = new LinkedList<>();
+        if (!tableExists(SELECTED_INDEX_TABLE))
+            return packageIds;
+
+        try (var results = query("SELECT groupid, artifactid, version FROM " + SELECTED_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
             while (results.next()) {
                 packageIds.add(new PackageId(results.getString("groupid"),
                         results.getString("artifactid"),
