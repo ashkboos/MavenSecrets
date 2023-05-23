@@ -29,20 +29,20 @@ public class IndexerReader {
 
         List<String[]> indexInfo = new ArrayList<>();
 
-        try (FileInputStream fileInputStream = new FileInputStream(file); ChunkReader reader = new ChunkReader("index", fileInputStream)) { 
-            Iterator<Map<String, String>> itr = reader.iterator();
-            while (itr.hasNext()) {
-                Map<String, String> chunk = itr.next();
-                if(chunk.get("u") != null) {
+        try (FileInputStream fileInputStream = new FileInputStream(file);
+            ChunkReader reader = new ChunkReader("index", fileInputStream)) {
+            for (Map<String, String> chunk : reader) {
+                if (chunk.get("u") != null) {
                     String[] tokens = (chunk.get("u").split("\\|"));
                     String[] arti = (chunk.get("i").split("\\|"));
-                    String [] newList = new String[5];
+                    String[] newList = new String[5];
                     System.arraycopy(tokens, 0, newList, 0, 3);
                     String epochDate = chunk.get("m");
                     newList[3] = epochDate;
                     newList[4] = arti[arti.length - 1];
-                    indexInfo.add(newList);
-
+                    if (!newList[4].contains(".") && tokens[3].equals("NA")) {
+                        indexInfo.add(newList);
+                    }
                     // Insert batch into database
                     if (indexInfo.size() == BATCH_SIZE) {
                         putInDatabase(indexInfo);

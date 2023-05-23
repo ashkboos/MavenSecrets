@@ -126,8 +126,7 @@ public class PackagingTypeExtractor implements Extractor {
     private void addQualifier(List<Object> extractedFields, Artifact artifact) {
         Objects.requireNonNull(extractedFields);
 
-        // FIXME Change to null?
-        extractedFields.add(artifact == null ? "null" : artifact.getClassifier());
+        extractedFields.add(artifact == null ? null : artifact.getClassifier());
     }
 
     private void addCheckSumType(List<Object> extractedFields, Artifact artifact) {
