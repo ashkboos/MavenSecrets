@@ -168,15 +168,18 @@ public class Database implements Closeable {
         } else execute("INSERT INTO " + EXTENSION_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
-    void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
-        PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
-                "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
-        query.setString(1, groupId);
-        query.setString(2, artifactId);
-        query.setString(3, version);
-        query.setDate(4, lastModified);
-        query.setString(5, packagingType);
-        query.execute();
+    void batchUpdateIndexTable(List<String[]> indexedInfo) throws SQLException {
+       PreparedStatement query =  conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE + " "
+               + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES (?,?,?,?,?)");
+       for (String[] info : indexedInfo) {
+           query.setString(1, info[0]);
+           query.setString(2, info[1]);
+           query.setString(3, info[2]);
+           query.setDate(4, new Date(Long.parseLong(info[3])));
+           query.setString(5, info[4]);
+           query.addBatch();
+       }
+       query.executeBatch();
     }
 
     void updateUnresolvedTable(String id, String error) throws SQLException {
