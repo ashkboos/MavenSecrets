@@ -99,6 +99,7 @@
 			<version>${mockito.version}</version>
 			<scope>test</scope>
 		</dependency>
+
 		<!-- Other -->
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
