@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 
+import nl.tudelft.mavensecrets.selection.StratifiedSampleSelector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,7 +43,8 @@ public class App {
         runIndexerReader(config.getIndexFiles(), args, db);
 
         // TODO: Make selector configurable / proper selection strategy
-        PackageSelector selector = new AllPackageSelector(db);
+//        PackageSelector selector = new AllPackageSelector(db);
+        PackageSelector selector = new StratifiedSampleSelector(db, 69420, 1);
         LOGGER.info("Package selector: {}", selector);
         var packages = selector.getPackages();
 

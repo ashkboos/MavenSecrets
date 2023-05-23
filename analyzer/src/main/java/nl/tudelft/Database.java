@@ -124,7 +124,6 @@ public class Database implements Closeable {
                 "version    varchar(128)," +
                 "lastmodified date," +
                 "packagingtype varchar(128)," +
-                "constraint table_name_pk " +
                 "primary key (groupid, artifactid, version))").execute();
     }
 
@@ -227,6 +226,31 @@ public class Database implements Closeable {
 
         return packagingTypes;
     }
+
+    public Map<Integer, Integer> getYearCounts() throws SQLException {
+        String sql = "SELECT date_part('year', lastmodified) AS year, COUNT(*)"
+                + "FROM " + PACKAGE_INDEX_TABLE
+                + " group by year ";
+//        String sql = "SELECT date_part('year', lastmodified) AS year, COUNT(*)"
+//                + "FROM package_list_huge "
+//                + "group by year ";
+        ResultSet rs = query(sql);
+        Map<Integer, Integer> yearCounts = new HashMap<>();
+        while (rs.next()) {
+           yearCounts.put(rs.getInt(1), rs.getInt(2)) ;
+        }
+
+        return yearCounts;
+    }
+
+    public void extractStrataSample(int seed, float percent, int year) throws SQLException {
+       String sql = "INSERT INTO selected_packages SELECT * FROM " + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent
+               +") REPEATABLE ("+ seed + ") WHERE date_part('year', lastmodified) = " + year;
+//        String sql = "INSERT INTO selected_packages SELECT * FROM " + "package_list_huge" + " TABLESAMPLE bernoulli(" + percent
+//                +") REPEATABLE ("+ seed + ") WHERE date_part('year', lastmodified) = " + year;
+       execute(sql);
+    }
+
 
     @Override
     public void close() throws IOException {
