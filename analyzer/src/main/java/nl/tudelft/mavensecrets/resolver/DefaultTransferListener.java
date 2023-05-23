@@ -7,6 +7,8 @@ import org.eclipse.aether.transfer.TransferCancelledException;
 import org.eclipse.aether.transfer.TransferEvent;
 
 public class DefaultTransferListener extends AbstractTransferListener {
+
+    @SuppressWarnings("unused")
     private final Logger log;
 
     public DefaultTransferListener(Logger log) {
