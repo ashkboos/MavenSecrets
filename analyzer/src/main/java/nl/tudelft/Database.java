@@ -36,13 +36,13 @@ public class Database implements Closeable {
     }
 
     public static Database connect(String url, String user, String pass) throws SQLException {
-        LOGGER.trace("connecting to " + url);
+        LOGGER.trace("Attempting to connect to {}", url);
         var sleep = BACKOFF_TIME_MS;
-        for (var i = 0;; i++) {
+        for (var i = 1;; i++) {
             try {
                 return new Database(DriverManager.getConnection(url, user, pass));
             } catch (SQLException ex) {
-                LOGGER.error("failed to connect to the database (attempt " + (i + 1) + ")", ex);
+                LOGGER.warn("Failed to connect to the database (attempt {})", i, ex);
                 if (i > BACKOFF_RETRIES)
                     throw ex;
             }
@@ -207,19 +207,22 @@ public class Database implements Closeable {
         return packageIds;
     }
 
-    public List<String> getPackagingType() throws SQLException {
-        List<String> packagingTypes = new ArrayList<>();
-        if (!tableExists(PACKAGE_INDEX_TABLE))
-            return packagingTypes;
+    public Map<PackageId, String> getPackagingType() throws SQLException {
+        Map<PackageId, String> packagingTypes = new HashMap<>();
 
-        try (var results = query("SELECT packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+        if (!tableExists(PACKAGE_INDEX_TABLE)) {
+            return packagingTypes;
+        }
+
+        try (var results = query("SELECT groupid, artifactid, version, packagingtype FROM " + PACKAGE_INDEX_TABLE)) {
             while (results.next()) {
-                packagingTypes.add(results.getString("packagingtype"));
+                PackageId id = new PackageId(results.getString("groupid"), results.getString("artifactid"), results.getString("version"));
+                String type = results.getString("packagingtype");
+                packagingTypes.put(id, type);
             }
         }
 
         return packagingTypes;
-
     }
 
     @Override
@@ -248,11 +251,11 @@ public class Database implements Closeable {
         try {
             results = prepare(sql, arguments).executeQuery();
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("queried " + stringify(sql, arguments));
+        LOGGER.trace("Queried {}", stringify(sql, arguments));
         return results;
     }
 
@@ -272,11 +275,11 @@ public class Database implements Closeable {
                     throw new RuntimeException("query returned too many rows");
             }
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("query " + stringify(sql, arguments) + " returned `" + value + "`: " + value.getClass().getName());
+        LOGGER.trace("Query {} returned '{}': {}", stringify(sql, arguments), value, value.getClass().getName());
         return value;
     }
 
@@ -290,11 +293,11 @@ public class Database implements Closeable {
                 statement.execute();
             }
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("executed " + stringify(sql, arguments));
+        LOGGER.trace("Executed {}", stringify(sql, arguments));
     }
 
     private static String stringify(String sql, Object[] arguments) {

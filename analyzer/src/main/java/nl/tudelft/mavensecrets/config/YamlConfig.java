@@ -1,4 +1,4 @@
-package nl.tudelft.mavensecrets;
+package nl.tudelft.mavensecrets.config;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,8 +21,13 @@ import org.yaml.snakeyaml.reader.UnicodeReader;
 import org.yaml.snakeyaml.representer.Representer;
 
 import nl.tudelft.Extractor;
+import nl.tudelft.mavensecrets.config.Config.Database;
+import nl.tudelft.mavensecrets.config.MemoryConfig.MemoryDatabase;
 
-public class YamlConfig implements Config {
+/**
+ * A YAML-based {@link Config} loader.
+ */
+public class YamlConfig {
 
     private static final Logger LOGGER = LogManager.getLogger(YamlConfig.class);
     private static final Yaml YAML;
@@ -43,28 +48,20 @@ public class YamlConfig implements Config {
         YAML = new Yaml(constructor, representer, dumper, loader);
     }
 
-    private final Collection<? extends Extractor> extractors;
-    private final int threads;
-
-    private YamlConfig(Collection<? extends Extractor> extractors, int threads) {
-        this.extractors = Objects.requireNonNull(extractors);
-        this.threads = threads;
-    }
-
-    @Override
-    public Collection<? extends Extractor> getExtractors() {
-        return Collections.unmodifiableCollection(extractors);
+    private YamlConfig() {
+        // Nothing
     }
 
     /**
-     * @return 
+     * Load a {@link Config} from file.
+     *
+     * @param file File.
+     * @return The loaded configuration.
+     * @throws IOException If an I/O error occurs.
      */
-    @Override
-    public int getThreads() {
-        return threads;
-    }
-
     public static Config fromFile(File file) throws IOException {
+        Objects.requireNonNull(file);
+
         Map<?, ?> map;
         try (Reader reader = new UnicodeReader(new FileInputStream(file))) {
             Object object = YAML.load(reader);
@@ -93,9 +90,60 @@ public class YamlConfig implements Config {
                 .findFirst()
                 .orElse(8); // Default
 
-        return new YamlConfig(collection, threads);
+        Database db = Optional.ofNullable(map)
+                .map(x -> x.get("database"))
+                .map(x -> x instanceof Map ? (Map<?, ?>) x : null)
+                .map(x -> {
+                    Object p = x.get("hostname");
+                    Object q = x.get("port");
+                    Object r = x.get("name");
+                    Object s = x.get("username");
+                    Object t = x.get("password");
+
+                    if (p instanceof String hostname && q instanceof Number port && r instanceof String name) {
+                        return new MemoryDatabase(hostname, port.intValue(), name, s instanceof String ? (String) s : null, t instanceof String ? (String) t : null);
+                    }
+
+                    return null;
+                })
+                .orElseGet(() -> new MemoryDatabase("localhost", 5432, "postgres", null, null));
+
+        @SuppressWarnings("unchecked")
+        Collection<String> indices = Optional.ofNullable(map)
+                .map(x -> x.get("indexfile"))
+                .map(x -> {
+                    if (x instanceof Collection<?> c) {
+                        return (Collection<Object>) c;
+                    }
+                    else if (x instanceof String s) {
+                        return Collections.singleton(s);
+                    }
+                    else {
+                        return null;
+                    }
+                })
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .distinct()
+                .toList();
+
+        File m2 = Optional.ofNullable(map)
+                .map(x -> x.get("m2-dir"))
+                .map(x -> x instanceof String ? (String) x : null)
+                .map(File::new)
+                .orElseGet(() -> new File(System.getProperty("user.home"), ".m2/repository"));
+
+        return new MemoryConfig(collection, threads, db, indices, m2);
     }
 
+    /**
+     * Attempt creating an extractor instance.
+     *
+     * @param name The extractor's full name.
+     * @return The extractor wrapped in an {@link Optional}.
+     */
     private static Optional<Extractor> createExtractor(String name) {
         Objects.requireNonNull(name);
 
@@ -107,7 +155,7 @@ public class YamlConfig implements Config {
 
             return Optional.of((Extractor) instance);
         } catch (ClassCastException | ReflectiveOperationException exception) {
-            LOGGER.warn("Could not create extractor '" + name + "'", exception);
+            LOGGER.warn("Could not create extractor '{}'", name, exception);
             return Optional.empty();
         }
     }
