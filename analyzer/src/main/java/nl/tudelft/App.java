@@ -136,7 +136,7 @@ public class App {
         Path path = Paths.get("index-files", index);
 
         // Legacy support
-        if (Files.exists(legacyPath) && Files.isRegularFile(legacyPath)) {
+        if (Files.exists(legacyPath) && Files.isRegularFile(legacyPath) && !Files.exists(path)) {
             LOGGER.trace("Found index file for {} in legacy location, moving...", index);
             Files.move(legacyPath, path);
         }
