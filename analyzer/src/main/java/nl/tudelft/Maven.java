@@ -32,7 +32,7 @@ public class Maven {
 
         File jar;
         try {
-            jar = resolver.getJar(artifact, pkgType);
+            jar = pkgType.equals("pom") ? null : resolver.getJar(artifact, pkgType);
         } catch (ArtifactResolutionException exception) {
             LOGGER.warn("Could not fetch archive ({})", id, exception);
             jar = null;
