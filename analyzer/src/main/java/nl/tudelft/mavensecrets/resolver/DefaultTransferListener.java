@@ -15,16 +15,16 @@ public class DefaultTransferListener extends AbstractTransferListener {
 
     @Override
     public void transferInitiated(TransferEvent event) throws TransferCancelledException {
-        log.trace("GET {}{}", event.getResource().getRepositoryUrl(), event.getResource().getResourceName());
+        //log.trace("GET {}{}", event.getResource().getRepositoryUrl(), event.getResource().getResourceName());
     }
 
     @Override
     public void transferFailed(TransferEvent event) {
-        log.error("Failed to fetch {}", event.getResource().getResourceName(), event.getException());
+        //log.error("Failed to fetch {}", event.getResource().getResourceName(), event.getException());
     }
 
     @Override
     public void transferSucceeded(TransferEvent event) {
-        log.debug("Fetched {}", event.getResource().getFile());
+        //log.debug("Fetched {}", event.getResource().getFile());
     }
 }

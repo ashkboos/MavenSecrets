@@ -88,13 +88,7 @@ public class DefaultResolver implements Resolver {
         ArtifactRequest request = new ArtifactRequest();
         request.setArtifact(artifact);
         request.setRepositories(Collections.singletonList(MAVEN_CENTRAL));
-        ArtifactResult result;
-        try {
-            result = repository.resolveArtifact(session, request);
-        } catch (ArtifactResolutionException ex) {
-            LOGGER.error("Failed to resolve artifact {}", artifact, ex);
-            throw ex;
-        }
+        ArtifactResult result = repository.resolveArtifact(session, request);
 
         if (result == null) {
             return null;

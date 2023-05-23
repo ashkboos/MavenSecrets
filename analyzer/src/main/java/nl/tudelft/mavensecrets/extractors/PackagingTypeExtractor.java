@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -86,13 +87,13 @@ public class PackagingTypeExtractor implements Extractor {
 
         addQualifier(extractedFields, artifactJavadoc);
 
-        addCheckSumType(extractedFields, artifactWithMd5, ".md5");
+        addCheckSumType(extractedFields, artifactWithMd5);
 
-        addCheckSumType(extractedFields, artifactWithSha1, ".sha1");
+        addCheckSumType(extractedFields, artifactWithSha1);
 
-        addCheckSumType(extractedFields, artifactWithSha256, "sha256");
+        addCheckSumType(extractedFields, artifactWithSha256);
 
-        addCheckSumType(extractedFields, artifactWithSha512, ".sha512");
+        addCheckSumType(extractedFields, artifactWithSha512);
 
         extractedFields.add(allFiles.toString());
 
@@ -100,45 +101,46 @@ public class PackagingTypeExtractor implements Extractor {
     }
 
     private Artifact getCheckSumArtifact(Maven mvn, Package pkg, String fileExtension, String checksumType) {
-        Artifact artifact = null;
+        Artifact artifact;
         try {
             artifact = mvn.getArtifactChecksum(pkg.id(), fileExtension + checksumType);
         } catch (PackageException | ArtifactResolutionException e) {
-            LOGGER.error("{} artifact not found", checksumType, e);
+            LOGGER.trace("{} artifact not found ({})", checksumType, pkg.id(), e);
+            artifact = null;
         }
         return artifact;
     }
 
     private Artifact getQualifierArtifact(Maven mvn, Package pkg, String qualifierName) {
-        Artifact artifact = null;
+        Artifact artifact;
         try {
             // The source files and javadoc files are always packaged as "jar"
             artifact = mvn.getArtifactQualifier(pkg.id(), qualifierName, "jar");
         } catch (PackageException | ArtifactResolutionException e) {
-            LOGGER.error("{} artifact not found", qualifierName, e);
+            LOGGER.trace("{} artifact not found ({})", qualifierName, pkg.id(), e);
+            artifact = null;
         }
         return artifact;
     }
 
     private void addQualifier(List<Object> extractedFields, Artifact artifact) {
-        if (artifact != null) {
-            extractedFields.add(artifact.getClassifier());
-        } else {
-            extractedFields.add("null");
-        }
+        Objects.requireNonNull(extractedFields);
+
+        // FIXME Change to null?
+        extractedFields.add(artifact == null ? "null" : artifact.getClassifier());
     }
 
-    private void addCheckSumType(List<Object> extractedFields, Artifact artifact, String checksumType) {
-        if(artifact != null) {
-            try {
-                extractedFields.add(readChecksum(artifact));
-            } catch (IOException e) {
-                LOGGER.error(e);
-                extractedFields.add(null);
-            }
-        } else {
-            extractedFields.add(null);
+    private void addCheckSumType(List<Object> extractedFields, Artifact artifact) {
+        Objects.requireNonNull(extractedFields);
+
+        String checksum;
+        try {
+            checksum = artifact == null ? null : readChecksum(artifact);
+        } catch (IOException exception) {
+            LOGGER.warn("Could not read checksum file", exception);
+            checksum = null;
         }
+        extractedFields.add(checksum);
     }
 
     public Set<String> getFilesFromExecutable(JarFile file) {
