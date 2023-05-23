@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,14 +20,14 @@ public class Runner implements Closeable {
     }
 
     Runner addExtractor(Extractor extractor) throws SQLException {
-        LOGGER.trace("Adding extractor '" + extractor + "': " + extractor.getClass());
+        LOGGER.trace("Adding extractor '{}': {}", extractor, extractor.getClass());
         db.updateSchema(extractor.fields());
         extractors.putIfAbsent(extractor.getClass(), extractor);
 
         return this;
     }
 
-    void run(Maven mvn, Collection<ArtifactId> packages, int threads) throws SQLException, InterruptedException {
+    void run(Maven mvn, Collection<? extends ArtifactId> packages, int threads) throws SQLException, InterruptedException {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)

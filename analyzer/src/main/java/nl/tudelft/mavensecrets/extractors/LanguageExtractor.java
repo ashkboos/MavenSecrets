@@ -1,11 +1,18 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import nl.tudelft.*;
-import nl.tudelft.Package;
-import org.apache.maven.model.Dependency;
-
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+
+import org.apache.maven.model.Dependency;
+
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Field;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
 
 public class LanguageExtractor implements Extractor {
     private final Field[] fields = new Field[]{
@@ -55,19 +62,40 @@ public class LanguageExtractor implements Extractor {
     }
 
     private static boolean hasTasty(Package pkg) {
-        return pkg.jar().stream().anyMatch(i -> i.getRealName().toLowerCase().endsWith(".tasty"));
+        return hasEntry(pkg, i -> i.getRealName().toLowerCase().endsWith(".tasty"));
     }
 
     private static boolean hasKt(Package pkg) {
-        return pkg.jar().stream().anyMatch(i -> i.getRealName().endsWith("Kt.class"));
+        return hasEntry(pkg, i -> i.getRealName().endsWith("Kt.class"));
     }
 
     private static boolean hasKotlinModule(Package pkg) {
-        return pkg.jar().stream().anyMatch(i -> i.getRealName().toLowerCase().endsWith(".kotlin_module"));
+        return hasEntry(pkg, i -> i.getRealName().toLowerCase().endsWith(".kotlin_module"));
     }
 
     private static boolean hasClj(Package pkg) {
-        return pkg.jar().stream().anyMatch(i -> i.getRealName().toLowerCase().endsWith(".clj"));
+        return hasEntry(pkg, i -> i.getRealName().toLowerCase().endsWith(".clj"));
+    }
+
+    /**
+     * Check if a given package has any {@link JarEntry} matching the given {@link Predicate}.
+     *
+     * @param pkg Target package.
+     * @param predicate Predicate.
+     * @return If the package's archive has an entry matching the predicate.
+     */
+    private static boolean hasEntry(Package pkg, Predicate<? super JarEntry> predicate) {
+        Objects.requireNonNull(pkg);
+        Objects.requireNonNull(predicate);
+
+        JarFile jar = pkg.jar();
+
+        // Sanity check
+        if (jar == null) {
+            return false;
+        }
+
+        return jar.stream().anyMatch(predicate);
     }
 
     private static boolean isScalaLink(Dependency dep) {

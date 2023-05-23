@@ -36,13 +36,13 @@ public class Database implements Closeable {
     }
 
     public static Database connect(String url, String user, String pass) throws SQLException {
-        LOGGER.trace("connecting to " + url);
+        LOGGER.trace("Attempting to connect to {}", url);
         var sleep = BACKOFF_TIME_MS;
-        for (var i = 0;; i++) {
+        for (var i = 1;; i++) {
             try {
                 return new Database(DriverManager.getConnection(url, user, pass));
             } catch (SQLException ex) {
-                LOGGER.error("failed to connect to the database (attempt " + (i + 1) + ")", ex);
+                LOGGER.warn("Failed to connect to the database (attempt {})", i, ex);
                 if (i > BACKOFF_RETRIES)
                     throw ex;
             }
@@ -218,11 +218,11 @@ public class Database implements Closeable {
         try {
             results = prepare(sql, arguments).executeQuery();
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("queried " + stringify(sql, arguments));
+        LOGGER.trace("Queried {}", stringify(sql, arguments));
         return results;
     }
 
@@ -242,11 +242,11 @@ public class Database implements Closeable {
                     throw new RuntimeException("query returned too many rows");
             }
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("query " + stringify(sql, arguments) + " returned `" + value + "`: " + value.getClass().getName());
+        LOGGER.trace("Query {} returned '{}': {}", stringify(sql, arguments), value, value.getClass().getName());
         return value;
     }
 
@@ -260,11 +260,11 @@ public class Database implements Closeable {
                 statement.execute();
             }
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("executed " + stringify(sql, arguments));
+        LOGGER.trace("Executed {}", stringify(sql, arguments));
     }
 
     private static String stringify(String sql, Object[] arguments) {
