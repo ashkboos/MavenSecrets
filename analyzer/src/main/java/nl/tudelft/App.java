@@ -12,10 +12,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,6 +20,8 @@ import org.apache.logging.log4j.Logger;
 import nl.tudelft.mavensecrets.config.Config;
 import nl.tudelft.mavensecrets.config.YamlConfig;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+import nl.tudelft.mavensecrets.selection.AllPackageSelector;
+import nl.tudelft.mavensecrets.selection.PackageSelector;
 
 public class App {
 
@@ -42,17 +41,17 @@ public class App {
         var db = openDatabase(config.getDatabaseConfig());
         runIndexerReader(config.getIndexFiles(), args, db);
 
-        var packages = db.getPackageIds();
-        var packagingTypes = db.getPackagingType();
-
-        Map<PackageId, String> pkgTypeMap = IntStream.range(0, packages.size())
-                .boxed()
-                .collect(Collectors.toMap(packages::get, packagingTypes::get));
+        // TODO: Make selector configurable / proper selection strategy
+        PackageSelector selector = new AllPackageSelector(db);
+        LOGGER.info("Package selector: {}", selector);
+        var packages = selector.getPackages();
 
         LOGGER.info("Found {} package(s)", packages.size());
         if (packages.isEmpty()) {
             return;
         }
+
+        var pkgTypeMap = db.getPackagingType();
 
         var resolver = new DefaultResolver(config.getLocalRepository());
         var builder = extractors(config, new RunnerBuilder());

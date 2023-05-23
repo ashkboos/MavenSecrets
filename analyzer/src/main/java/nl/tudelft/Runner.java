@@ -49,7 +49,7 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, List<PackageId> packages, Map<PackageId, String> packagingTypes, Config config) {
+    void run(Maven mvn, Collection<? extends PackageId> packages, Map<PackageId, String> packagingTypes, Config config) {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
@@ -59,7 +59,7 @@ public class Runner implements Closeable {
         processPackages(packages, fields, mvn, packagingTypes, config);
     }
 
-    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes, Config config) {
+    private void processPackages(Collection<? extends PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes, Config config) {
         ExecutorService executor = Executors.newFixedThreadPool(config.getThreads());
 
         // We manually create then manage the future inside the task

@@ -207,19 +207,22 @@ public class Database implements Closeable {
         return packageIds;
     }
 
-    public List<String> getPackagingType() throws SQLException {
-        List<String> packagingTypes = new ArrayList<>();
-        if (!tableExists(PACKAGE_INDEX_TABLE))
-            return packagingTypes;
+    public Map<PackageId, String> getPackagingType() throws SQLException {
+        Map<PackageId, String> packagingTypes = new HashMap<>();
 
-        try (var results = query("SELECT packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+        if (!tableExists(PACKAGE_INDEX_TABLE)) {
+            return packagingTypes;
+        }
+
+        try (var results = query("SELECT groupid, artifactid, version, packagingtype FROM " + PACKAGE_INDEX_TABLE)) {
             while (results.next()) {
-                packagingTypes.add(results.getString("packagingtype"));
+                PackageId id = new PackageId(results.getString("groupid"), results.getString("artifactid"), results.getString("version"));
+                String type = results.getString("packagingtype");
+                packagingTypes.put(id, type);
             }
         }
 
         return packagingTypes;
-
     }
 
     @Override
