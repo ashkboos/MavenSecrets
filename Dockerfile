@@ -6,7 +6,7 @@ COPY analyzer/pom.xml /project/analyzer/pom.xml
 RUN mvn dependency:copy-dependencies
 
 COPY analyzer/src /project/analyzer/src
-RUN mvn package -DskipTests
+RUN mvn package
 
 FROM eclipse-temurin:17-jre-alpine AS runtime
 COPY --from=build /project/analyzer/target/analyzer-1.0-SNAPSHOT.jar /project/analyzer.jar

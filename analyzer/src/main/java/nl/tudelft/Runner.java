@@ -40,7 +40,7 @@ public class Runner implements Closeable {
         try {
             pool.submit(() -> packages.parallelStream().forEach(id -> execute(mvn, fields, id))).get();
         } catch (ExecutionException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getCause());
         } finally {
             pool.shutdown();
         }
@@ -55,8 +55,8 @@ public class Runner implements Closeable {
                 if (result.length != extractor.fields().length)
                     throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
 
-                for (var i = 0; i < result.length; offset++, i++)
-                    values[offset] = result[i];
+                System.arraycopy(result, 0, values, offset, result.length);
+                offset += result.length;
             }
 
             db.update(id, fields, values, true);
