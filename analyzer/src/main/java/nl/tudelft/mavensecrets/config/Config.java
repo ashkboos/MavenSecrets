@@ -47,6 +47,7 @@ public interface Config {
 
     /**
      * Get the seed for the random sampling.
+     *
      * @return The seed.
      */
     long getSeed();
@@ -54,6 +55,7 @@ public interface Config {
 
     /**
      * Get the percentage of the dataset to be sampled.
+     *
      * @return The sample percentage.
      */
     float getSamplePercent();

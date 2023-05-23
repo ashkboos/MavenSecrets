@@ -33,6 +33,9 @@ public record MemoryConfig(Collection<? extends Extractor> extractors, int threa
         if (threads <= 0) {
             throw new IllegalArgumentException("Invalid thread count: " + threads);
         }
+        if (samplePercent < 0 || samplePercent > 100) {
+            throw new IllegalArgumentException("Sample percent must be between 0 and 100");
+        }
     }
 
     @Override
@@ -70,7 +73,7 @@ public record MemoryConfig(Collection<? extends Extractor> extractors, int threa
 
     @Override
     public float getSamplePercent() {
-        return samplePercent;
+        return samplePercent();
     }
 
     /**
