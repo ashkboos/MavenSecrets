@@ -6,11 +6,10 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - db
-    environment:
-      DB_HOST: db
-      DB_USER: postgres
-      DB_NAME: postgres
-      DB_PASS: SuperSekretPassword
+    volumes:
+      - type: bind
+        source: $SOURCE_M2 # set this in '.env' in the same directory as docker-compose.yml
+        target: /root/.m2
   db:
     image: "postgres:15.2"
     restart: always
