@@ -15,7 +15,7 @@ extractors:
 threads: 12
 
 database:
-  hostname: localhost
+  hostname: db
   port: 5432
   name: postgres
   username: postgres
