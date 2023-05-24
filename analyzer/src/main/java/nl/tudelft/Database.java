@@ -14,6 +14,7 @@ public class Database implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
+    private static final String SELECTED_INDEX_TABLE = "selected_packages";
     private static final String EXTENSION_TABLE = "extensions";
     private static final String UNRESOLVED_PACKAGES = "unresolved_packages";
     private static final int BACKOFF_TIME_MS = 1000;
@@ -124,8 +125,23 @@ public class Database implements Closeable {
                 "version    varchar(128)," +
                 "lastmodified date," +
                 "packagingtype varchar(128)," +
-                "constraint table_name_pk " +
                 "primary key (groupid, artifactid, version))").execute();
+    }
+
+    public void createSelectedTable() throws SQLException {
+        conn.prepareStatement("DROP TABLE IF EXISTS " + SELECTED_INDEX_TABLE).execute();
+        conn.prepareStatement(
+                "create table " + SELECTED_INDEX_TABLE + """
+                (
+                groupid       varchar(128) not null,
+                artifactid    varchar(128) not null,
+                version       varchar(128) not null,
+                lastmodified  date,
+                packagingtype varchar(128),
+                primary key (groupid, artifactid, version)
+                );
+                """
+        ).execute();
     }
 
     private Set<String> listColumns(String tableName) throws SQLException {
@@ -168,15 +184,18 @@ public class Database implements Closeable {
         } else execute("INSERT INTO " + EXTENSION_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
     }
 
-    void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
-        PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
-                "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
-        query.setString(1, groupId);
-        query.setString(2, artifactId);
-        query.setString(3, version);
-        query.setDate(4, lastModified);
-        query.setString(5, packagingType);
-        query.execute();
+    void batchUpdateIndexTable(List<String[]> indexedInfo) throws SQLException {
+       PreparedStatement query =  conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE + " "
+               + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES (?,?,?,?,?)");
+       for (String[] info : indexedInfo) {
+           query.setString(1, info[0]);
+           query.setString(2, info[1]);
+           query.setString(3, info[2]);
+           query.setDate(4, new Date(Long.parseLong(info[3])));
+           query.setString(5, info[4]);
+           query.addBatch();
+       }
+       query.executeBatch();
     }
 
     void updateUnresolvedTable(String id, String error) throws SQLException {
@@ -207,6 +226,22 @@ public class Database implements Closeable {
         return packageIds;
     }
 
+    public List<PackageId> getSelectedPkgs() throws SQLException {
+        List<PackageId> packageIds = new LinkedList<>();
+        if (!tableExists(SELECTED_INDEX_TABLE))
+            return packageIds;
+
+        try (var results = query("SELECT groupid, artifactid, version FROM " + SELECTED_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+            while (results.next()) {
+                packageIds.add(new PackageId(results.getString("groupid"),
+                        results.getString("artifactid"),
+                        results.getString("version")));
+            }
+        }
+
+        return packageIds;
+    }
+
     public Map<PackageId, String> getPackagingType() throws SQLException {
         Map<PackageId, String> packagingTypes = new HashMap<>();
 
@@ -224,6 +259,31 @@ public class Database implements Closeable {
 
         return packagingTypes;
     }
+
+    public Map<Integer, Integer> getYearCounts() throws SQLException {
+        String sql = "SELECT date_part('year', lastmodified) AS year, COUNT(*)"
+                + "FROM " + PACKAGE_INDEX_TABLE
+                + " group by year ";
+//        String sql = "SELECT date_part('year', lastmodified) AS year, COUNT(*)"
+//                + "FROM package_list_huge "
+//                + "group by year ";
+        ResultSet rs = query(sql);
+        Map<Integer, Integer> yearCounts = new HashMap<>();
+        while (rs.next()) {
+           yearCounts.put(rs.getInt(1), rs.getInt(2)) ;
+        }
+
+        return yearCounts;
+    }
+
+    public void extractStrataSample(long seed, float percent, int year) throws SQLException {
+       String sql = "INSERT INTO selected_packages SELECT * FROM " + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent
+               +") REPEATABLE ("+ seed + ") WHERE date_part('year', lastmodified) = " + year;
+//        String sql = "INSERT INTO selected_packages SELECT * FROM " + "package_list_huge" + " TABLESAMPLE bernoulli(" + percent
+//                +") REPEATABLE ("+ seed + ") WHERE date_part('year', lastmodified) = " + year;
+       execute(sql);
+    }
+
 
     @Override
     public void close() throws IOException {

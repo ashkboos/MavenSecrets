@@ -45,7 +45,7 @@ public class IndexerReader {
                     }
                     // Insert batch into database
                     if (indexInfo.size() == BATCH_SIZE) {
-                        putInDatabase(indexInfo);
+                        db.batchUpdateIndexTable(indexInfo);
                         indexInfo.clear();
                     }
                 }
@@ -53,18 +53,9 @@ public class IndexerReader {
         }
 
         // Remainder that is not part of a batch
-        putInDatabase(indexInfo);
+        db.batchUpdateIndexTable(indexInfo);
     }
 
-    public void putInDatabase(List<String[]> indexedInfo) throws SQLException {
-        for (String[] info : indexedInfo) {
-            db.updateIndexTable(info[0], info[1], info[2], convertToDate(info[3]), info[4]);
-        }
-    }
-
-    public Date convertToDate(String epochDate) {
-        return new Date(Long.parseLong(epochDate));
-    }
 }
 
 
