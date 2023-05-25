@@ -1,50 +1,61 @@
 package nl.tudelft;
 
-import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import io.github.cdimascio.dotenv.Dotenv;
-import nl.tudelft.mavensecrets.Config;
-import nl.tudelft.mavensecrets.YamlConfig;
+import nl.tudelft.mavensecrets.selection.StratifiedSampleSelector;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import nl.tudelft.mavensecrets.config.Config;
+import nl.tudelft.mavensecrets.config.YamlConfig;
+import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+import nl.tudelft.mavensecrets.selection.AllPackageSelector;
+import nl.tudelft.mavensecrets.selection.PackageSelector;
 
 public class App {
+
     private static final Logger LOGGER = LogManager.getLogger(App.class);
 
     public static void main(String[] args) throws IOException, SQLException, PackageException {
         // Config
         LOGGER.info("Loading configuration");
         Config config = loadConfiguration();
-        LOGGER.info("Extractors: " + config.getExtractors());
+        LOGGER.info("Extractors: {}", config.getExtractors());
+        LOGGER.info("Threadpool size: {}", config.getThreads());
+        LOGGER.info("Database configuration: {}", config.getDatabaseConfig());
+        LOGGER.info("Index files: {}", config.getIndexFiles());
+        LOGGER.info("Local repository: {}", config.getLocalRepository().getAbsolutePath());
+        LOGGER.info("Seed: {}", config.getSeed());
+        LOGGER.info("Sample percent: {}%", config.getSamplePercent());
 
         long startTime = System.currentTimeMillis();
-        var db = openDatabase();
-        runIndexerReader(args, db);
-        var packages = db.getPackageIds();
-        var packagingTypes = db.getPackagingType();
+        var db = openDatabase(config.getDatabaseConfig());
+        runIndexerReader(config.getIndexFiles(), args, db);
 
-        Map<PackageId, String> pkgTypeMap = IntStream.range(0, packages.size())
-                .boxed()
-                .collect(Collectors.toMap(packages::get, packagingTypes::get));
+        PackageSelector selector = new StratifiedSampleSelector(db, config.getSeed(), config.getSamplePercent());
+        LOGGER.info("Package selector: {}", selector);
+        var packages = selector.getPackages();
 
+        LOGGER.info("Found {} package(s)", packages.size());
         if (packages.isEmpty()) {
-            LOGGER.info("no packages, nothing to do");
             return;
-        } else
-            LOGGER.info("found " + packages.size() + " packages");
+        }
 
-        var resolver = new DefaultResolver();
+        var pkgTypeMap = db.getPackagingType();
+
+        var resolver = new DefaultResolver(config.getLocalRepository());
         var builder = extractors(config, new RunnerBuilder());
         var maven = new Maven(resolver);
 
@@ -56,31 +67,89 @@ public class App {
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;
 
-        LOGGER.info("Elapsed time: " + elapsedTime + " milliseconds");
+        LOGGER.info("Elapsed time: {}ms", elapsedTime);
     }
 
-    private static void runIndexerReader(String[] args, Database db) throws IOException, SQLException {
-        if(args.length > 1 && args[0].equals("index")) {
-            String indexFile = args[1];
-            String url = "https://repo.maven.apache.org/maven2/.index/" + indexFile;
-            Path path = Paths.get(indexFile);
+    private static void runIndexerReader(Collection<? extends String> indices, String[] args, Database db) throws SQLException {
+        Objects.requireNonNull(indices);
+        Objects.requireNonNull(args);
+        Objects.requireNonNull(db);
 
-            // Check if the file exists
-            if (!Files.exists(path)) {
-                try {
-                    // Download the file
-                    URL fileUrl = new URL(url);
-                    Files.copy(fileUrl.openStream(), path);
-                    LOGGER.info("Successfully downloaded file");
-                } catch (IOException e) {
-                    LOGGER.error(e);
-                }
-            } else {
-                LOGGER.info("Index file already exists");
+        LOGGER.trace("Fetching indices...");
+
+        Collection<Path> paths = new ArrayList<>();
+        for (String index : indices) {
+            Path path;
+            try {
+                path = getIndex(index);
+            } catch (IOException exception) {
+                LOGGER.warn("Could not fetch index {}", index, exception);
+                continue;
             }
-            IndexerReader ir = new IndexerReader(db);
-            ir.indexerReader(indexFile);
+            paths.add(path);
         }
+
+        // Backwards compatibility
+        if (args.length > 1 && args[0].equals("index")) {
+            LOGGER.warn("Found 'index' command line argument; use the configuration");
+            String indexFile = args[1];
+            try {
+                Path path = getIndex(indexFile);
+                paths.add(path);
+            } catch (IOException exception) {
+                LOGGER.warn("Could not fetch index {}", indexFile, exception);
+            }
+        }
+
+        IndexerReader ir = new IndexerReader(db);
+        for (Path path : paths) {
+            LOGGER.trace("Reading index {}", path.getFileName());
+            try {
+                ir.indexerReader(path.toFile());
+            } catch (SQLException exception) {
+                throw exception;
+            } catch (Throwable exception) { // Generic catch because malformed data may not throw IOExceptions
+                LOGGER.warn("Could not read index {}", path.getFileName(), exception);
+            }
+        }
+    }
+
+    /**
+     * Get the path to a given index file, downloading it if needed.
+     *
+     * @param index Index file name.
+     * @return The path.
+     * @throws IOException If an I/O error occurs.
+     */
+    private static Path getIndex(String index) throws IOException {
+        Objects.requireNonNull(index);
+
+        // Note: Index file name is not sanitized
+
+        LOGGER.trace("Fetching index {}", index);
+
+        // Directory
+        Path dir = Paths.get("index-files");
+        if (!Files.exists(dir)) {
+            Files.createDirectory(dir);
+        }
+
+        Path legacyPath = Paths.get(index);
+        Path path = Paths.get("index-files", index);
+
+        // Legacy support
+        if (Files.exists(legacyPath) && Files.isRegularFile(legacyPath) && !Files.exists(path)) {
+            LOGGER.trace("Found index file for {} in legacy location, moving...", index);
+            Files.move(legacyPath, path);
+        }
+
+        if (!Files.exists(path)) {
+            LOGGER.trace("No index file found for {}, downloading...", index);
+            URL fileUrl = new URL("https://repo.maven.apache.org/maven2/.index/" + index);
+            Files.copy(fileUrl.openStream(), path);
+        }
+
+        return path;
     }
 
     private static RunnerBuilder extractors(Config config, RunnerBuilder builder) {
@@ -93,21 +162,11 @@ public class App {
         return builder;
     }
 
-    private static Database openDatabase() throws SQLException {
-        var dotenv = Dotenv.configure()
-                .ignoreIfMissing()
-                .ignoreIfMalformed()
-                .load();
+    private static Database openDatabase(Config.Database config) throws SQLException {
+        Objects.requireNonNull(config);
 
-        var host = dotenv.get("DB_HOST");
-        var port = dotenv.get("DB_PORT");
-        var name = dotenv.get("DB_NAME");
-        var user = dotenv.get("DB_USER");
-        var pass = dotenv.get("DB_PASS");
-        if (host != null && name != null && user != null)
-            return Database.connect("jdbc:postgresql://" + host + ":" + (port == null ? "5432" : port) + "/" + name, user, pass);
-        else
-            return Database.connect("jdbc:postgresql://localhost:5432/postgres", "postgres", "SuperSekretPassword");
+        // Not sanitized
+        return Database.connect("jdbc:postgresql://" + config.getHostname() + ':' + config.getPort() + '/' + config.getName(), config.getUsername(), config.getPassword());
     }
 
     /**
