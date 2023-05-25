@@ -58,6 +58,7 @@ class Database:
         self.cur.execute(query)
         self.conn.commit()
     
+
     def collate_hosts_yearly(self):
         query = f'''
         SELECT hostname, COUNT(hostname), date_part('year', lastmodified) AS year
@@ -70,6 +71,7 @@ class Database:
         '''
         self.cur.execute(query)
         return self.cur.fetchall()
+    
 
     def create_err_table(self):
         query = f'''
