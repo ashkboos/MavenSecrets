@@ -12,7 +12,8 @@ class Database:
             port=port
         )
         self.cur: DictCursor = self.conn.cursor(cursor_factory=DictCursor)
-        self.PKG_TABLE = "packages_big"
+        self.PKG_TABLE = 'packages'
+        self.PKG_LIST_TABLE = 'package_list'
         self.HOST_TABLE = 'hosts'
     
 
@@ -56,6 +57,19 @@ class Database:
         '''
         self.cur.execute(query)
         self.conn.commit()
+    
+    def collate_hosts_yearly(self):
+        query = f'''
+        SELECT hostname, COUNT(hostname), date_part('year', lastmodified) AS year
+        FROM {self.HOST_TABLE} h
+        JOIN {self.PKG_LIST_TABLE} pl ON h.groupid = pl.groupid
+        AND h.artifactid = pl.artifactid
+        AND h.version = pl.version
+        GROUP BY year, hostname
+        ORDER BY year, hostname;
+        '''
+        self.cur.execute(query)
+        return self.cur.fetchall()
 
     def create_err_table(self):
         query = f'''
