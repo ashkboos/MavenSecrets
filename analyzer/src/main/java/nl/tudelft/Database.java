@@ -187,7 +187,8 @@ public class Database implements Closeable {
     }
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
-        execute("INSERT INTO " + PACKAGE_INDEX_TABLE + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING", new Object[] {groupId,artifactId,version,lastModified,packagingType});
+        execute("INSERT INTO " + PACKAGE_INDEX_TABLE + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING", new Object[]{groupId, artifactId, version, lastModified, packagingType});
+    }
 
     // TODO UPDATE THIS
     void batchUpdateIndexTable(List<String[]> indexedInfo) throws SQLException {
@@ -229,21 +230,23 @@ public class Database implements Closeable {
         return artifacts;
     }
 
-        public List<PackageId> getSelectedPkgs() throws SQLException {
-            List<PackageId> packageIds = new LinkedList<>();
-            if (!tableExists(SELECTED_INDEX_TABLE))
-                return packageIds;
 
-            try (var results = query("SELECT groupid, artifactid, version FROM " + SELECTED_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
-                while (results.next()) {
-                    packageIds.add(new PackageId(results.getString("groupid"),
-                            results.getString("artifactid"),
-                            results.getString("version")));
-                }
+    public List<ArtifactId> getSelectedPkgs(int page, int pageSize) throws SQLException {
+        List<ArtifactId> artifacts = new LinkedList<>();
+        if (!tableExists(SELECTED_INDEX_TABLE))
+            return artifacts;
+
+        try (var results = query("SELECT groupid, artifactid, version, packagingtype FROM " + SELECTED_INDEX_TABLE + " ORDER BY groupid, artifactid, version LIMIT " + pageSize + " OFFSET " + pageSize * page)) {
+
+            while (results.next()) {
+                artifacts.add(new ArtifactId(results.getString("groupid"),
+                        results.getString("artifactid"),
+                        results.getString("version"),
+                        results.getString("packagingtype")));
             }
-
-            return packageIds;
         }
+        return artifacts;
+    }
 
     public Map<Integer, Integer> getYearCounts() throws SQLException {
         String sql = "SELECT date_part('year', lastmodified) AS year, COUNT(*)"

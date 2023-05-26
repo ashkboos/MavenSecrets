@@ -1,7 +1,7 @@
 package nl.tudelft.mavensecrets.selection;
 
+import nl.tudelft.ArtifactId;
 import nl.tudelft.Database;
-import nl.tudelft.PackageId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,14 +31,16 @@ public class StratifiedSampleSelector implements PackageSelector{
         }
     }
 
+
     /**
-     * @return 
+     * @param page 
+     * @param pageSize
+     * @return
      * @throws IOException
      * @throws SQLException
      */
-
     @Override
-    public Collection<? extends PackageId> getPackages() throws SQLException {
-        return Collections.unmodifiableCollection(db.getSelectedPkgs());
+    public Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws IOException, SQLException {
+        return Collections.unmodifiableCollection(db.getSelectedPkgs(page, pageSize));
     }
 }
