@@ -9,10 +9,9 @@
 	<artifactId>analyzer</artifactId>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>17</maven.compiler.source>
-		<maven.compiler.target>17</maven.compiler.target>
 		<junit.version>5.9.3</junit.version>
 		<mockito.version>5.3.1</mockito.version>
+		<log4j.version>2.20.0</log4j.version>
 	</properties>
 	<dependencies>
 		<!-- Maven -->
@@ -51,22 +50,17 @@
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-api</artifactId>
-			<version>2.20.0</version>
+			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>2.20.0</version>
+			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-slf4j2-impl</artifactId>
-			<version>2.20.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>2.0.7</version>
+			<artifactId>log4j-slf4j-impl</artifactId>
+			<version>${log4j.version}</version>
 		</dependency>
 		<!-- Testing -->
 		<dependency>
@@ -124,6 +118,22 @@
 	<build>
 		<plugins>
 			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<release>17</release>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Multi-Release>true</Multi-Release>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
 				<version>3.4.1</version>
@@ -138,20 +148,29 @@
 								<filter>
 									<artifact>*:*</artifact>
 									<excludes>
-										<exclude>META-INF/**</exclude>
-										<exclude>META-INF.versions.9.module-info</exclude>
-										<exclude>**/module-info.class</exclude>
+										<exclude>META-INF/DEPENDENCIES</exclude>
+										<exclude>META-INF/MANIFEST.MF</exclude>
+										<exclude>META-INF/sisu/javax.inject.Named</exclude>
+										<exclude>META-INF/versions/9/module-info.class</exclude>
 									</excludes>
 								</filter>
 								<filter>
 									<artifact>org.slf4j:jcl-over-slf4j</artifact>
 									<excludes>
-										<exclude>org/apache/commons/logging/**</exclude>
+										<exclude>org/apache/commons/logging/Log.class</exclude>
+										<exclude>org/apache/commons/logging/LogConfigurationException.class</exclude>
+										<exclude>org/apache/commons/logging/LogFactory.class</exclude>
+										<exclude>org/apache/commons/logging/impl/NoOpLog.class</exclude>
+										<exclude>org/apache/commons/logging/impl/SimpleLog.class</exclude>
+										<exclude>org/apache/commons/logging/impl/SimpleLog$1.class</exclude>
 									</excludes>
 								</filter>
 							</filters>
 							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 							</transformers>
 						</configuration>
 					</execution>

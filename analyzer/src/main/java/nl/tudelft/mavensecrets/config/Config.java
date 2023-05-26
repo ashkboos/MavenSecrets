@@ -46,6 +46,21 @@ public interface Config {
     File getLocalRepository();
 
     /**
+     * Get the seed for the random sampling.
+     *
+     * @return The seed.
+     */
+    long getSeed();
+
+
+    /**
+     * Get the percentage of the dataset to be sampled.
+     *
+     * @return The sample percentage.
+     */
+    float getSamplePercent();
+
+    /**
      * A database configuration.
      */
     public static interface Database {

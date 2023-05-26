@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 
+import nl.tudelft.mavensecrets.selection.StratifiedSampleSelector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,13 +38,14 @@ public class App {
         LOGGER.info("Database configuration: {}", config.getDatabaseConfig());
         LOGGER.info("Index files: {}", config.getIndexFiles());
         LOGGER.info("Local repository: {}", config.getLocalRepository().getAbsolutePath());
+        LOGGER.info("Seed: {}", config.getSeed());
+        LOGGER.info("Sample percent: {}%", config.getSamplePercent());
 
         long startTime = System.currentTimeMillis();
         var db = openDatabase(config.getDatabaseConfig());
         runIndexerReader(config.getIndexFiles(), args, db);
 
-        // TODO: Make selector configurable / proper selection strategy
-        PackageSelector selector = new AllPackageSelector(db);
+        PackageSelector selector = new StratifiedSampleSelector(db, config.getSeed(), config.getSamplePercent());
         LOGGER.info("Package selector: {}", selector);
 
         var resolver = new DefaultResolver(config.getLocalRepository());
@@ -137,7 +139,7 @@ public class App {
         Path path = Paths.get("index-files", index);
 
         // Legacy support
-        if (Files.exists(legacyPath) && Files.isRegularFile(legacyPath)) {
+        if (Files.exists(legacyPath) && Files.isRegularFile(legacyPath) && !Files.exists(path)) {
             LOGGER.trace("Found index file for {} in legacy location, moving...", index);
             Files.move(legacyPath, path);
         }

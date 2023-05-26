@@ -6,6 +6,8 @@ COPY analyzer/pom.xml /project/analyzer/pom.xml
 RUN mvn dependency:copy-dependencies
 
 COPY analyzer/src /project/analyzer/src
+# Make sure to have the local config in the current directory
+COPY config.yml /project/config.yml
 RUN mvn package
 
 FROM eclipse-temurin:17-jre-alpine AS runtime

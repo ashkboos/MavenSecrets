@@ -135,7 +135,22 @@ public class YamlConfig {
                 .map(File::new)
                 .orElseGet(() -> new File(System.getProperty("user.home"), ".m2/repository"));
 
-        return new MemoryConfig(collection, threads, db, indices, m2);
+        long seed = Optional.ofNullable(map)
+                .map(x -> x.get("seed"))
+                .map(x -> x instanceof Number ? (Number) x : null)
+                .map(Number::longValue)
+                .orElseGet(System::currentTimeMillis);
+
+        float samplePercent = Optional.ofNullable(map)
+                .map(x -> x.get("sample-percentage"))
+                .map(x -> x instanceof Number ? (Number) x : null)
+                .map(Number::floatValue)
+                .stream()
+                .filter(x -> x > 0 && x <= 100)
+                .findFirst()
+                .orElse(0.1f);
+
+        return new MemoryConfig(collection, threads, db, indices, m2, seed, samplePercent);
     }
 
     /**
