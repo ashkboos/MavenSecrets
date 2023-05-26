@@ -79,9 +79,9 @@ public class Database implements Closeable {
         }
     }
 
-    public void createUnresolvedTable(boolean checked) throws SQLException {
-        if(!checked && !tableExists(UNRESOLVED_PACKAGES)) {
-            createUnresolvedTable();
+    public void createUnresolvedTable() throws SQLException {
+        if(!tableExists(UNRESOLVED_PACKAGES)) {
+            createUnresolvedTable0();
         }
     }
 
@@ -111,7 +111,7 @@ public class Database implements Closeable {
         throw new RuntimeException("query didn't result in boolean");
     }
 
-    private void createUnresolvedTable() throws SQLException {
+    private void createUnresolvedTable0() throws SQLException {
         execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(groupid VARCHAR(128), artifactid VARCHAR(128), version VARCHAR(128), error TEXT, PRIMARY KEY (groupid, artifactid, version))");
     }
 
@@ -264,7 +264,7 @@ public class Database implements Closeable {
         return yearCounts;
     }
 
-    public void extractStrataSample(long seed, float percent, int year) throws SQLException {
+    public void extractStrataSample(long seed, double percent, int year) throws SQLException {
        String sql = "INSERT INTO selected_packages SELECT * FROM " + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent
                +") REPEATABLE ("+ seed + ") WHERE date_part('year', lastmodified) = " + year;
 //        String sql = "INSERT INTO selected_packages SELECT * FROM " + "package_list_huge" + " TABLESAMPLE bernoulli(" + percent

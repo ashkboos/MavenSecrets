@@ -27,20 +27,21 @@ public class Runner implements Closeable {
         return this;
     }
 
-    void run(Maven mvn, Collection<? extends ArtifactId> packages, int threads) throws SQLException, InterruptedException {
-        var fields = extractors.values().stream()
+    void run(Maven mvn, Collection<? extends ArtifactId> packages, int threads) throws InterruptedException {
+        var fields = extractors.values()
+                .stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
                 .toArray(Field[]::new);
-        if (fields.length == 0)
+        if (fields.length == 0) {
             return;
+        }
 
-        db.createUnresolvedTable(false);
         var pool = new ForkJoinPool(threads);
         try {
             pool.submit(() -> packages.parallelStream().forEach(id -> execute(mvn, fields, id))).get();
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e.getCause());
+        } catch (ExecutionException exception) {
+            LOGGER.error("Task execution failed", exception.getCause());
         } finally {
             pool.shutdown();
         }
@@ -51,20 +52,28 @@ public class Runner implements Closeable {
             var offset = 0;
             Object[] values = new Object[fields.length];
             for (var extractor : extractors.values()) {
-                var result = extractor.extract(mvn, artifact, id.extension(), db);
-                if (result.length != extractor.fields().length)
-                    throw new RuntimeException("Extractor '" + extractor + "' returned unexpected number of values");
+                Object[] result;
+                try {
+                    result = extractor.extract(mvn, artifact, id.extension(), db);
+                } catch (Throwable exception) { // Generic catch just in case
+                    LOGGER.warn("Extractor '{}' threw an unexpected exception", extractor, exception);
+                    result = new Object[extractor.fields().length];
+                }
+                if (result.length != extractor.fields().length) {
+                    LOGGER.warn("Extractor '{}' returned unexpected number of values", extractor);
+                }
 
                 System.arraycopy(result, 0, values, offset, result.length);
                 offset += result.length;
             }
 
             db.update(id, fields, values, true);
-        } catch (PackageException | IOException | SQLException ex) {
+        } catch (PackageException | IOException | SQLException exception) {
+            LOGGER.warn("Could not extract fields of {}", id, exception);
             try {
-                db.updateUnresolvedTable(id, ex.toString());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+                db.updateUnresolvedTable(id, exception.toString());
+            } catch (SQLException exception1) {
+                LOGGER.error("Could not write failure to databse", exception1);
             }
         }
     }
