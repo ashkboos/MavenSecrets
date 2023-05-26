@@ -208,4 +208,12 @@ public class DefaultResolver implements Resolver {
 
         return session;
     }
+
+    public RepositorySystem getRepository() {
+        return this.repository;
+    }
+
+    public RepositorySystemSession getRepositorySystemSession() {
+        return this.session;
+    }
 }
