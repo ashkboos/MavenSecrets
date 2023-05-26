@@ -23,6 +23,7 @@ database:
 
 indexfile: ~
 
+# This should point to the location at which the host's m2 folder was mounted in the container
 m2-dir: ~
 
 seed: 69420
