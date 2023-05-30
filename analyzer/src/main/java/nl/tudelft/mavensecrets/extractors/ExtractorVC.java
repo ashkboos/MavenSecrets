@@ -1,6 +1,6 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +25,8 @@ public class ExtractorVC implements Extractor {
                 new Field("homepage_url", "VARCHAR"),
                 new Field("dist_mgmt_repo_url", "VARCHAR"),
                 new Field("scm_conn_url", "VARCHAR"),
-                new Field("dev_conn_url", "VARCHAR")
+                new Field("dev_conn_url", "VARCHAR"),
+                new Field("output_timestamp_prop", "VARCHAR") // used to ensure build reproducibility
                 };
     }
 
@@ -36,9 +37,10 @@ public class ExtractorVC implements Extractor {
 
     @Override
     public Object[] extract(Maven mvn, Package pkg, String pkgType, Database db) {
-        List<Object> values = new LinkedList<>();
+        List<Object> values = new ArrayList<>();
 
         values.addAll(extractUrls(mvn, pkg));
+        values.addAll(extractOther(mvn, pkg));
 
         return values.toArray();
     }
@@ -69,7 +71,7 @@ public class ExtractorVC implements Extractor {
                 .map(Scm::getDeveloperConnection)
                 .orElse(null);
 
-        List<Object> urls = new LinkedList<>();
+        List<Object> urls = new ArrayList<>();
 
         urls.add(scmUrl);
         urls.add(homeUrl);
@@ -78,5 +80,22 @@ public class ExtractorVC implements Extractor {
         urls.add(scmDevUrl);
         return urls;
     }
+
+    private List<Object> extractOther(Maven mvn, Package pkg) {
+        List<Object> values = new ArrayList<>();
+
+        String outputTimestampProp = Optional.ofNullable(pkg.pom())
+                .map(Model::getProperties)
+                .map(x -> x.getProperty("project.build.outputTimestamp"))
+                .orElse(null);
+
+        values.add(outputTimestampProp);
+
+        return values;
+
+
+    }
+
+
 
 }
