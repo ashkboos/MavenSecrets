@@ -2,6 +2,7 @@ import subprocess
 
 from database import *
 from utils import *
+from packageId import PackageId
 
 class VerifyHost:
 
@@ -9,7 +10,7 @@ class VerifyHost:
         self.db = db
         self.TABLE = 'hosts'
         self.timeout = 30
-        self.funcs = [lambda x : x, scm_to_url, git_to_https, http_to_https]
+        self.funcs = [lambda x : (x, True), scm_to_url, git_to_https, http_to_https]
 
     # TODO mark them as processed
     # TODO write tests to try different formats
@@ -22,22 +23,37 @@ class VerifyHost:
             success = False
             errs = []
             print('-'*50)
-            url = record['url']
 
-            for convert_func in self.funcs:
-                converted_url = convert_func(url)
-                err = self.try_with(converted_url)
-                if err is None:
-                    success = True
-                    break
-                else:
-                    errs.append(err)
-                    # TODO add to errortable
+            urls = [record['url'], record['url_home'], record['url_scm_conn'], record['url_dev_conn']]
+            valid_fields = ['valid', 'valid_home', 'valid_scm_conn', 'valid_dev_conn']
+
+            pkg = PackageId(record['groupid'], record['artifactid'], record['version'])
+
+            for j, url in enumerate(urls): 
+                if url is None:
+                    continue
+
+                for convert_func in self.funcs:
+                    converted_url, changed = convert_func(url)
+                    if not changed:
+                        continue 
+
+                    err = self.try_with(converted_url)
+                    if err is None:
+                        success = True
+                        # TODO add working url to table
+                        self.db.update_validity(valid_fields[j], pkg, True)
+                        print('VALID:', valid_fields[j])
+                        break
+                    else:
+                        errs.append(err)
+                        self.db.insert_error(pkg, converted_url, err)
             
-            if success:
-                valid += 1
-            else:
-                print(errs)
+                if success:
+                    valid += 1
+                else:
+                    print(errs)
+            self.db.mark_processed(pkg)
 
         print(f'There were {valid} repos out of {len(records)}')
 

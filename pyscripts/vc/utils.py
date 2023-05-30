@@ -6,12 +6,12 @@ import re
 def git_to_https(url: str) -> str:
     n_url = re.sub(r"^git://", "https://", url)
     n_url = re.sub(r"^git@", "https://", n_url)
-    return n_url
+    return (n_url, url != n_url)
 
 
 def http_to_https(url: str) -> str:
-    https_url = re.sub(r'^http://', 'https://', url)
-    return https_url
+    n_url = re.sub(r'^http://', 'https://', url)
+    return (n_url, url != n_url) 
     
 def scm_to_url(url: str) -> str:
     # scm:git:git://server_name[:port]/path_to_repository
@@ -24,4 +24,4 @@ def scm_to_url(url: str) -> str:
     n_url = re.sub(r"^scm:git@", "git@", url)
     n_url = re.sub(r"^scm:git:", "", n_url)
     n_url = re.sub(r"^git://", "https://", n_url)
-    return n_url
+    return (n_url, url != n_url)

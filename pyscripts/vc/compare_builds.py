@@ -1,6 +1,7 @@
 from time import sleep
 from giturlparse import parse
 import requests
+import subprocess
 from dotenv import dotenv_values
 
 from database import Database
@@ -51,8 +52,12 @@ class CompareBuilds:
             data = res.json()['data']
             self.rate_lim_remain = data['rateLimit']['remaining']
             self.rate_lim_reset = data['rateLimit']['resetAt']
-
-            tag_exists = len(data['repository']['refs']['nodes']) != 0
+            print(self.rate_lim_remain)
+            try:
+                tag_exists = len(data['repository']['refs']['nodes']) != 0
+            except TypeError as err:
+              print("Something was not found! Repo is probably missing/private.")
+              continue
             if not tag_exists:
                 # TODO look in releases
                 print("Checking releases")
@@ -63,6 +68,21 @@ class CompareBuilds:
                 print(f"Tag {version} with commit hash {commit_hash} FOUND!")
             
             sleep(0.1)
+    
+    def build_and_compare(self):
+        # TODO replace with only github repos that have a matching tag
+        records = self.db.get_all()
+        clone_dir = './clones'
+        for record in records:
+            url = record['url']
+            process = subprocess.run(['git', 'clone', url, clone_dir])
+            if process.returncode != 0:
+                print('Problem encountered')
+                continue
+            
+            
+
+
 
 
     def make_request(self, owner: str, repo: str, version: str):

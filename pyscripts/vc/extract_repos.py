@@ -20,8 +20,16 @@ class Extractor:
 
     def extract(self) -> None:
         self.db.create_table()
-        unparseable: list = self.process_url("scm_url")
+        self.db.create_err_table()
+        unparseable = self.process_url("scm_url")
+        unparseable_home = self.process_url("homepage_url")
+        unparseable_dev_conn = self.process_url("dev_conn_url")
+        unparseable_scm_conn = self.process_url("scm_conn_url")
+        # TODO save unparseable to errortable
         print(*unparseable, sep='\n')
+        print(*unparseable_home, sep='\n')
+        print(*unparseable_dev_conn, sep='\n')
+        print(*unparseable_scm_conn, sep='\n')
         # self.process_url('homepage_url', cur)
 
 
@@ -44,10 +52,7 @@ class Extractor:
             version = record['version']
             url = record[field]
 
-            if field == 'scm_url':
-                host = self.parse_git_url(url)
-            elif field == 'homepage_url':
-                host = self.parse_homepage_url(url)
+            host = self.parse_git_url(url)
 
             if host:
                 urls.append(url)
@@ -60,7 +65,7 @@ class Extractor:
 
             if (len(hosts) == 100):
                 self.db.insert_hosts(groupids, artifactids,
-                                     versions, urls, hosts)
+                                     versions, urls, hosts, field)
                 groupids.clear()
                 artifactids.clear()
                 versions.clear()
@@ -70,7 +75,7 @@ class Extractor:
         # TODO final request
         if (len(hosts) > 0):
             self.db.insert_hosts(groupids, artifactids,
-                                 versions, urls, hosts)
+                                 versions, urls, hosts, field)
 
         print('*' * 50)
         print(field)
