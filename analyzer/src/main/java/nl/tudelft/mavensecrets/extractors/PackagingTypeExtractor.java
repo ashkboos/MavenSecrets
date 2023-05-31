@@ -12,8 +12,6 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import nl.tudelft.*;
 import nl.tudelft.Package;
 import org.apache.logging.log4j.LogManager;
@@ -41,7 +39,10 @@ public class PackagingTypeExtractor implements Extractor {
             new Field("sha1", "VARCHAR"),
             new Field("sha256", "VARCHAR"),
             new Field("sha512", "VARCHAR"),
-            new Field("typesoffile", "VARCHAR(4096)")
+            new Field("typesoffile", "VARCHAR(4096)"),
+            new Field("allqualifiers", "VARCHAR"),
+            new Field("allpackagingtype", "VARCHAR"),
+            new Field("allchecksum", "VARCHAR")
         };
     }
 
@@ -66,18 +67,18 @@ public class PackagingTypeExtractor implements Extractor {
 
         List<String> allArtifacts = request(pkg.id());
 
-        //String qualifierPattern = "-(.+?)(?=\\.jar)";
-        //String allQualifiers = getQualifiers(allArtifacts, qualifierPattern);
         Set<String> allQualifiers = new HashSet<>();
         Set<String> allTypesOfExecutable = new HashSet<>();
         Set<String> allTypesOfCheckSum = new HashSet<>();
 
+        if(pkg.id().artifact().equals("asciidoc-confluence-publisher-converter")) {
+            System.out.println("kkk");
+        }
 
-        //getFileExtensions(allArtifacts, allTypesOfExecutable, allTypesOfCheckSum);
+        extractQualifier(pkg.id(), allArtifacts, allQualifiers);
 
-        extractChecksum(allArtifacts, allTypesOfCheckSum);
+        extractExecutableTypeAndCheckSum(pkg.id(), allArtifacts, allTypesOfExecutable, allTypesOfCheckSum);
 
-        extractFileDetails(allArtifacts, allQualifiers, allTypesOfExecutable, allTypesOfCheckSum);
 
         artifactSources = getQualifierArtifact(mvn, pkg, "sources");
 
@@ -113,17 +114,64 @@ public class PackagingTypeExtractor implements Extractor {
 
         extractedFields.add(allFiles.toString());
 
+        extractedFields.add(allQualifiers.toString());
+
+        extractedFields.add(allTypesOfExecutable.toString());
+
+        extractedFields.add(allTypesOfCheckSum.toString());
+
         return extractedFields.toArray();
     }
 
-    private void extractChecksum(List<String> allArtifacts, Set<String> allTypesOfCheckSum) {
-        for(String filename : allArtifacts) {
-            String pattern = "\\.(md5|sha1|asc|sha256|sha512)$";
-            Pattern regex = Pattern.compile(pattern);
-            Matcher matcher = regex.matcher(filename);
+    private void extractExecutableTypeAndCheckSum(PackageId id, List<String> allArtifacts, Set<String> allTypesOfExecutable, Set<String> allTypesOfCheckSum) {
+        String baseName = id.artifact() + "-" + id.version() + ".";
+        String restOfFileName = "";
+        for (String filename : allArtifacts) {
+            if(filename.contains(".asc")) {
+                continue;
+            }
+            int startIndex = filename.indexOf(baseName) + baseName.length();
 
-            if (matcher.find()) {
-                matcher.group(1);
+            if (startIndex != -1 && startIndex < filename.length()) {
+                restOfFileName = filename.substring(startIndex);
+            }
+
+            int endIndex = restOfFileName.indexOf(".");
+
+            if(endIndex == -1) {
+                if(!restOfFileName.equals("")) {
+                    allTypesOfExecutable.add(restOfFileName);
+                }
+            } else {
+                if(!restOfFileName.contains("-")) {
+                    int index = restOfFileName.lastIndexOf('.');
+                    allTypesOfCheckSum.add(restOfFileName.substring(index));
+                }
+            }
+        }
+        if(allTypesOfExecutable.size() > 1) {
+            allTypesOfExecutable.remove("pom");
+        }
+    }
+
+    private void extractQualifier(PackageId id, List<String> allArtifacts, Set<String> allQualifiers) {
+        String baseName = id.artifact() + "-" + id.version();
+        String restOfFileName = "";
+        for(String filename : allArtifacts) {
+            if(filename.contains(".asc")) {
+                continue;
+            }
+            int startIndex = filename.indexOf(baseName) + baseName.length();
+
+            if (startIndex != -1 && startIndex < filename.length()) {
+                restOfFileName = filename.substring(startIndex);
+            }
+
+            int start = restOfFileName.indexOf("-");
+            int endIndex = restOfFileName.indexOf(".");
+
+            if (start != -1 && endIndex != -1) {
+                allQualifiers.add(restOfFileName.substring(start + 1, endIndex));
             }
         }
     }
@@ -224,11 +272,11 @@ public class PackagingTypeExtractor implements Extractor {
             Elements contentsElement = document.select("pre#contents");
 
             // Extract the <a> elements within the <pre> element
-            Elements linkElements = contentsElement.select("a");
+            Elements linkElements = contentsElement.select("a[href]");
 
             // Iterate over the link elements and print the titles
             for (Element linkElement : linkElements) {
-                String title = linkElement.text();
+                String title = linkElement.attr("href");
                 allFiles.add(title);
             }
         } catch (IOException e) {
@@ -236,59 +284,4 @@ public class PackagingTypeExtractor implements Extractor {
         }
         return allFiles;
     }
-
-    private String getQualifiers(List<String> allFiles, String qualifierPattern) {
-        Set<String> qualifiers = new HashSet<>();
-        Pattern pattern = Pattern.compile(qualifierPattern);
-
-        for (String fileName : allFiles) {
-            Matcher matcher = pattern.matcher(fileName);
-            if (matcher.find()) {
-                qualifiers.add(matcher.group(1));
-            }
-        }
-        return qualifiers.toString();
-    }
-
-    public static void getFileExtensions(List<String> fileList, List<String> extensions, List<String> checksumExtensions) {
-        Pattern pattern = Pattern.compile("\\.([^\\.]+)(\\.\\w+)?$");
-
-        for (String fileName : fileList) {
-            if (fileName.contains(".asc")) {
-                continue; // Ignore files with ".asc" extension
-            }
-
-            Matcher matcher = pattern.matcher(fileName);
-            if (matcher.find()) {
-                String extension = matcher.group(1);
-                extensions.add(extension);
-
-                String checksumExtension = matcher.group(2);
-                if (checksumExtension != null) {
-                    checksumExtensions.add(checksumExtension.substring(1));
-                }
-            }
-        }
-    }
-
-    public static void extractFileDetails(List<String>fileList,
-                                          Set<String> qualifiers,
-                                          Set<String> executables,
-                                          Set<String> checksums) {
-        Pattern pattern = Pattern.compile("^(.+?)-(.+?)(?:-(.+?))?\\.(.+?)(?:\\.(.+))?");
-
-        for (String fileName : fileList) {
-            Matcher matcher = pattern.matcher(fileName);
-            if (matcher.find()) {
-                String qualifier = matcher.group(3);
-                String fileExtension = matcher.group(4);
-                String checksumExtension = matcher.group(5);
-
-                qualifiers.add(qualifier);
-                executables.add(fileExtension);
-                checksums.add(checksumExtension);
-            }
-        }
-    }
-
 }
