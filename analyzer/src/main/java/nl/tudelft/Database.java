@@ -14,6 +14,7 @@ public class Database implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
+    private static final String PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING = "package_list_with_all_packaging";
     private static final String SELECTED_INDEX_TABLE = "selected_packages";
     private static final String EXTENSION_TABLE = "extensions";
     private static final String UNRESOLVED_PACKAGES = "unresolved_packages";
@@ -73,6 +74,12 @@ public class Database implements Closeable {
         }
     }
 
+    public void createIndexesTableWithAllPackaging(boolean checked) throws SQLException {
+        if(!checked && !tableExists(PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING)) {
+            createIndexTableWithPackaging();
+        }
+    }
+
     public void createExtensionTable(boolean checked) throws SQLException {
         if(!checked && !tableExists(EXTENSION_TABLE)) {
             createTable(EXTENSION_TABLE);
@@ -126,6 +133,15 @@ public class Database implements Closeable {
                 "lastmodified date," +
                 "packagingtype varchar(128)," +
                 "primary key (groupid, artifactid, version))");
+    }
+
+    private void createIndexTableWithPackaging() throws SQLException {
+        execute("CREATE TABLE " + PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING + "(groupid varchar(128)," +
+            "artifactid varchar(128)," +
+            "version    varchar(128)," +
+            "lastmodified date," +
+            "packagingtype varchar(128)," +
+            "primary key (groupid, artifactid, version, packagingtype))");
     }
 
     public void createSelectedTable() throws SQLException {
@@ -203,6 +219,20 @@ public class Database implements Closeable {
            query.addBatch();
        }
        query.executeBatch();
+    }
+
+    public void batchUpdateIndexTableWithPackaging(List<String[]> indexInfo) throws SQLException {
+        PreparedStatement query =  conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING + " "
+            + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES (?,?,?,?,?)");
+        for (String[] info : indexInfo) {
+            query.setString(1, info[0]);
+            query.setString(2, info[1]);
+            query.setString(3, info[2]);
+            query.setDate(4, new Date(Long.parseLong(info[3])));
+            query.setString(5, info[4]);
+            query.addBatch();
+        }
+        query.executeBatch();
     }
 
     void updateUnresolvedTable(ArtifactId id, String error) throws SQLException {

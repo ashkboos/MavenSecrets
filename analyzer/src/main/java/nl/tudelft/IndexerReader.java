@@ -20,6 +20,7 @@ public class IndexerReader {
         Objects.requireNonNull(file);
 
         db.createIndexesTable(false);
+        db.createIndexesTableWithAllPackaging(false);
 
         List<String[]> indexInfo = new ArrayList<>();
 
@@ -34,7 +35,7 @@ public class IndexerReader {
                     String epochDate = chunk.get("m");
                     newList[3] = epochDate;
                     newList[4] = arti[arti.length - 1];
-                    if(newList[1].equals("MServer")) {
+                    if(newList[1].equals("presto-benchto-benchmarks")) {
                         System.out.println(Arrays.toString(newList));
                     }
                     if (!newList[4].contains(".") && tokens[3].equals("NA")) {
@@ -43,6 +44,7 @@ public class IndexerReader {
                     // Insert batch into database
                     if (indexInfo.size() == BATCH_SIZE) {
                         db.batchUpdateIndexTable(indexInfo);
+                        db.batchUpdateIndexTableWithPackaging(indexInfo);
                         indexInfo.clear();
                     }
                 }
@@ -51,6 +53,7 @@ public class IndexerReader {
 
         // Remainder that is not part of a batch
         db.batchUpdateIndexTable(indexInfo);
+        db.batchUpdateIndexTableWithPackaging(indexInfo);
     }
 
 }
