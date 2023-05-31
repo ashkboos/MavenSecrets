@@ -71,10 +71,6 @@ public class PackagingTypeExtractor implements Extractor {
         Set<String> allTypesOfExecutable = new HashSet<>();
         Set<String> allTypesOfCheckSum = new HashSet<>();
 
-        if(pkg.id().artifact().equals("asciidoc-confluence-publisher-converter")) {
-            System.out.println("kkk");
-        }
-
         extractQualifier(pkg.id(), allArtifacts, allQualifiers);
 
         extractExecutableTypeAndCheckSum(pkg.id(), allArtifacts, allTypesOfExecutable, allTypesOfCheckSum);
@@ -127,26 +123,23 @@ public class PackagingTypeExtractor implements Extractor {
         String baseName = id.artifact() + "-" + id.version() + ".";
         String restOfFileName = "";
         for (String filename : allArtifacts) {
-            if(filename.contains(".asc")) {
-                continue;
-            }
             int startIndex = filename.indexOf(baseName) + baseName.length();
 
             if (startIndex != -1 && startIndex < filename.length()) {
                 restOfFileName = filename.substring(startIndex);
             }
 
+            if(restOfFileName.contains(".asc") || restOfFileName.contains("-")) {
+                continue;
+            }
+
             int endIndex = restOfFileName.indexOf(".");
 
-            if(endIndex == -1) {
-                if(!restOfFileName.equals("")) {
-                    allTypesOfExecutable.add(restOfFileName);
-                }
+            if(endIndex == -1 || restOfFileName.endsWith("tar.gz")) {
+                allTypesOfExecutable.add(restOfFileName);
             } else {
-                if(!restOfFileName.contains("-")) {
-                    int index = restOfFileName.lastIndexOf('.');
-                    allTypesOfCheckSum.add(restOfFileName.substring(index));
-                }
+                int index = restOfFileName.lastIndexOf('.');
+                allTypesOfCheckSum.add(restOfFileName.substring(index));
             }
         }
         if(allTypesOfExecutable.size() > 1) {
@@ -158,13 +151,14 @@ public class PackagingTypeExtractor implements Extractor {
         String baseName = id.artifact() + "-" + id.version();
         String restOfFileName = "";
         for(String filename : allArtifacts) {
-            if(filename.contains(".asc")) {
-                continue;
-            }
             int startIndex = filename.indexOf(baseName) + baseName.length();
 
             if (startIndex != -1 && startIndex < filename.length()) {
                 restOfFileName = filename.substring(startIndex);
+            }
+
+            if(restOfFileName.contains(".asc")) {
+                continue;
             }
 
             int start = restOfFileName.indexOf("-");
@@ -277,6 +271,9 @@ public class PackagingTypeExtractor implements Extractor {
             // Iterate over the link elements and print the titles
             for (Element linkElement : linkElements) {
                 String title = linkElement.attr("href");
+                if (title.endsWith("/")) {  // Skip directories
+                    continue;
+                }
                 allFiles.add(title);
             }
         } catch (IOException e) {
