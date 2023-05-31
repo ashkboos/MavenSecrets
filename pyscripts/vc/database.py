@@ -77,16 +77,16 @@ class Database:
             version VARCHAR,
             url VARCHAR,
             host VARCHAR,
-            valid BOOL DEFAULT false,
+            valid VARCHAR,
             url_home VARCHAR,
             host_home VARCHAR,
-            valid_home BOOL DEFAULT false,
+            valid_home VARCHAR,
             url_scm_conn VARCHAR,
             host_scm_conn VARCHAR,
-            valid_scm_conn BOOL DEFAULT false,
+            valid_scm_conn VARCHAR,
             url_dev_conn VARCHAR,
             host_dev_conn VARCHAR,
-            valid_dev_conn BOOL DEFAULT false,
+            valid_dev_conn VARCHAR,
             processed BOOL default FALSE,
             PRIMARY KEY(groupid,artifactid,version)
         )
@@ -133,9 +133,9 @@ class Database:
     
 
     # TODO make this a batch OP
-    def update_validity(self, field: str, pkg: PackageId , value: bool):
+    def update_validity(self, field: str, pkg: PackageId , url: str):
         query = f'''
-        UPDATE {self.HOST_TABLE} SET {field} = {value} 
+        UPDATE {self.HOST_TABLE} SET {field} = '{url}'
         WHERE groupid='{pkg.groupid}' AND artifactid='{pkg.artifactid}' AND version='{pkg.version}'
         '''
         self.cur.execute(query)

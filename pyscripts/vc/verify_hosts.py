@@ -42,7 +42,7 @@ class VerifyHost:
                     if err is None:
                         success = True
                         # TODO add working url to table
-                        self.db.update_validity(valid_fields[j], pkg, True)
+                        self.db.update_validity(valid_fields[j], pkg, converted_url)
                         print('VALID:', valid_fields[j])
                         break
                     else:
