@@ -24,6 +24,19 @@ class Database:
             'dev_conn_url': ('url_dev_conn','host_dev_conn'),
             'scm_conn_url': ('url_scm_conn','host_scm_conn'),
         }
+
+    def get_urls(self, fieldname: str):
+        self.cur.execute(
+            f'''
+            SELECT split_part(id, ':', 1) AS groupid,
+            split_part(id, ':', 2) AS artifactid,
+            split_part(id, ':', 3) AS version,
+            {fieldname}
+            FROM {self.PKG_TABLE}
+            WHERE {fieldname} IS NOT NULL AND {fieldname} != '';
+            '''
+        )
+        return self.cur.fetchall()
     
 
     def get_distinct_urls(self, fieldname: str):
