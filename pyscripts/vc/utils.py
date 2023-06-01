@@ -3,14 +3,16 @@ import re
 # https://maven.apache.org/scm/scm-url-format.html
 # https://maven.apache.org/scm/git.html
 # TODO convert scm urls
+# also might be broken because of the : after the username
 def git_to_https(url: str) -> str:
     n_url = re.sub(r"^git://", "https://", url)
     n_url = re.sub(r"^git@", "https://", n_url)
     return (n_url, url != n_url)
 
 
-def http_to_https(url: str) -> str:
-    n_url = re.sub(r'^http://', 'https://', url)
+# TODO look into what happens with repositories like username/tree/tree/master
+def remove_tree_path(url: str) -> str:
+    n_url = re.sub(r'/tree.*', '', url)
     return (n_url, url != n_url) 
     
 def scm_to_url(url: str) -> str:

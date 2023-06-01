@@ -10,7 +10,7 @@ class VerifyHost:
         self.db = db
         self.TABLE = 'hosts'
         self.timeout = 30
-        self.funcs = [lambda x : (x, True), scm_to_url, git_to_https, http_to_https]
+        self.funcs = [lambda x : (x, True), scm_to_url, git_to_https, remove_tree_path]
 
     # TODO mark them as processed
     # TODO write tests to try different formats
@@ -101,6 +101,10 @@ class VerifyHost:
 # git://github.com/instaclustr/instaclustr-icarus.git TIMES OUT
 # BUT
 # https://github.com/instaclustr/instaclustr-icarus.git WORKS
+
+# http://github.com/ericmedvet/jgea/tree/main/jgea.experimenter
+# SHOULD remove everything from /tree onwards
+
 
 
 # Trying with https://github.com/cerner/ccl-testing/tree/master/ftp-util
