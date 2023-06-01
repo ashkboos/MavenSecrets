@@ -38,6 +38,7 @@ public class JavaVersionExtractor implements Extractor {
     private static final Name CREATED_BY = new Name("Created-By");
     private static final Name BUILD_JDK = new Name("Build-Jdk");
     private static final Name BUILD_JDK_SPEC = new Name("Build-Jdk-Spec");
+    private static final Name MULTI_RELEASE = Name.MULTI_RELEASE;
     //private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
 
     private final Field[] fields = {
@@ -46,7 +47,8 @@ public class JavaVersionExtractor implements Extractor {
             new Field("java_version_manifest_3", "VARCHAR"), // Build-Jdk-Spec
             new Field("java_version_class_major", "BYTEA"),
             new Field("java_version_class_minor", "BYTEA"),
-            new Field("java_version_class_map", "BYTEA")
+            new Field("java_version_class_map", "BYTEA"),
+            new Field("java_version_multirelease", "BOOLEAN")
     };
 
     @Override
@@ -85,6 +87,14 @@ public class JavaVersionExtractor implements Extractor {
             result[2] = attributes.get(BUILD_JDK_SPEC);
             if (result[2] != null) {
                 LOGGER.trace("Found {} entry in META-INF/MANIFEST.MF: {} ({})", BUILD_JDK_SPEC, result[2], pkg.id());
+            }
+            Object value = attributes.get(MULTI_RELEASE);
+            result[6] = parseBoolStrict(value);
+            if (value != null && result[6] == null) {
+                LOGGER.trace("Found malformed {} entry in META-INF/MANIFEST.MF: {} ({})", MULTI_RELEASE, value, pkg.id());
+            }
+            if (result[6] != null) {
+                LOGGER.trace("Found {} entry in META-INF/MANIFEST.MF: {} ({})", MULTI_RELEASE, result[6], pkg.id());
             }
         }
 
@@ -178,6 +188,27 @@ public class JavaVersionExtractor implements Extractor {
             throw new AssertionError(exception);
         }
         return array;
+    }
+
+    /**
+     * Strict boolean parsing.
+     * 
+     * @param string Input string.
+     * @return The parsed boolean or <code>null</code> if not valid.
+     */
+    private Boolean parseBoolStrict(Object object) {
+        if (object == null || !(object instanceof String)) {
+            return null;
+        }
+
+        switch (((String) object).toLowerCase()) {
+            case "true":
+                return Boolean.TRUE;
+            case "false":
+                return Boolean.FALSE;
+            default:
+                return null;
+        }
     }
 
     /**
