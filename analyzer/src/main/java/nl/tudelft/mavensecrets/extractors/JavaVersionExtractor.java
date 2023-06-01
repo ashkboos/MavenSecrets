@@ -29,7 +29,7 @@ import nl.tudelft.Package;
 
 /**
  * An extractor fetching Java versions from an artifact.
- * It looks both at <code>META-INF/MANIFEST.MD</code> and class bytecode.
+ * It looks both at <code>META-INF/MANIFEST.MF</code> and class bytecode.
  * It may be possible the bytecode read is from a class shaded in rather than a class from the actual project, in which case a different version may be detected. 
  */
 public class JavaVersionExtractor implements Extractor {
