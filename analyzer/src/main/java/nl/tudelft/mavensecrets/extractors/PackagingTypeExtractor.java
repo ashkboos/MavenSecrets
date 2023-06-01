@@ -119,10 +119,11 @@ public class PackagingTypeExtractor implements Extractor {
         return extractedFields.toArray();
     }
 
-    private void extractExecutableTypeAndCheckSum(PackageId id, List<String> allArtifacts, Set<String> allTypesOfExecutable, Set<String> allTypesOfCheckSum) {
+    public void extractExecutableTypeAndCheckSum(PackageId id, List<String> allArtifacts, Set<String> allTypesOfExecutable, Set<String> allTypesOfCheckSum) {
         String baseName = id.artifact() + "-" + id.version() + ".";
-        String restOfFileName = "";
+
         for (String filename : allArtifacts) {
+            String restOfFileName = "";
             int startIndex = filename.indexOf(baseName) + baseName.length();
 
             if (startIndex != -1 && startIndex < filename.length()) {
@@ -134,20 +135,27 @@ public class PackagingTypeExtractor implements Extractor {
             }
 
             int endIndex = restOfFileName.indexOf(".");
+            int lastIndex = restOfFileName.lastIndexOf(".");
 
-            if(endIndex == -1 || restOfFileName.endsWith("tar.gz")) {
+            if(endIndex == -1) {
                 allTypesOfExecutable.add(restOfFileName);
-            } else {
-                int index = restOfFileName.lastIndexOf('.');
-                allTypesOfCheckSum.add(restOfFileName.substring(index));
             }
+            if(endIndex != lastIndex) {
+                allTypesOfExecutable.add(restOfFileName.substring(0, lastIndex));
+            }
+
+            if(restOfFileName.endsWith("md5") || restOfFileName.endsWith("sha1")
+            || restOfFileName.endsWith("sha256") || restOfFileName.endsWith("sha512")) {
+                allTypesOfCheckSum.add(restOfFileName.substring(lastIndex));
+            }
+
         }
         if(allTypesOfExecutable.size() > 1) {
             allTypesOfExecutable.remove("pom");
         }
     }
 
-    private void extractQualifier(PackageId id, List<String> allArtifacts, Set<String> allQualifiers) {
+    public void extractQualifier(PackageId id, List<String> allArtifacts, Set<String> allQualifiers) {
         String baseName = id.artifact() + "-" + id.version();
         String restOfFileName = "";
         for(String filename : allArtifacts) {
