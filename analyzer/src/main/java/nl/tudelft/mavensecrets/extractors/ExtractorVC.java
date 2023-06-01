@@ -9,8 +9,6 @@ import nl.tudelft.Extractor;
 import nl.tudelft.Field;
 import nl.tudelft.Maven;
 import nl.tudelft.Package;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;
@@ -18,14 +16,16 @@ import org.apache.maven.model.Scm;
 
 public class ExtractorVC implements Extractor {
 
-    private static final Logger LOGGER = LogManager.getLogger(ExtractorVC.class);
+    //private static final Logger LOGGER = LogManager.getLogger(ExtractorVC.class);
     Field[] fields;
 
     public ExtractorVC() {
         this.fields = new Field[] {
                 new Field("scm_url", "VARCHAR"),
                 new Field("homepage_url", "VARCHAR"),
-                new Field("dist_mgmt_repo_url", "VARCHAR")
+                new Field("dist_mgmt_repo_url", "VARCHAR"),
+                new Field("scm_conn_url", "VARCHAR"),
+                new Field("dev_conn_url", "VARCHAR")
                 };
     }
 
@@ -58,11 +58,24 @@ public class ExtractorVC implements Extractor {
                 .map(DistributionManagement::getRepository)
                 .map(DeploymentRepository::getUrl)
                 .orElse(null);
+
+        String scmConnUrl = Optional.ofNullable(pkg.pom())
+                .map(Model::getScm)
+                .map(Scm::getConnection)
+                .orElse(null);
+
+        String scmDevUrl = Optional.ofNullable(pkg.pom())
+                .map(Model::getScm)
+                .map(Scm::getDeveloperConnection)
+                .orElse(null);
+
         List<Object> urls = new LinkedList<>();
 
         urls.add(scmUrl);
         urls.add(homeUrl);
         urls.add(repositoryUrl);
+        urls.add(scmConnUrl);
+        urls.add(scmDevUrl);
         return urls;
     }
 

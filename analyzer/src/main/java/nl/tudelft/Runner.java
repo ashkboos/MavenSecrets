@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import nl.tudelft.mavensecrets.Config;
+import nl.tudelft.mavensecrets.config.Config;
 
 public class Runner implements Closeable {
 
@@ -40,7 +40,7 @@ public class Runner implements Closeable {
     }
 
     Runner addExtractor(Extractor extractor) throws SQLException {
-        LOGGER.trace("Adding extractor '" + extractor + "': " + extractor.getClass());
+        LOGGER.trace("Adding extractor '{}': {}", extractor, extractor.getClass());
         db.updateSchema(extractor.fields());
         extractors.putIfAbsent(extractor.getClass(), extractor);
 
@@ -49,7 +49,7 @@ public class Runner implements Closeable {
 
     void clear(PackageId[] packages) {}
 
-    void run(Maven mvn, List<PackageId> packages, Map<PackageId, String> packagingTypes, Config config) {
+    void run(Maven mvn, Collection<? extends PackageId> packages, Map<PackageId, String> packagingTypes, Config config) {
         var fields = extractors.values().stream()
                 .map(Extractor::fields)
                 .flatMap(Arrays::stream)
@@ -59,8 +59,7 @@ public class Runner implements Closeable {
         processPackages(packages, fields, mvn, packagingTypes, config);
     }
 
-    private void processPackages(Collection<PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes, Config config) {
-        LOGGER.debug("running on " + config.getThreads() + " threads");
+    private void processPackages(Collection<? extends PackageId> packages, Field[] fields, Maven mvn, Map<PackageId, String> packagingTypes, Config config) {
         ExecutorService executor = Executors.newFixedThreadPool(config.getThreads());
 
         // We manually create then manage the future inside the task
@@ -128,7 +127,7 @@ public class Runner implements Closeable {
         @Override
         public Void call() throws SQLException {
             if (cancelled.get()) {
-                LOGGER.error("SQL Exception encountered in another thread. Skipping package " + id);
+                LOGGER.error("SQL Exception encountered in another thread. Skipping package {}", id);
                 future.completeExceptionally(new SQLException("Lost connection to DB!"));
                 return null;
             }
@@ -164,7 +163,7 @@ public class Runner implements Closeable {
             var fetchTime = Duration.between(start, fetchEnd);
             var extractTime = Duration.between(fetchEnd, dbStart);
             var dbTime = Duration.between(dbStart, end);
-            LOGGER.info("processed " + id + " in " + time.toMillis() + " ms (fetch: " + fetchTime.toMillis() + " ms, extract: " + extractTime.toMillis() + " ms, db: " + dbTime.toMillis() + " ms)");
+            LOGGER.info("Processed {} in {}ms (fetch: {}ms, extract: {}ms, db: {}ms)", id, time.toMillis(), fetchTime.toMillis(), extractTime.toMillis(), dbTime.toMillis());
 
             future.complete(null);
             return null;

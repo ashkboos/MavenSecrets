@@ -1,27 +1,37 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import nl.tudelft.*;
-import nl.tudelft.Package;
-import nl.tudelft.mavensecrets.NopResolver;
+import static org.mockito.Mockito.mock;
+
+import java.io.IOException;
+import java.sql.SQLException;
+
 import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Scm;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
-
-import static org.mockito.Mockito.mock;
+import nl.tudelft.Database;
+import nl.tudelft.Extractor;
+import nl.tudelft.Maven;
+import nl.tudelft.Package;
+import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.NopResolver;
 
 class ExtractorVCTest {
     private static Extractor extractor;
     private static Maven maven;
     private static Model testModel;
-    private static File file;
     private static String pkgName = "";
     private static Database db = mock(Database.class);
+    private static final String defaultUrl = "https://github.com/ashkboos/MavenSecrets";
+    private static final String defaultHomepageUrl = "https://se.ewi.tudelft.nl/";
+    private static final String defaultDistMgmtUrl = "https://github.com/example/example";
+    private static final String defaultConnUrl = "scm:git:git@github.com:ericmoshare/uid-generator.git";
+    private static final String defaultDevConnUrl = "scm:git:github.com/guardian/identity";
 
     @BeforeAll
     static void setUp() {
@@ -29,14 +39,16 @@ class ExtractorVCTest {
         maven = new Maven(NopResolver.getInstance());
 
         Scm scm = new Scm();
-        scm.setUrl("https://github.com/ashkboos/MavenSecrets");
+        scm.setUrl(defaultUrl);
+        scm.setDeveloperConnection(defaultDevConnUrl);
+        scm.setConnection(defaultConnUrl);
         testModel = new Model();
         testModel.setScm(scm);
-        testModel.setUrl("https://se.ewi.tudelft.nl/");
+        testModel.setUrl(defaultHomepageUrl);
 
         DistributionManagement dist = new DistributionManagement();
         DeploymentRepository repo = new DeploymentRepository();
-        repo.setUrl("https://github.com/example/example");
+        repo.setUrl(defaultDistMgmtUrl);
         dist.setRepository(repo);
         testModel.setDistributionManagement(dist);
     }
@@ -62,9 +74,11 @@ class ExtractorVCTest {
         Object[] results = extractor.extract(maven, pkg, pkgName, db);
         Assertions.assertNotNull(results);
         Assertions.assertArrayEquals(new Object[] {
-                "https://github.com/ashkboos/MavenSecrets",
-                "https://se.ewi.tudelft.nl/",
-                "https://github.com/example/example"
+                defaultUrl,
+                defaultHomepageUrl,
+                defaultDistMgmtUrl,
+                defaultConnUrl,
+                defaultDevConnUrl
         }, results);
     }
 
@@ -73,7 +87,7 @@ class ExtractorVCTest {
         Model emptyModel = new Model();
         Package pkg = createPackage(emptyModel);
         Object[] results = extractor.extract(maven, pkg, pkgName, db);
-        Assertions.assertArrayEquals(new Object[] {null, null, null}, results);
+        Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
     }
 
     private static Package createPackage(Model model) {

@@ -36,9 +36,12 @@ public class SizeExtractor implements Extractor {
         Objects.requireNonNull(pkg);
         Object[] sizeAndNumber = new Object[2];
         JarFile jar = pkg.jar();
-        if(jar == null) {
+
+        // Sanity check
+        if (jar == null) {
             return new Object[fields.length];
         }
+
         jar.size();
         long size = 0;
         Enumeration<JarEntry> enumerator = jar.entries();
