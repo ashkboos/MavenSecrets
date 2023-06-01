@@ -40,6 +40,7 @@ public class JavaVersionExtractor implements Extractor {
     private static final Name BUILD_JDK_SPEC = new Name("Build-Jdk-Spec");
     private static final Name MULTI_RELEASE = Name.MULTI_RELEASE;
     //private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
+    // TODO: Built-By, X-Compile-Target-JDK, X-Compile-Source-JDK
 
     private final Field[] fields = {
             new Field("java_version_manifest_1", "VARCHAR"), // Created-By
