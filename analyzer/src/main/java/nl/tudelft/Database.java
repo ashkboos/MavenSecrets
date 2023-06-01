@@ -119,28 +119,28 @@ public class Database implements Closeable {
     }
 
     private void createUnresolvedTable0() throws SQLException {
-        execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(groupid VARCHAR(128), artifactid VARCHAR(128), version VARCHAR(128), error TEXT, PRIMARY KEY (groupid, artifactid, version))");
+        execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(groupid VARCHAR, artifactid VARCHAR, version VARCHAR, error VARCHAR, PRIMARY KEY (groupid, artifactid, version))");
     }
 
     private void createTable(String tableName) throws SQLException {
-        execute("CREATE TABLE " + tableName + "(groupid VARCHAR(128), artifactid VARCHAR(128), version VARCHAR(128), updated TIMESTAMP NOT NULL DEFAULT NOW(), PRIMARY KEY (groupid, artifactid, version))");
+        execute("CREATE TABLE " + tableName + "(groupid VARCHAR, artifactid VARCHAR, version VARCHAR, updated TIMESTAMP NOT NULL DEFAULT NOW(), PRIMARY KEY (groupid, artifactid, version))");
     }
 
     private void createIndexTable() throws SQLException {
-        execute("CREATE TABLE " + PACKAGE_INDEX_TABLE + "(groupid varchar(128)," +
-                "artifactid varchar(128)," +
-                "version    varchar(128)," +
+        execute("CREATE TABLE " + PACKAGE_INDEX_TABLE + "(groupid varchar," +
+                "artifactid varchar," +
+                "version    varchar," +
                 "lastmodified date," +
-                "packagingtype varchar(128)," +
+                "packagingtype varchar," +
                 "primary key (groupid, artifactid, version))");
     }
 
     private void createIndexTableWithPackaging() throws SQLException {
-        execute("CREATE TABLE " + PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING + "(groupid varchar(128)," +
-            "artifactid varchar(128)," +
-            "version    varchar(128)," +
+        execute("CREATE TABLE " + PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING + "(groupid varchar," +
+            "artifactid varchar," +
+            "version    varchar," +
             "lastmodified date," +
-            "packagingtype varchar(128)," +
+            "packagingtype varchar," +
             "primary key (groupid, artifactid, version, packagingtype))");
     }
 
@@ -149,11 +149,11 @@ public class Database implements Closeable {
         conn.prepareStatement(
                 "create table " + SELECTED_INDEX_TABLE + """
                 (
-                groupid       varchar(128) not null,
-                artifactid    varchar(128) not null,
-                version       varchar(128) not null,
+                groupid       varchar not null,
+                artifactid    varchar not null,
+                version       varchar not null,
                 lastmodified  date,
-                packagingtype varchar(128),
+                packagingtype varchar,
                 primary key (groupid, artifactid, version)
                 );
                 """
