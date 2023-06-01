@@ -53,7 +53,7 @@ public class JavaVersionExtractorTest {
     public void test_no_jar() throws IOException, SQLException {
         try (Package pkg = createPackage(null)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null, null}, results);
         }
     }
 
@@ -74,7 +74,7 @@ public class JavaVersionExtractorTest {
         }), JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {"1.7.0_06", null, null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {"1.7.0_06", null, null, null, null, new byte[0]}, results);
         }
     }
 
@@ -85,7 +85,7 @@ public class JavaVersionExtractorTest {
         }), JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, "1.8.0_201", null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {null, "1.8.0_201", null, null, null, new byte[0]}, results);
         }
     }
 
@@ -96,7 +96,7 @@ public class JavaVersionExtractorTest {
         }), JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, "1.8", null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {null, null, "1.8", null, null, new byte[0]}, results);
         }
     }
 
@@ -109,7 +109,7 @@ public class JavaVersionExtractorTest {
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null, new byte[0]}, results);
         }
     }
 
@@ -122,7 +122,7 @@ public class JavaVersionExtractorTest {
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null, new byte[0]}, results);
         }
     }
 
@@ -139,7 +139,7 @@ public class JavaVersionExtractorTest {
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {3, 4}, new byte[] {1, 2}}, results);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {3, 4}, new byte[] {1, 2}, null}, results);
         }
     }
 
@@ -148,7 +148,7 @@ public class JavaVersionExtractorTest {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null, new byte[0]}, results);
         }
     }
 
@@ -162,7 +162,7 @@ public class JavaVersionExtractorTest {
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {3, 4}, new byte[] {1, 2}}, results);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {3, 4}, new byte[] {1, 2}, null}, results);
         }
     }
 
@@ -184,7 +184,7 @@ public class JavaVersionExtractorTest {
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {7, 8}, new byte[] {5, 6}}, results);
+            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {7, 8}, new byte[] {5, 6}, new byte[] {7, 8, 5, 6, 0, 0, 0, 2, 3, 4, 1, 2, 0, 0, 0, 1}}, results);
         }
     }
 

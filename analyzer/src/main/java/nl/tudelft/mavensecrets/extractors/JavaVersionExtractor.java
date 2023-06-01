@@ -1,5 +1,7 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
@@ -36,14 +38,15 @@ public class JavaVersionExtractor implements Extractor {
     private static final Name CREATED_BY = new Name("Created-By");
     private static final Name BUILD_JDK = new Name("Build-Jdk");
     private static final Name BUILD_JDK_SPEC = new Name("Build-Jdk-Spec");
-    private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
+    //private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
 
     private final Field[] fields = {
             new Field("java_version_manifest_1", "VARCHAR"), // Created-By
             new Field("java_version_manifest_2", "VARCHAR"), // Build-Jdk
             new Field("java_version_manifest_3", "VARCHAR"), // Build-Jdk-Spec
             new Field("java_version_class_major", "BYTEA"),
-            new Field("java_version_class_minor", "BYTEA")
+            new Field("java_version_class_minor", "BYTEA"),
+            new Field("java_version_class_map", "BYTEA")
     };
 
     @Override
@@ -89,9 +92,10 @@ public class JavaVersionExtractor implements Extractor {
         Map<JavaClassVersion, Integer> versions = new HashMap<>();
         List<JarEntry> entries = jar.stream()
                 .filter(je -> je.getName().endsWith(".class"))
-                .limit(CLASS_FILE_LIMIT)
+                //.limit(CLASS_FILE_LIMIT)
                 .toList();
-        LOGGER.trace("Found {}/{} class file(s) to analyze ({})", entries.size(), CLASS_FILE_LIMIT, pkg.id());
+        //LOGGER.trace("Found {}/{} class file(s) to analyze ({})", entries.size(), CLASS_FILE_LIMIT, pkg.id());
+        LOGGER.trace("Found {} class file(s) to analyze ({})", entries.size(), pkg.id());
         for (JarEntry entry : entries) {
             JavaClassVersion jcv;
             try (InputStream stream = jar.getInputStream(entry)) {
@@ -119,6 +123,11 @@ public class JavaVersionExtractor implements Extractor {
                     result[4] = jcv.minor();
                 });
 
+        // Only needed if there are multiple versions
+        if (versions.size() != 1) {
+            result[5] = serializeVersionMap(versions);
+        }
+
         return result;
     }
 
@@ -145,6 +154,30 @@ public class JavaVersionExtractor implements Extractor {
         byte[] minor = Arrays.copyOfRange(buf, 4, 6);
         byte[] major = Arrays.copyOfRange(buf, 6, 8);
         return new JavaClassVersion(major, minor);
+    }
+
+    /**
+     * Serialize a class version map into (proprietary) binary data.
+     *
+     * @param map Map to serialize.
+     * @return The serialized map.
+     */
+    private byte[] serializeVersionMap(Map<JavaClassVersion, Integer> map) {
+        Objects.requireNonNull(map);
+
+        byte[] array;
+        try (ByteArrayOutputStream stream = new ByteArrayOutputStream(); DataOutputStream out = new DataOutputStream(stream)) {
+            for (Entry<JavaClassVersion, Integer> entry : map.entrySet()) {
+                JavaClassVersion jcv = entry.getKey();
+                out.write(jcv.major());
+                out.write(jcv.minor());
+                out.writeInt(entry.getValue());
+            }
+            array = stream.toByteArray();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        }
+        return array;
     }
 
     /**
