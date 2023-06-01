@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-import nl.tudelft.ArtifactId;
 import nl.tudelft.Database;
 import nl.tudelft.PackageId;
 
@@ -27,7 +26,7 @@ public class AllPackageSelector implements PackageSelector {
     }
 
     @Override
-    public Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws IOException, SQLException {
-        return Collections.unmodifiableCollection(db.getArtifactIds(page, pageSize));
+    public Collection<? extends PackageId> getPackages() throws IOException, SQLException {
+        return Collections.unmodifiableCollection(db.getPackageIds());
     }
 }

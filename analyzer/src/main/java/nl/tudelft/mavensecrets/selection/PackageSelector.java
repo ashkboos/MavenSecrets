@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 
-import nl.tudelft.ArtifactId;
+import nl.tudelft.PackageId;
 
 /**
  * A supplier of packages to analyze.
@@ -20,5 +20,5 @@ public interface PackageSelector {
      * @throws IOException If an I/O error occurs.
      * @throws SQLException If a database error occurs.
      */
-    Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws IOException, SQLException;
+    Collection<? extends PackageId> getPackages() throws IOException, SQLException;
 }
