@@ -28,7 +28,6 @@ import nl.tudelft.Package;
 public class DependencyExtractor implements Extractor {
 
     //private static final Logger LOGGER = LogManager.getLogger(DependencyExtractor.class);
-    private DefaultResolver resolver = new DefaultResolver();
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static List<RemoteRepository> repositories = List.of(MAVEN_CENTRAL);
     private final Field[] fields = {
@@ -74,24 +73,24 @@ public class DependencyExtractor implements Extractor {
         return result;
     }
 
-    private int resolves(String groupId, String artifactId, String version) {
-        Artifact artifact = resolver.createArtifact(groupId, artifactId, version);
-        RepositorySystem repository = resolver.getRepository();
-        RepositorySystemSession session = resolver.getRepositorySystemSession();
-        DependencyResult result;
-        List<Dependency> list = new ArrayList<>();
-        list.add(new Dependency(artifact, null));
-        try {
-            result = repository.resolveDependencies(session, new DependencyRequest(new CollectRequest((Dependency) null, list, repositories), null));
-        } catch (DependencyResolutionException exception) {
-            // Handle exception
-            return -1;
-        }
-        List<Artifact> transDeps = new ArrayList<>();
-        for (ArtifactResult ar : result.getArtifactResults()) {
-            Artifact a = ar.getArtifact();
-            transDeps.add(a);
-        }
-        return transDeps.size();
-    }
+//    private int resolves(String groupId, String artifactId, String version) {
+//        Artifact artifact = resolver.createArtifact(groupId, artifactId, version);
+//        RepositorySystem repository = resolver.getRepository();
+//        RepositorySystemSession session = resolver.getRepositorySystemSession();
+//        DependencyResult result;
+//        List<Dependency> list = new ArrayList<>();
+//        list.add(new Dependency(artifact, null));
+//        try {
+//            result = repository.resolveDependencies(session, new DependencyRequest(new CollectRequest((Dependency) null, list, repositories), null));
+//        } catch (DependencyResolutionException exception) {
+//            // Handle exception
+//            return -1;
+//        }
+//        List<Artifact> transDeps = new ArrayList<>();
+//        for (ArtifactResult ar : result.getArtifactResults()) {
+//            Artifact a = ar.getArtifact();
+//            transDeps.add(a);
+//        }
+//        return transDeps.size();
+//    }
 }
