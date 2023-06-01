@@ -1,58 +1,44 @@
 package nl.tudelft.mavensecrets.selection;
 
+import nl.tudelft.Database;
+import nl.tudelft.PackageId;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import nl.tudelft.ArtifactId;
-import nl.tudelft.Database;
-
-public class StratifiedSampleSelector implements PackageSelector {
-
+public class StratifiedSampleSelector implements PackageSelector{
+    private Logger LOGGER = LogManager.getLogger(StratifiedSampleSelector.class);
     private final Database db;
-    private final long seed;
-    private final double samplePercent;
-    private final AtomicBoolean generated = new AtomicBoolean(false);
 
-    public StratifiedSampleSelector(Database db, long seed, double samplePercent) {
-        this.db = Objects.requireNonNull(db);
-        this.seed = seed;
-        this.samplePercent = samplePercent;
-        if (samplePercent < 0D || samplePercent > 100D) {
+    public StratifiedSampleSelector(Database db, long seed, float samplePercent) throws SQLException {
+        Objects.requireNonNull(db);
+        if (samplePercent < 0 || samplePercent > 100) {
             throw new IllegalArgumentException("Sample percent must be between 0 and 100");
         }
-    }
 
-    @Override
-    public Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws IOException, SQLException {
-        // We assume page and pageSize is valid :)
-
-        // Generate if not done so
-        // Computational overhead is negligible
-        if (!generated.getAndSet(true)) {
-            generateSubset();
+        this.db = db;
+        Map<Integer, Integer> yearPopulationMap = db.getYearCounts();
+        db.createSelectedTable();
+        for (var kvPair : yearPopulationMap.entrySet()) {
+            int year = kvPair.getKey();
+            db.extractStrataSample(seed, samplePercent, year);
         }
-
-        return Collections.unmodifiableCollection(db.getSelectedPkgs(page, pageSize));
     }
 
     /**
-     * Generate the dataset.
-     * Behaviour of repeated method calls is undefined.
-     * 
-     * @throws SQLException If a database error occurs.
+     * @return 
+     * @throws IOException
+     * @throws SQLException
      */
-    private void generateSubset() throws SQLException {
-        Map<Integer, Integer> yearPopulationMap = db.getYearCounts();
-        db.createSelectedTable();
-        for (Entry<Integer, Integer> entry : yearPopulationMap.entrySet()) {
-            int year = entry.getKey();
-            db.extractStrataSample(seed, samplePercent, year);
-        }
+
+    @Override
+    public Collection<? extends PackageId> getPackages() throws SQLException {
+        return Collections.unmodifiableCollection(db.getSelectedPkgs());
     }
 }

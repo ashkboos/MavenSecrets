@@ -14,30 +14,24 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 
+import nl.tudelft.mavensecrets.selection.StratifiedSampleSelector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import nl.tudelft.mavensecrets.config.Config;
 import nl.tudelft.mavensecrets.config.YamlConfig;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
+import nl.tudelft.mavensecrets.selection.AllPackageSelector;
 import nl.tudelft.mavensecrets.selection.PackageSelector;
-import nl.tudelft.mavensecrets.selection.StratifiedSampleSelector;
 
 public class App {
 
     private static final Logger LOGGER = LogManager.getLogger(App.class);
-    private static final int PAGE_SIZE = 512;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, SQLException, PackageException {
         // Config
         LOGGER.info("Loading configuration");
-        Config config;
-        try {
-            config = loadConfiguration();
-        } catch (IOException exception) {
-            LOGGER.error("Could not load configuration", exception);
-            return;
-        }
+        Config config = loadConfiguration();
         LOGGER.info("Extractors: {}", config.getExtractors());
         LOGGER.info("Threadpool size: {}", config.getThreads());
         LOGGER.info("Database configuration: {}", config.getDatabaseConfig());
@@ -47,42 +41,27 @@ public class App {
         LOGGER.info("Sample percent: {}%", config.getSamplePercent());
 
         long startTime = System.currentTimeMillis();
-
-        // Databse
-        Database db;
-        try {
-            db = openDatabase(config.getDatabaseConfig());
-            db.createUnresolvedTable();
-        } catch (SQLException exception) {
-            LOGGER.error("Could not open database", exception);
-            return;
-        }
-
-        // Indexer
-        try {
-            runIndexerReader(config.getIndexFiles(), args, db);
-        } catch (SQLException exception) {
-            LOGGER.error("Could not insert indices into database", exception);
-            return;
-        }
+        var db = openDatabase(config.getDatabaseConfig());
+        runIndexerReader(config.getIndexFiles(), args, db);
 
         PackageSelector selector = new StratifiedSampleSelector(db, config.getSeed(), config.getSamplePercent());
         LOGGER.info("Package selector: {}", selector);
+        var packages = selector.getPackages();
+
+        LOGGER.info("Found {} package(s)", packages.size());
+        if (packages.isEmpty()) {
+            return;
+        }
+
+        var pkgTypeMap = db.getPackagingType();
 
         var resolver = new DefaultResolver(config.getLocalRepository());
         var builder = extractors(config, new RunnerBuilder());
         var maven = new Maven(resolver);
 
         try (var runner = builder.build(db)) {
-            Collection<? extends ArtifactId> artifacts;
-            for (int i = 0; (artifacts = selector.getArtifacts(i, PAGE_SIZE)).size() > 0; i++) {
-                runner.run(maven, artifacts, config.getThreads());
-            }
-        } catch (IOException | SQLException exception) {
-            LOGGER.error("Runner failed with exception", exception);
-        } catch (InterruptedException exception) {
-            LOGGER.warn("Run interrupted");
-            Thread.currentThread().interrupt();
+            runner.run(maven, packages, pkgTypeMap, config);
+            db.addTimestamp();
         }
 
         long endTime = System.currentTimeMillis();

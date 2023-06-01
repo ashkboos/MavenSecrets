@@ -3,7 +3,6 @@ package nl.tudelft.mavensecrets.resolver;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -12,13 +11,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.interpolation.AbstractStringBasedModelInterpolator;
 import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
-import org.apache.maven.model.interpolation.ModelInterpolator;
 import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
 import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
-import org.apache.maven.model.merge.ModelMerger;
 import org.apache.maven.model.path.DefaultUrlNormalizer;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -46,15 +42,14 @@ import nl.tudelft.PackageId;
  * This implementation pulls from Maven Central.
  */
 public class DefaultResolver implements Resolver {
+
     private static final Logger LOGGER = LogManager.getLogger(DefaultResolver.class);
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");
 
     private final RepositorySystem repository;
     private final RepositorySystemSession session;
-    private final ModelReader modelReader;
-    private final ModelMerger merger;
-    private final ModelInterpolator interpolator;
+    private final ModelReader modelReader = new DefaultModelReader();
 
     /**
      * Create a resolver instance.
@@ -65,11 +60,6 @@ public class DefaultResolver implements Resolver {
         Objects.requireNonNull(local);
         this.repository = createRepositorySystem();
         this.session = createSession(new LocalRepository(local));
-        this.modelReader = new DefaultModelReader();
-        this.merger = new ModelMerger();
-        this.interpolator = new StringVisitorModelInterpolator()
-                .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
-                .setUrlNormalizer(new DefaultUrlNormalizer());
     }
 
     @Override
@@ -118,7 +108,6 @@ public class DefaultResolver implements Resolver {
     public Model loadPom(Artifact artifact) throws ArtifactResolutionException, IOException {
         Model pomFile = modelReader.read(getPom(artifact), null);
         Properties properties = new Properties();
-        Model parent = null;
         if (pomFile.getParent() != null) {
             var parentPom = pomFile.getParent();
             var parentGroup = parentPom.getGroupId() == null ? artifact.getGroupId() : parentPom.getGroupId();
@@ -126,6 +115,7 @@ public class DefaultResolver implements Resolver {
             var parentId = new PackageId(parentGroup, parentPom.getArtifactId(), parentVersion);
 
             LOGGER.trace("Resolving parent {} -> {}", PackageId.fromArtifact(artifact), parentId);
+            Model parent;
             try {
                 parent = loadPom(createArtifact(parentId.group(), parentId.artifact(), parentId.version()));
             } catch (Throwable ex) {
@@ -142,11 +132,10 @@ public class DefaultResolver implements Resolver {
         request.setUserProperties(properties);
         request.setProcessPlugins(true);
 
-        var model = interpolator.interpolateModel(pomFile, null, request, new LoggedModelProblemCollector(LOGGER));
-        if (parent != null)
-            merger.merge(model, parent, false, new HashMap<>());
-
-        return model;
+        return new StringVisitorModelInterpolator()
+                .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
+                .setUrlNormalizer(new DefaultUrlNormalizer())
+                .interpolateModel(pomFile, null, request, new LoggedModelProblemCollector(LOGGER));
     }
 
     @Override

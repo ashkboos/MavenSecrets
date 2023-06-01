@@ -25,14 +25,14 @@ public class Maven {
         this.resolver = Objects.requireNonNull(resolver);
     }
 
-    public Package getPackage(ArtifactId id) throws PackageException {
+    public Package getPackage(PackageId id, String pkgType) throws PackageException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         File jar;
         try {
-            jar = id.extension().equals("pom") ? null : resolver.getJar(artifact, id.extension());
+            jar = pkgType.equals("pom") ? null : resolver.getJar(artifact, pkgType);
         } catch (ArtifactResolutionException exception) {
             LOGGER.warn("Could not fetch archive ({})", id, exception);
             jar = null;

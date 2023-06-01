@@ -3,29 +3,7 @@ package nl.tudelft;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 
-public class PackageId {
-    private final String group;
-    private final String artifact;
-    private final String version;
-
-    public PackageId(String group, String artifact, String version) {
-        this.group = group;
-        this.artifact = artifact;
-        this.version = version;
-    }
-
-    public String group() {
-        return group;
-    }
-
-    public String artifact() {
-        return artifact;
-    }
-
-    public String version() {
-        return version;
-    }
-
+public record PackageId(String group, String artifact, String version) {
     @Override
     public String toString() {
         return group + ":" + artifact + ":" + version;
@@ -45,12 +23,17 @@ public class PackageId {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this)
+        if (obj == this) {
             return true;
-        if (!(obj instanceof PackageId that))
-            return false;
+        }
 
-        return this.group.equals(that.group) && this.artifact.equals(that.artifact) && this.version.equals(that.version);
+        if (!(obj instanceof PackageId)) {
+            return false;
+        }
+
+        PackageId other = (PackageId) obj;
+
+        return this.group.equals(other.group) && this.artifact.equals(other.artifact) &&  this.version.equals(other.version);
     }
 
     @Override
