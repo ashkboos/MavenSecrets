@@ -130,24 +130,19 @@ public class PackagingTypeExtractor implements Extractor {
                 restOfFileName = filename.substring(startIndex);
             }
 
+            int lastIndex = restOfFileName.lastIndexOf(".");
+
+            if(restOfFileName.endsWith("md5") || restOfFileName.endsWith("sha1")
+                || restOfFileName.endsWith("sha256") || restOfFileName.endsWith("sha512")) {
+                allTypesOfCheckSum.add(restOfFileName.substring(lastIndex));
+                continue;
+            }
+
             if(restOfFileName.contains(".asc") || restOfFileName.contains("-")) {
                 continue;
             }
 
-            int endIndex = restOfFileName.indexOf(".");
-            int lastIndex = restOfFileName.lastIndexOf(".");
-
-            if(endIndex == -1) {
-                allTypesOfExecutable.add(restOfFileName);
-            }
-            if(endIndex != lastIndex) {
-                allTypesOfExecutable.add(restOfFileName.substring(0, lastIndex));
-            }
-
-            if(restOfFileName.endsWith("md5") || restOfFileName.endsWith("sha1")
-            || restOfFileName.endsWith("sha256") || restOfFileName.endsWith("sha512")) {
-                allTypesOfCheckSum.add(restOfFileName.substring(lastIndex));
-            }
+            allTypesOfExecutable.add(restOfFileName);
 
         }
         if(allTypesOfExecutable.size() > 1) {

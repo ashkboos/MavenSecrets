@@ -123,7 +123,7 @@ public class PackagingTypeExtractorTest {
     }
 
     @Test
-    public void testAllCheckSum() {
+    public void testAllCheckSumAndExecutable() {
         Set<String> allExecutable = new HashSet<>();
         Set<String> allChecksum = new HashSet<>();
         extractor.extractExecutableTypeAndCheckSum(id, allArtifacts, allExecutable, allChecksum);
