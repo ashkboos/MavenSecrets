@@ -1,19 +1,17 @@
 package nl.tudelft.mavensecrets.selection;
 
-import nl.tudelft.Database;
-import nl.tudelft.PackageId;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
-public class StratifiedSampleSelector implements PackageSelector{
-    private Logger LOGGER = LogManager.getLogger(StratifiedSampleSelector.class);
+import nl.tudelft.Database;
+import nl.tudelft.PackageId;
+
+public class StratifiedSampleSelector implements PackageSelector {
+
+    //private static final Logger LOGGER = LogManager.getLogger(StratifiedSampleSelector.class);
     private final Database db;
 
     public StratifiedSampleSelector(Database db, long seed, float samplePercent) throws SQLException {
@@ -30,12 +28,6 @@ public class StratifiedSampleSelector implements PackageSelector{
             db.extractStrataSample(seed, samplePercent, year);
         }
     }
-
-    /**
-     * @return 
-     * @throws IOException
-     * @throws SQLException
-     */
 
     @Override
     public Collection<? extends PackageId> getPackages() throws SQLException {

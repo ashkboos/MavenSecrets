@@ -14,15 +14,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 
-import nl.tudelft.mavensecrets.selection.StratifiedSampleSelector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import nl.tudelft.mavensecrets.config.Config;
 import nl.tudelft.mavensecrets.config.YamlConfig;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import nl.tudelft.mavensecrets.selection.AllPackageSelector;
 import nl.tudelft.mavensecrets.selection.PackageSelector;
+import nl.tudelft.mavensecrets.selection.StratifiedSampleSelector;
 
 public class App {
 
