@@ -1,5 +1,7 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
@@ -43,7 +45,8 @@ public class JavaVersionExtractor implements Extractor {
             new Field("java_version_manifest_2", "VARCHAR"), // Build-Jdk
             new Field("java_version_manifest_3", "VARCHAR"), // Build-Jdk-Spec
             new Field("java_version_class_major", "BYTEA"),
-            new Field("java_version_class_minor", "BYTEA")
+            new Field("java_version_class_minor", "BYTEA"),
+            new Field("java_version_class_map", "BYTEA")
     };
 
     @Override
@@ -108,6 +111,11 @@ public class JavaVersionExtractor implements Extractor {
             LOGGER.trace("Found version occurrences: {} ({})", versions, pkg.id());
         }
 
+        // Only needed if there are multiple versions
+        if (versions.size() > 1) {
+            result[5] = serializeVersionMap(versions);
+        }
+
         // Find most frequent type
         versions.entrySet()
                 .stream()
@@ -146,6 +154,30 @@ public class JavaVersionExtractor implements Extractor {
         byte[] minor = Arrays.copyOfRange(buf, 4, 6);
         byte[] major = Arrays.copyOfRange(buf, 6, 8);
         return new JavaClassVersion(major, minor);
+    }
+
+    /**
+     * Serialize a class version map into (proprietary) binary data.
+     *
+     * @param map Map to serialize.
+     * @return The serialized map.
+     */
+    private byte[] serializeVersionMap(Map<JavaClassVersion, Integer> map) {
+        Objects.requireNonNull(map);
+
+        byte[] array;
+        try (ByteArrayOutputStream stream = new ByteArrayOutputStream(); DataOutputStream out = new DataOutputStream(stream)) {
+            for (Entry<JavaClassVersion, Integer> entry : map.entrySet()) {
+                JavaClassVersion jcv = entry.getKey();
+                out.write(jcv.major());
+                out.write(jcv.minor());
+                out.writeInt(entry.getValue());
+            }
+            array = stream.toByteArray();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        }
+        return array;
     }
 
     /**
