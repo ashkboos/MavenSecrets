@@ -1,3 +1,5 @@
+import collections
+
 import matplotlib.pyplot as plt
 import psycopg2
 
@@ -11,6 +13,8 @@ def main():
 
     result_difference = get_frequency_of_difference(cur)
     results_frequency = get_frequency_from_pom(cur)
+
+    frequency_of_each_qualifier(cur)
 
     total_difference_in_packages(cur)
 
@@ -32,7 +36,7 @@ def main():
         s = s + packaging_type_counts[r]
         print(f'Actual Packaging type (from POM) : {r}, Count: {packaging_type_counts[r]}')
 
-    print('Total:', s)
+    print(f'Total: {s}')
     # Create a bar chart
     packaging_type_counts = {key: value for key, value in packaging_type_counts.items() if value is not None}
 
@@ -89,6 +93,40 @@ def print_result_with_individual_freq(results):
         frequency = row[2]
         print(f'Packaging type from POM: {packagingtypefrompom}, Packaging type from Repo: {packagingtypefromrepo}, '
               f'Frequency: {frequency}')
+
+
+def frequency_of_each_qualifier(cur):
+    # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
+    cur.execute("SELECT allqualifiers FROM packages")
+
+    # Fetch all the values and store them into the 'all_qualifiers_list' list
+    all_qualifiers_list = [row['allqualifiers'] for row in cur.fetchall()]
+
+    # Create an empty dictionary to store word frequencies
+    word_frequencies = {}
+
+    # Iterate through each 'allqualifiers' value
+    for qualifiers_string in all_qualifiers_list:
+        if qualifiers_string is not None:
+            # Remove the square brackets and split the string into words
+            qualifiers_list = qualifiers_string.strip('[]').split(',')
+
+            # Iterate through each word and update the frequencies
+            for word in qualifiers_list:
+                word = word.strip()  # Remove leading/trailing whitespaces
+                if word:
+                    word_frequencies[word] = word_frequencies.get(word, 0) + 1
+
+    # Sort the word frequencies by their values in descending order
+    sorted_frequencies = collections.Counter(word_frequencies).most_common()
+
+    unique_words_count = len(sorted_frequencies)
+
+    print(f"Number of unique words: {unique_words_count}")
+
+    # Print the word frequencies
+    for word, frequency in sorted_frequencies:
+        print(f"Word: {word} - Frequency: {frequency}")
 
 
 main()
