@@ -32,8 +32,10 @@ def main():
         s = s + packaging_type_counts[r]
         print(f'Actual Packaging type (from POM) : {r}, Count: {packaging_type_counts[r]}')
 
-    print('Total:', {s})
+    print('Total:', s)
     # Create a bar chart
+    packaging_type_counts = {key: value for key, value in packaging_type_counts.items() if value is not None}
+
     plt.bar(packaging_type_counts.keys(), packaging_type_counts.values())
 
     # Add labels and title
@@ -60,8 +62,8 @@ def get_frequency_of_difference(cur):
 
 
 def get_frequency_from_pom(cur):
-    cur.execute('SELECT packagingtypefrompom, COUNT(*) FROM packages GROUP BY packagingtypefrompom')
-
+    cur.execute('SELECT packagingtypefrompom, COUNT(*) FROM packages WHERE packagingtypefrompom IS NOT NULL GROUP BY '
+                'packagingtypefrompom')
     results = cur.fetchall()
     return results
 
