@@ -8,7 +8,6 @@ import java.util.Objects;
 
 import nl.tudelft.ArtifactId;
 import nl.tudelft.Database;
-import nl.tudelft.PackageId;
 
 /**
  * A {@link PackageSelector} that fetches all available packages from a database.

@@ -12,7 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.interpolation.AbstractStringBasedModelInterpolator;
 import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
 import org.apache.maven.model.interpolation.ModelInterpolator;
 import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
@@ -46,6 +45,7 @@ import nl.tudelft.PackageId;
  * This implementation pulls from Maven Central.
  */
 public class DefaultResolver implements Resolver {
+
     private static final Logger LOGGER = LogManager.getLogger(DefaultResolver.class);
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");
