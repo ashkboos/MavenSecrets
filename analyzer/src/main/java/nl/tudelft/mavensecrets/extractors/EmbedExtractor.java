@@ -1,15 +1,16 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import nl.tudelft.*;
-import nl.tudelft.Package;
-
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.JarUtils;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
 
 public class EmbedExtractor implements Extractor {
     private static final Field[] fields = new Field[] {
@@ -27,6 +28,12 @@ public class EmbedExtractor implements Extractor {
         // TODO: identify JARs by magic number
 
         var jar = pkg.jar();
+
+        // Sanity check
+        if (jar == null) {
+            return new Object[fields.length];
+        }
+
         var jars = jar.stream().filter(i -> i.getRealName().toLowerCase().endsWith(".jar")).toArray(JarEntry[]::new);
         var packages = new HashSet<String>();
         for (var entry : jars) {

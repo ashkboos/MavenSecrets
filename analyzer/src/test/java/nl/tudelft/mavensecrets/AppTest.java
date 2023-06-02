@@ -1,4 +1,4 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

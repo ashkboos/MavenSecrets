@@ -1,4 +1,4 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,6 +14,8 @@ public class Database implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger(Database.class);
     private static final String PACKAGES_TABLE = "packages";
     private static final String PACKAGE_INDEX_TABLE = "package_list";
+    private static final String PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING = "package_list_with_all_packaging";
+    private static final String SELECTED_INDEX_TABLE = "selected_packages";
     private static final String EXTENSION_TABLE = "extensions";
     private static final String UNRESOLVED_PACKAGES = "unresolved_packages";
     private static final int BACKOFF_TIME_MS = 1000;
@@ -36,13 +38,13 @@ public class Database implements Closeable {
     }
 
     public static Database connect(String url, String user, String pass) throws SQLException {
-        LOGGER.trace("connecting to " + url);
+        LOGGER.trace("Attempting to connect to {}", url);
         var sleep = BACKOFF_TIME_MS;
-        for (var i = 0;; i++) {
+        for (var i = 1;; i++) {
             try {
                 return new Database(DriverManager.getConnection(url, user, pass));
             } catch (SQLException ex) {
-                LOGGER.error("failed to connect to the database (attempt " + (i + 1) + ")", ex);
+                LOGGER.warn("Failed to connect to the database (attempt {})", i, ex);
                 if (i > BACKOFF_RETRIES)
                     throw ex;
             }
@@ -72,15 +74,21 @@ public class Database implements Closeable {
         }
     }
 
-    public void createExtensionsTable() throws SQLException {
-        if(!tableExists(EXTENSION_TABLE)) {
-            createExtensionTable();
+    public void createIndexesTableWithAllPackaging(boolean checked) throws SQLException {
+        if(!checked && !tableExists(PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING)) {
+            createIndexTableWithPackaging();
         }
     }
 
-    public void createUnresolvedTable(boolean checked) throws SQLException {
-        if(!checked && !tableExists(UNRESOLVED_PACKAGES)) {
-            createUnresolvedTable();
+    public void createExtensionTable() throws SQLException {
+        if(!tableExists(EXTENSION_TABLE)) {
+            createTable(EXTENSION_TABLE);
+        }
+    }
+
+    public void createUnresolvedTable() throws SQLException {
+        if(!tableExists(UNRESOLVED_PACKAGES)) {
+            createUnresolvedTable0();
         }
     }
 
@@ -102,22 +110,46 @@ public class Database implements Closeable {
         throw new RuntimeException("query didn't result in boolean");
     }
 
-    private void createUnresolvedTable() throws SQLException {
-        execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(id VARCHAR(128) PRIMARY KEY, error VARCHAR(512))");
+    private void createUnresolvedTable0() throws SQLException {
+        execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(groupid VARCHAR, artifactid VARCHAR, version VARCHAR, error VARCHAR, PRIMARY KEY (groupid, artifactid, version))");
     }
 
     private void createTable(String tableName) throws SQLException {
-        execute("CREATE TABLE " + tableName + "(id VARCHAR(128) PRIMARY KEY)");
+        execute("CREATE TABLE " + tableName + "(groupid VARCHAR, artifactid VARCHAR, version VARCHAR, updated TIMESTAMP NOT NULL DEFAULT NOW(), PRIMARY KEY (groupid, artifactid, version))");
     }
 
     private void createIndexTable() throws SQLException {
-        conn.prepareStatement("CREATE TABLE " + PACKAGE_INDEX_TABLE + "(groupid varchar(128)," +
-                "artifactid varchar(128)," +
-                "version    varchar(128)," +
+        execute("CREATE TABLE " + PACKAGE_INDEX_TABLE + "(groupid varchar," +
+                "artifactid varchar," +
+                "version    varchar," +
                 "lastmodified date," +
-                "packagingtype varchar(128)," +
-                "constraint table_name_pk " +
-                "primary key (groupid, artifactid, version))").execute();
+                "packagingtype varchar," +
+                "primary key (groupid, artifactid, version))");
+    }
+
+    private void createIndexTableWithPackaging() throws SQLException {
+        execute("CREATE TABLE " + PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING + "(groupid varchar," +
+            "artifactid varchar," +
+            "version    varchar," +
+            "lastmodified date," +
+            "packagingtype varchar," +
+            "primary key (groupid, artifactid, version, packagingtype))");
+    }
+
+    public void createSelectedTable() throws SQLException {
+        conn.prepareStatement("DROP TABLE IF EXISTS " + SELECTED_INDEX_TABLE).execute();
+        conn.prepareStatement(
+                "create table " + SELECTED_INDEX_TABLE + """
+                (
+                groupid       varchar not null,
+                artifactid    varchar not null,
+                version       varchar not null,
+                lastmodified  date,
+                packagingtype varchar,
+                primary key (groupid, artifactid, version)
+                );
+                """
+        ).execute();
     }
 
     private void createExtensionTable() throws SQLException {
@@ -151,8 +183,8 @@ public class Database implements Closeable {
         if (fields.length != values.length)
             throw new IllegalArgumentException("number of fields and values is different");
 
-        StringBuilder names = new StringBuilder("id");
-        StringBuilder qe = new StringBuilder("?");
+        StringBuilder names = new StringBuilder("groupid,artifactid,version");
+        StringBuilder qe = new StringBuilder("?,?,?");
         StringBuilder upd = new StringBuilder();
         for (var field : fields) {
             names.append(",").append(field.name());
@@ -163,31 +195,53 @@ public class Database implements Closeable {
             upd.append(field.name()).append("=?");
         }
 
-        Object[] arguments = new Object[fields.length * 2 + 1];
-        arguments[0] = id.toString();
+        Object[] arguments = new Object[fields.length * 2 + 3];
+        arguments[0] = id.group();
+        arguments[1] = id.artifact();
+        arguments[2] = id.version();
         for (var i = 0; i < fields.length; i++)
-            arguments[i + fields.length + 1] = arguments[i + 1] = values[i];
-        execute("INSERT INTO " + PACKAGES_TABLE + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(id) DO UPDATE SET " + upd, arguments);
+            arguments[i + fields.length + 3] = arguments[i + 3] = values[i];
+
+        var table = updatePackageTable ? PACKAGES_TABLE : EXTENSION_TABLE;
+        execute("INSERT INTO " + table + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(groupid,artifactid,version) DO UPDATE SET updated = DEFAULT," + upd, arguments);
     }
 
     void updateIndexTable(String groupId, String artifactId, String version, Date lastModified, String packagingType) throws SQLException {
-        PreparedStatement query = conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE +
-                "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING");
-        query.setString(1, groupId);
-        query.setString(2, artifactId);
-        query.setString(3, version);
-        query.setDate(4, lastModified);
-        query.setString(5, packagingType);
-        query.execute();
+        execute("INSERT INTO " + PACKAGE_INDEX_TABLE + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING", new Object[]{groupId, artifactId, version, lastModified, packagingType});
     }
 
-    void updateUnresolvedTable(String id, String error) throws SQLException {
-        PreparedStatement query = conn.prepareStatement("INSERT INTO " + UNRESOLVED_PACKAGES +
-                "(id, error) VALUES(?,?) ON CONFLICT DO NOTHING");
-        query.setString(1, id);
-        query.setString(2, error);
-        query.execute();
+    // TODO UPDATE THIS
+    void batchUpdateIndexTable(List<String[]> indexedInfo) throws SQLException {
+       PreparedStatement query =  conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE + " "
+               + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES (?,?,?,?,?)");
+       for (String[] info : indexedInfo) {
+           query.setString(1, info[0]);
+           query.setString(2, info[1]);
+           query.setString(3, info[2]);
+           query.setDate(4, new Date(Long.parseLong(info[3])));
+           query.setString(5, info[4]);
+           query.addBatch();
+       }
+       query.executeBatch();
+    }
 
+    public void batchUpdateIndexTableWithPackaging(List<String[]> indexInfo) throws SQLException {
+        PreparedStatement query =  conn.prepareStatement("INSERT INTO " + PACKAGE_INDEX_TABLE_WITH_ALL_PACKAGING + " "
+                + "(groupid, artifactid, version, lastmodified, packagingtype) VALUES (?,?,?,?,?)");
+        for (String[] info : indexInfo) {
+            query.setString(1, info[0]);
+            query.setString(2, info[1]);
+            query.setString(3, info[2]);
+            query.setDate(4, new Date(Long.parseLong(info[3])));
+            query.setString(5, info[4]);
+            query.addBatch();
+        }
+        query.executeBatch();
+    }
+
+    void updateUnresolvedTable(ArtifactId id, String error) throws SQLException {
+        execute("INSERT INTO " + UNRESOLVED_PACKAGES + "(groupid,artifactid,version, error) VALUES(?,?,?,?) ON CONFLICT DO NOTHING",
+                new Object[] { id.group(), id.artifact(), id.version(), error });
     }
 
     public void updateExtensionTable(String id, String extension, long count, long size, long min, long max, long median) throws SQLException {
@@ -206,36 +260,60 @@ public class Database implements Closeable {
     /**
      * @return list of package ids of packages to be fed to the runner
      */
-    public List<PackageId> getPackageIds() throws SQLException {
-        List<PackageId> packageIds = new LinkedList<>();
+    public List<ArtifactId> getArtifactIds(int page, int pageSize) throws SQLException {
+        List<ArtifactId> artifacts = new LinkedList<>();
         if (!tableExists(PACKAGE_INDEX_TABLE))
-            return packageIds;
+            return artifacts;
 
-        try (var results = query("SELECT groupid, artifactid, version FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+        try (var results = query("SELECT groupid, artifactid, version, packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY groupid, artifactid, version LIMIT " + pageSize + " OFFSET " + pageSize * page)) {
             while (results.next()) {
-                packageIds.add(new PackageId(results.getString("groupid"),
+                artifacts.add(new ArtifactId(results.getString("groupid"),
                         results.getString("artifactid"),
-                        results.getString("version")));
+                        results.getString("version"),
+                        results.getString("packagingtype")));
             }
         }
 
-        return packageIds;
+        return artifacts;
     }
 
-    public List<String> getPackagingType() throws SQLException {
-        List<String> packagingTypes = new ArrayList<>();
-        if (!tableExists(PACKAGE_INDEX_TABLE))
-            return packagingTypes;
 
-        try (var results = query("SELECT packagingtype FROM " + PACKAGE_INDEX_TABLE + " ORDER BY CONCAT(groupid, artifactid, version)")) {
+    public List<ArtifactId> getSelectedPkgs(int page, int pageSize) throws SQLException {
+        List<ArtifactId> artifacts = new LinkedList<>();
+        if (!tableExists(SELECTED_INDEX_TABLE))
+            return artifacts;
+
+        try (var results = query("SELECT groupid, artifactid, version, packagingtype FROM " + SELECTED_INDEX_TABLE + " ORDER BY groupid, artifactid, version LIMIT " + pageSize + " OFFSET " + pageSize * page)) {
+
             while (results.next()) {
-                packagingTypes.add(results.getString("packagingtype"));
+                artifacts.add(new ArtifactId(results.getString("groupid"),
+                        results.getString("artifactid"),
+                        results.getString("version"),
+                        results.getString("packagingtype")));
             }
         }
-
-        return packagingTypes;
-
+        return artifacts;
     }
+
+    public Map<Integer, Integer> getYearCounts() throws SQLException {
+        String sql = "SELECT date_part('year', lastmodified) AS year, COUNT(*)"
+                + "FROM " + PACKAGE_INDEX_TABLE
+                + " group by year ";
+        ResultSet rs = query(sql);
+        Map<Integer, Integer> yearCounts = new HashMap<>();
+        while (rs.next()) {
+           yearCounts.put(rs.getInt(1), rs.getInt(2)) ;
+        }
+        return yearCounts;
+    }
+
+    public void extractStrataSample(long seed, double percent, int year) throws SQLException {
+       String sql = "INSERT INTO selected_packages SELECT DISTINCT ON (groupid, artifactid) * FROM "
+               + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent +") REPEATABLE ("+ seed + ")" +
+               "WHERE date_part('year', lastmodified) = " + year;
+       execute(sql);
+    }
+
 
     @Override
     public void close() throws IOException {
@@ -263,11 +341,11 @@ public class Database implements Closeable {
         try {
             results = prepare(sql, arguments).executeQuery();
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("queried " + stringify(sql, arguments));
+        LOGGER.trace("Queried {}", stringify(sql, arguments));
         return results;
     }
 
@@ -287,11 +365,11 @@ public class Database implements Closeable {
                     throw new RuntimeException("query returned too many rows");
             }
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("query " + stringify(sql, arguments) + " returned `" + value + "`: " + value.getClass().getName());
+        LOGGER.trace("Query {} returned '{}': {}", stringify(sql, arguments), value, value.getClass().getName());
         return value;
     }
 
@@ -305,11 +383,11 @@ public class Database implements Closeable {
                 statement.execute();
             }
         } catch (SQLException ex) {
-            LOGGER.error("query " + stringify(sql, arguments) + " failed", ex);
+            LOGGER.error("Query {} failed", stringify(sql, arguments), ex);
             throw ex;
         }
 
-        LOGGER.trace("executed " + stringify(sql, arguments));
+        LOGGER.trace("Executed {}", stringify(sql, arguments));
     }
 
     private static String stringify(String sql, Object[] arguments) {

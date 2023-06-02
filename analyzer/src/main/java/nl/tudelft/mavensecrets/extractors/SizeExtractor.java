@@ -5,8 +5,12 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import nl.tudelft.Package;
-import nl.tudelft.*;
+
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.PackageId;
 
 /**
  * An extractor fetching Jar Size and number of files
@@ -36,9 +40,12 @@ public class SizeExtractor implements Extractor {
         Objects.requireNonNull(pkg);
         Object[] sizeAndNumber = new Object[2];
         JarFile jar = pkg.jar();
-        if(jar == null) {
+
+        // Sanity check
+        if (jar == null) {
             return new Object[fields.length];
         }
+
         jar.size();
         long size = 0;
         Enumeration<JarEntry> enumerator = jar.entries();

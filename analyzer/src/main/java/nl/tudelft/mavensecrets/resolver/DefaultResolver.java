@@ -3,6 +3,7 @@ package nl.tudelft.mavensecrets.resolver;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -12,9 +13,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
 //import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
+import org.apache.maven.model.interpolation.ModelInterpolator;
 import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
 import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
+import org.apache.maven.model.merge.ModelMerger;
 import org.apache.maven.model.path.DefaultUrlNormalizer;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -35,7 +38,7 @@ import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
-import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.PackageId;
 
 /**
  * A default artefact {@link Resolver}.
@@ -49,16 +52,9 @@ public class DefaultResolver implements Resolver {
 
     private final RepositorySystem repository;
     private final RepositorySystemSession session;
-    private final ModelReader modelReader = new DefaultModelReader();
-
-    public DefaultResolver() {
-        this(new File(System.getProperty("user.home"),".m2/repository"));
-    }
-
-    public DefaultResolver(String location) {
-        this(new File(System.getProperty("user.home"),location));
-    }
-
+    private final ModelReader modelReader;
+    private final ModelMerger merger;
+    private final ModelInterpolator interpolator;
 
     /**
      * Create a resolver instance.
@@ -69,6 +65,11 @@ public class DefaultResolver implements Resolver {
         Objects.requireNonNull(local);
         this.repository = createRepositorySystem();
         this.session = createSession(new LocalRepository(local));
+        this.modelReader = new DefaultModelReader();
+        this.merger = new ModelMerger();
+        this.interpolator = new StringVisitorModelInterpolator()
+                .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
+                .setUrlNormalizer(new DefaultUrlNormalizer());
     }
 
     @Override
@@ -97,13 +98,7 @@ public class DefaultResolver implements Resolver {
         ArtifactRequest request = new ArtifactRequest();
         request.setArtifact(artifact);
         request.setRepositories(Collections.singletonList(MAVEN_CENTRAL));
-        ArtifactResult result;
-        try {
-            result = repository.resolveArtifact(session, request);
-        } catch (ArtifactResolutionException ex) {
-            LOGGER.error("failed to resolve artifact " + artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getExtension() + ":" + artifact.getVersion(), ex);
-            throw ex;
-        }
+        ArtifactResult result = repository.resolveArtifact(session, request);
 
         if (result == null) {
             return null;
@@ -123,18 +118,18 @@ public class DefaultResolver implements Resolver {
     public Model loadPom(Artifact artifact) throws ArtifactResolutionException, IOException {
         Model pomFile = modelReader.read(getPom(artifact), null);
         Properties properties = new Properties();
+        Model parent = null;
         if (pomFile.getParent() != null) {
             var parentPom = pomFile.getParent();
             var parentGroup = parentPom.getGroupId() == null ? artifact.getGroupId() : parentPom.getGroupId();
             var parentVersion = parentPom.getVersion() == null ? artifact.getVersion() : parentPom.getVersion();
             var parentId = new PackageId(parentGroup, parentPom.getArtifactId(), parentVersion);
 
-            LOGGER.trace("resolving parent " + PackageId.fromArtifact(artifact) + " -> " + parentId);
-            Model parent;
+            LOGGER.trace("Resolving parent {} -> {}", PackageId.fromArtifact(artifact), parentId);
             try {
                 parent = loadPom(createArtifact(parentId.group(), parentId.artifact(), parentId.version()));
             } catch (Throwable ex) {
-                LOGGER.error("failed to resolve parent " + PackageId.fromArtifact(artifact) + " -> " + parentId, ex);
+                LOGGER.error("Failed to resolve parent {} -> {}", PackageId.fromArtifact(artifact), parentId, ex);
                 throw ex;
             }
 
@@ -147,10 +142,11 @@ public class DefaultResolver implements Resolver {
         request.setUserProperties(properties);
         request.setProcessPlugins(true);
 
-        return new StringVisitorModelInterpolator()
-//                .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
-                .setUrlNormalizer(new DefaultUrlNormalizer())
-                .interpolateModel(pomFile, null, request, new LoggedModelProblemCollector(LOGGER));
+        var model = interpolator.interpolateModel(pomFile, null, request, new LoggedModelProblemCollector(LOGGER));
+        if (parent != null)
+            merger.merge(model, parent, false, new HashMap<>());
+
+        return model;
     }
 
     @Override
@@ -161,7 +157,7 @@ public class DefaultResolver implements Resolver {
         try {
             artifactType = resolve(new SubArtifact(artifact, null, pkgType));
         } catch(ArtifactResolutionException e4) {
-            LOGGER.info(pkgType + "packaging for "+ artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion() + " not found");
+            LOGGER.info("{} packaging for {} not found", pkgType, artifact);
             throw e4;
         }
 
@@ -183,7 +179,7 @@ public class DefaultResolver implements Resolver {
         locator.setErrorHandler(new org.eclipse.aether.impl.DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                LOGGER.error("Service creation failed for " + type + " with implementation " + impl, exception);
+                LOGGER.error("Service creation failed for {} with implementation {}", type, impl, exception);
             }
         });
 
@@ -207,13 +203,5 @@ public class DefaultResolver implements Resolver {
         session.setReadOnly();
 
         return session;
-    }
-
-    public RepositorySystem getRepository() {
-        return this.repository;
-    }
-
-    public RepositorySystemSession getRepositorySystemSession() {
-        return this.session;
     }
 }

@@ -5,11 +5,7 @@ import static org.mockito.Mockito.mock;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
@@ -20,11 +16,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import nl.tudelft.Database;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.PackageId;
-import nl.tudelft.mavensecrets.JarUtil;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.PackageId;
+import nl.tudelft.mavensecrets.testutils.JarUtil;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 
 public class PackagingTypeExtractorTest {
@@ -37,6 +33,8 @@ public class PackagingTypeExtractorTest {
     private static String pkgName = "";
     private static Model model = null;
     private static PackageId packageId = null;
+    private static PackageId id = null;
+    static List<String> allArtifacts = null;
     private static Database db = mock(Database.class);
 
     @TempDir
@@ -59,6 +57,19 @@ public class PackagingTypeExtractorTest {
         JarUtil.createJar(fileExecutable, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         JarUtil.createJar(sourceFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         JarUtil.createJar(javadocFile, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
+
+        id = new PackageId("de.mediathekview","MServer","3.1.60");
+        allArtifacts = new ArrayList<>();
+        allArtifacts.add("MServer-3.1.60.tar.gz");
+        allArtifacts.add("MServer-3.1.60.jar");
+        allArtifacts.add("MServer-3.1.60.jar.sha512");
+        allArtifacts.add("MServer-3.1.60.tar.bz2");
+        allArtifacts.add("MServer-3.1.60.tar.gz.sha1");
+        allArtifacts.add("MServer-3.1.60.tar.bz2.sha256");
+        allArtifacts.add("MServer-3.1.60.tar.bz2.sha1");
+        allArtifacts.add("MServer-3.1.60-sources.jar.sha1");
+        allArtifacts.add("MServer-3.1.60-change-log.txt.sha256");
+        allArtifacts.add("MServer-3.1.60-changelog.tar.bz2.sha256");
     }
 
 
@@ -96,6 +107,39 @@ public class PackagingTypeExtractorTest {
             Assertions.assertNotNull(results);
             Assertions.assertEquals("sources", results[2]);
         }
+    }
+
+    @Test
+    public void testAllQualifier() {
+        Set<String> allQualifiers = new HashSet<>();
+        extractor.extractQualifier(id, allArtifacts, allQualifiers);
+
+        Set<String> result = new HashSet<>();
+        result.add("sources");
+        result.add("changelog");
+        result.add("change-log");
+
+        Assertions.assertEquals(result, allQualifiers);
+    }
+
+    @Test
+    public void testAllCheckSumAndExecutable() {
+        Set<String> allExecutable = new HashSet<>();
+        Set<String> allChecksum = new HashSet<>();
+        extractor.extractExecutableTypeAndCheckSum(id, allArtifacts, allExecutable, allChecksum);
+
+        Set<String> resultExecutable = new HashSet<>();
+        resultExecutable.add("tar.bz2");
+        resultExecutable.add("tar.gz");
+        resultExecutable.add("jar");
+
+        Set<String> resultChecksum = new HashSet<>();
+        resultChecksum.add(".sha1");
+        resultChecksum.add(".sha256");
+        resultChecksum.add(".sha512");
+
+        Assertions.assertEquals(resultExecutable, allExecutable);
+        Assertions.assertEquals(resultChecksum, allChecksum);
     }
 
     @Test

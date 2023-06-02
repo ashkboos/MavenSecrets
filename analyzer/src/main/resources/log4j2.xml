@@ -4,12 +4,20 @@
         <Console name="Console">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=bright_black} %-32c{1.} - %msg%n" disableAnsi="false"/>
         </Console>
+        <RollingRandomAccessFile name="File" fileName="logs/latest.log" filePattern="logs/%d{yyyy-MM-dd}-%i.log.gz">
+        	<PatternLayout pattern="[%d{HH:mm:ss}] [%t/%level]: %msg%n" disableAnsi="true"/>
+        	<Policies>
+        		<TimeBasedTriggeringPolicy/>
+        		<OnStartupTriggeringPolicy/>
+        	</Policies>
+        	<DefaultRolloverStrategy max="1000"/>
+        </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
         <Root level="trace">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="File" level="info"/>
         </Root>
-
         <Logger name="org.eclipse.aether" level="ERROR"/>
         <Logger name="org.apache.http" level="ERROR"/>
     </Loggers>
