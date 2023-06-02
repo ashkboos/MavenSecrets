@@ -45,6 +45,7 @@ import nl.tudelft.mavensecrets.PackageId;
  * This implementation pulls from Maven Central.
  */
 public class DefaultResolver implements Resolver {
+
     private static final Logger LOGGER = LogManager.getLogger(DefaultResolver.class);
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static final Pattern COMPONENT_PATTERN = Pattern.compile("^[^: ]+$");

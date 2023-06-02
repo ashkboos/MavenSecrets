@@ -8,7 +8,6 @@
 	</parent>
 	<artifactId>analyzer</artifactId>
 	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.9.3</junit.version>
 		<mockito.version>5.3.1</mockito.version>
 		<log4j.version>2.20.0</log4j.version>
@@ -125,6 +124,7 @@
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
+					<encoding>UTF-8</encoding>
 					<release>17</release>
 				</configuration>
 			</plugin>
