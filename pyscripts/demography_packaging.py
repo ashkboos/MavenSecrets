@@ -15,7 +15,7 @@ def main():
     packaging_analysis(cur)
 
     # Qualifier analysis
-    frequency_of_each_qualifier(cur)
+    qualifier_analysis(cur)
 
     # Close the cursor and connection
     cur.close()
@@ -23,14 +23,11 @@ def main():
 
 
 def packaging_analysis(cur):
-    # Frequency of pairs of difference in packaging type from and index
-    # TODO - NEED TO UPDATE
-    result_difference = get_frequency_of_difference(cur)
-    print_result_with_individual_freq(result_difference)
+    # Frequency of pairs of difference in packaging type from pom and index
+    print_result_with_individual_freq(cur)
 
     # Individual frequency of each packaging type from pom
-    results_frequency_pom = get_frequency_from_pom(cur)
-    print_plot_packaging_pom(results_frequency_pom)
+    print_plot_packaging_pom(cur)
 
     # Individual frequency of each packaging type from index
     print_frequency_from_index(cur)
@@ -39,16 +36,13 @@ def packaging_analysis(cur):
     print_frequency_of_packages_with_frequency_packaging_type(cur)
 
 
-def get_frequency_of_difference(cur):
+def print_result_with_individual_freq(cur):
     cur.execute('SELECT packagingtypefrompom, packagingtypefromrepo, COUNT(*) FROM packages WHERE '
                 'packagingtypefrompom != packagingtypefromrepo GROUP BY '
                 'packagingtypefrompom, packagingtypefromrepo')
 
     results = cur.fetchall()
-    return results
 
-
-def print_result_with_individual_freq(results):
     print('DIFFERENCE IN PACKAGING TYPE IN POM AND INDEX')
     print()
 
@@ -67,18 +61,14 @@ def print_result_with_individual_freq(results):
     print()
 
 
-def get_frequency_from_pom(cur):
+def print_plot_packaging_pom(cur):
     cur.execute('SELECT packagingtypefrompom, COUNT(*) FROM packages WHERE packagingtypefrompom IS NOT NULL GROUP BY '
                 'packagingtypefrompom')
     results = cur.fetchall()
-    return results
-
-
-def print_plot_packaging_pom(results_frequency):
     # Create a dictionary to store the "packagingType" values and their counts
     packaging_type_counts = {}
 
-    for row in results_frequency:
+    for row in results:
         packaging_type = row[0]
         count = row[1]
         packaging_type_counts[packaging_type] = count
@@ -160,7 +150,7 @@ def print_frequency_of_packages_with_frequency_packaging_type(cur):
     print()
 
 
-def frequency_of_each_qualifier(cur):
+def qualifier_analysis(cur):
     # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
     cur.execute("SELECT allqualifiers FROM packages")
 
