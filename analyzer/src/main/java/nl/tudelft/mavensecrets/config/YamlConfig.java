@@ -20,7 +20,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.reader.UnicodeReader;
 import org.yaml.snakeyaml.representer.Representer;
 
-import nl.tudelft.Extractor;
+import nl.tudelft.mavensecrets.extractors.Extractor;
 import nl.tudelft.mavensecrets.config.Config.Database;
 import nl.tudelft.mavensecrets.config.MemoryConfig.MemoryDatabase;
 

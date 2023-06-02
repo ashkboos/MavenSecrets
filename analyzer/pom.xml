@@ -213,7 +213,7 @@
 						<archive>
 							<manifest>
 								<addClasspath>true</addClasspath>
-								<mainClass>nl.tudelft.App</mainClass>
+								<mainClass>nl.tudelft.mavensecrets.App</mainClass>
 							</manifest>
 						</archive>
 					</configuration>

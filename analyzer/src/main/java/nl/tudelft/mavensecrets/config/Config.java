@@ -3,7 +3,7 @@ package nl.tudelft.mavensecrets.config;
 import java.io.File;
 import java.util.Collection;
 
-import nl.tudelft.Extractor;
+import nl.tudelft.mavensecrets.extractors.Extractor;
 
 /**
  * The program's configuration.

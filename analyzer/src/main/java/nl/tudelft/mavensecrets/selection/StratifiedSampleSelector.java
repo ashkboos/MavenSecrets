@@ -9,8 +9,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import nl.tudelft.ArtifactId;
-import nl.tudelft.Database;
+import nl.tudelft.mavensecrets.ArtifactId;
+import nl.tudelft.mavensecrets.Database;
 
 public class StratifiedSampleSelector implements PackageSelector {
 

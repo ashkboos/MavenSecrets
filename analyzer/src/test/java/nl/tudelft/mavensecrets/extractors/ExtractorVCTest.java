@@ -15,12 +15,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.PackageId;
-import nl.tudelft.mavensecrets.NopResolver;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.PackageId;
+import nl.tudelft.mavensecrets.testutils.NopResolver;
 
 class ExtractorVCTest {
     private static Extractor extractor;

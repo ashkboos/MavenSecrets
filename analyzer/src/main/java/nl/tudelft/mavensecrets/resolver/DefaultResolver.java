@@ -38,7 +38,7 @@ import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
-import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.PackageId;
 
 /**
  * A default artefact {@link Resolver}.

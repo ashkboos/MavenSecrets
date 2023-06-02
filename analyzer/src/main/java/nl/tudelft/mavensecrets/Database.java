@@ -1,4 +1,4 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -282,23 +282,18 @@ public class Database implements Closeable {
         String sql = "SELECT date_part('year', lastmodified) AS year, COUNT(*)"
                 + "FROM " + PACKAGE_INDEX_TABLE
                 + " group by year ";
-//        String sql = "SELECT date_part('year', lastmodified) AS year, COUNT(*)"
-//                + "FROM package_list_huge "
-//                + "group by year ";
         ResultSet rs = query(sql);
         Map<Integer, Integer> yearCounts = new HashMap<>();
         while (rs.next()) {
            yearCounts.put(rs.getInt(1), rs.getInt(2)) ;
         }
-
         return yearCounts;
     }
 
     public void extractStrataSample(long seed, double percent, int year) throws SQLException {
-       String sql = "INSERT INTO selected_packages SELECT * FROM " + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent
-               +") REPEATABLE ("+ seed + ") WHERE date_part('year', lastmodified) = " + year;
-//        String sql = "INSERT INTO selected_packages SELECT * FROM " + "package_list_huge" + " TABLESAMPLE bernoulli(" + percent
-//                +") REPEATABLE ("+ seed + ") WHERE date_part('year', lastmodified) = " + year;
+       String sql = "INSERT INTO selected_packages SELECT DISTINCT ON (groupid, artifactid) * FROM "
+               + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent +") REPEATABLE ("+ seed + ")" +
+               "WHERE date_part('year', lastmodified) = " + year;
        execute(sql);
     }
 

@@ -1,4 +1,6 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
+
+import nl.tudelft.mavensecrets.extractors.Extractor;
 
 import java.sql.SQLException;
 import java.util.HashMap;
