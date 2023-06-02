@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.*;
 
 public class DependencyExtractor implements Extractor {
 
@@ -38,16 +39,38 @@ public class DependencyExtractor implements Extractor {
         List<org.apache.maven.model.Dependency> dependencies = m.getDependencies();
         int directDependencies = dependencies.size();
         String id = pkg.id().group() + ":" + pkg.id().artifact() + ":" + pkgType + ":" + pkg.id().version();
-        List<MavenCoordinate> files = resolve(id);
+        int trans = timeoutResolve(id);
 //        int trans = resolves(pkg.id().group(), pkg.id().artifact(), pkg.id().version());
-        int a = files.size() - 1;
-        if(a < 0) a = 0;
+        int a = trans - 1;
+        if(a == -1) a = 0;
+        if(a == -2) a = -1;
         result[0] = directDependencies;
         result[1] = a;
         return result;
     }
 
-    private static List<org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate> resolve(
+
+    private static int timeoutResolve(String row) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() -> {
+            // Perform your method call here
+            return resolve(row);
+        }, executor);
+
+        try {
+            int result = future.get(60, TimeUnit.SECONDS); // Timeout set to 5 seconds
+            return result;
+        } catch (TimeoutException | InterruptedException | ExecutionException e) {
+            return -1;
+        } finally {
+            future.cancel(true); // Cancel the future to stop execution if not completed
+            executor.shutdown(); // Shutdown the executor
+        }
+    }
+
+
+    private static int resolve(
             final String row) {
         List<MavenCoordinate> result =
                 new ArrayList<>();
@@ -57,9 +80,9 @@ public class DependencyExtractor implements Extractor {
         } catch (Exception e) {
             System.out.println("Exception occurred while resolving " + row + ", " + e);
             System.out.println(e);
-            return result;
+            return result.size();
         }
-        return result;
+        return result.size();
     }
 
 //    private int resolves(String groupId, String artifactId, String version) {

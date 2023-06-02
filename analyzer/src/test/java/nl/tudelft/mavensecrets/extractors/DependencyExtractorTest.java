@@ -69,6 +69,7 @@ public class DependencyExtractorTest {
 
     @Test
     public void test_transitive_dependencies() {
+        PackageId id2 = new PackageId("ca.wheatstalk", "cdk-ecs-keycloak","0.0.58");
         Model m = new Model();
         PackageId id = new PackageId("top.infra", "spring-boot-starter-redisson", "1.0.0");
         Package pkg = new Package(id, null, m);
