@@ -36,7 +36,7 @@ public class PackagingTypeExtractor implements Extractor {
     public PackagingTypeExtractor() {
         this.fields = new Field[]{
             new Field ("packagingtypefrompom", "VARCHAR"),
-            new Field("packagingtypefromrepo", "VARCHAR"),
+            new Field("packagingtypefromindex", "VARCHAR"),
             new Field("qualifiersources", "VARCHAR"),
             new Field("qualifierjavadoc", "VARCHAR"),
             new Field("md5", "VARCHAR"),
