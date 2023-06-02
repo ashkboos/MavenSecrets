@@ -108,6 +108,44 @@ public class JavaVersionExtractorTest {
     }
 
     @Test
+    public void test_manifest_multi_release_true() throws IOException, SQLException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
+            mf.getMainAttributes().put(Name.MULTI_RELEASE, "true");
+        }), JarUtil.DEFAULT_RESOURCES);
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[3] = true;
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertArrayEquals(expected, results);
+        }
+    }
+
+    @Test
+    public void test_manifest_multi_release_false() throws IOException, SQLException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
+            mf.getMainAttributes().put(Name.MULTI_RELEASE, "false");
+        }), JarUtil.DEFAULT_RESOURCES);
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[3] = false;
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertArrayEquals(expected, results);
+        }
+    }
+
+    @Test
+    public void test_manifest_multi_release_malformed() throws IOException, SQLException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
+            mf.getMainAttributes().put(Name.MULTI_RELEASE, "abc");
+        }), JarUtil.DEFAULT_RESOURCES);
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertArrayEquals(expected, results);
+        }
+    }
+
+    @Test
     public void test_class_malformed_length() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES.andThen(jos -> {
             jos.putNextEntry(new ZipEntry("my-class.class"));
@@ -148,8 +186,8 @@ public class JavaVersionExtractorTest {
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] expected = new Object[extractor.fields().length];
-            expected[3] = new byte[] {3, 4};
-            expected[4] = new byte[] {1, 2};
+            expected[4] = new byte[] {3, 4};
+            expected[5] = new byte[] {1, 2};
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(expected, results);
         }
@@ -175,8 +213,8 @@ public class JavaVersionExtractorTest {
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] expected = new Object[extractor.fields().length];
-            expected[3] = new byte[] {3, 4};
-            expected[4] = new byte[] {1, 2};
+            expected[4] = new byte[] {3, 4};
+            expected[5] = new byte[] {1, 2};
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(expected, results);
         }
@@ -200,9 +238,9 @@ public class JavaVersionExtractorTest {
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
             Object[] expected = new Object[extractor.fields().length];
-            expected[3] = new byte[] {7, 8};
-            expected[4] = new byte[] {5, 6};
-            expected[5] = new byte[] {7, 8, 5, 6, 0, 0, 0, 2, 3, 4, 1, 2, 0, 0, 0, 1};
+            expected[4] = new byte[] {7, 8};
+            expected[5] = new byte[] {5, 6};
+            expected[6] = new byte[] {7, 8, 5, 6, 0, 0, 0, 2, 3, 4, 1, 2, 0, 0, 0, 1};
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
             Assertions.assertArrayEquals(expected, results);
         }

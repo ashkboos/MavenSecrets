@@ -29,21 +29,25 @@ import nl.tudelft.Package;
 
 /**
  * An extractor fetching Java versions from an artifact.
- * It looks both at <code>META-INF/MANIFEST.MD</code> and class bytecode.
+ * It looks both at <code>META-INF/MANIFEST.MF</code> and class bytecode.
  * It may be possible the bytecode read is from a class shaded in rather than a class from the actual project, in which case a different version may be detected. 
  */
 public class JavaVersionExtractor implements Extractor {
+
+    // TODO: Built-By, X-Compile-Target-JDK, X-Compile-Source-JDK
 
     private static final Logger LOGGER = LogManager.getLogger(JavaVersionExtractor.class);
     private static final Name CREATED_BY = new Name("Created-By");
     private static final Name BUILD_JDK = new Name("Build-Jdk");
     private static final Name BUILD_JDK_SPEC = new Name("Build-Jdk-Spec");
+    private static final Name MULTI_RELEASE = Name.MULTI_RELEASE;
     //private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
 
     private final Field[] fields = {
             new Field("java_version_manifest_1", "VARCHAR"), // Created-By
             new Field("java_version_manifest_2", "VARCHAR"), // Build-Jdk
             new Field("java_version_manifest_3", "VARCHAR"), // Build-Jdk-Spec
+            new Field("java_version_manifest_multirelease", "BOOLEAN"),
             new Field("java_version_class_major", "BYTEA"),
             new Field("java_version_class_minor", "BYTEA"),
             new Field("java_version_class_map", "BYTEA")
@@ -86,6 +90,14 @@ public class JavaVersionExtractor implements Extractor {
             if (result[2] != null) {
                 LOGGER.trace("Found {} entry in META-INF/MANIFEST.MF: {} ({})", BUILD_JDK_SPEC, result[2], pkg.id());
             }
+            Object value = attributes.get(MULTI_RELEASE);
+            result[3] = parseBoolStrict(value);
+            if (value != null && result[3] == null) {
+                LOGGER.trace("Found malformed {} entry in META-INF/MANIFEST.MF: {} ({})", MULTI_RELEASE, value, pkg.id());
+            }
+            if (result[3] != null) {
+                LOGGER.trace("Found {} entry in META-INF/MANIFEST.MF: {} ({})", MULTI_RELEASE, result[3], pkg.id());
+            }
         }
 
         // Class file
@@ -113,7 +125,7 @@ public class JavaVersionExtractor implements Extractor {
 
         // Only needed if there are multiple versions
         if (versions.size() > 1) {
-            result[5] = serializeVersionMap(versions);
+            result[6] = serializeVersionMap(versions);
         }
 
         // Find most frequent type
@@ -124,8 +136,8 @@ public class JavaVersionExtractor implements Extractor {
                 .findFirst()
                 .ifPresent(jcv -> {
                     LOGGER.trace("Found most common Java class version: {} ({})" + jcv, pkg.id());
-                    result[3] = jcv.major();
-                    result[4] = jcv.minor();
+                    result[4] = jcv.major();
+                    result[5] = jcv.minor();
                 });
 
         return result;
@@ -178,6 +190,27 @@ public class JavaVersionExtractor implements Extractor {
             throw new AssertionError(exception);
         }
         return array;
+    }
+
+    /**
+     * Strict boolean parsing.
+     * 
+     * @param string Input string.
+     * @return The parsed boolean or <code>null</code> if not valid.
+     */
+    private Boolean parseBoolStrict(Object object) {
+        if (object == null || !(object instanceof String)) {
+            return null;
+        }
+
+        switch (((String) object).toLowerCase()) {
+            case "true":
+                return Boolean.TRUE;
+            case "false":
+                return Boolean.FALSE;
+            default:
+                return null;
+        }
     }
 
     /**
