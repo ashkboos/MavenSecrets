@@ -95,13 +95,7 @@ def print_result_with_individual_freq(results):
               f'Frequency: {frequency}')
 
 
-def frequency_of_each_qualifier(cur):
-    # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
-    cur.execute("SELECT allqualifiers FROM packages")
-
-    # Fetch all the values and store them into the 'all_qualifiers_list' list
-    all_qualifiers_list = [row['allqualifiers'] for row in cur.fetchall()]
-
+def frequency_of_each_word(all_qualifiers_list):
     # Create an empty dictionary to store word frequencies
     word_frequencies = {}
 
@@ -119,6 +113,18 @@ def frequency_of_each_qualifier(cur):
 
     # Sort the word frequencies by their values in descending order
     sorted_frequencies = collections.Counter(word_frequencies).most_common()
+
+    return sorted_frequencies
+
+
+def frequency_of_each_qualifier(cur):
+    # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
+    cur.execute("SELECT allqualifiers FROM packages")
+
+    # Fetch all the values and store them into the 'all_qualifiers_list' list
+    all_qualifiers_list = [row['allqualifiers'] for row in cur.fetchall()]
+
+    sorted_frequencies = frequency_of_each_word(all_qualifiers_list)
 
     unique_words_count = len(sorted_frequencies)
 
