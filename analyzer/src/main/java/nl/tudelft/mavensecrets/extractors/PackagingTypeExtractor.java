@@ -44,9 +44,9 @@ public class PackagingTypeExtractor implements Extractor {
             new Field("sha256", "VARCHAR"),
             new Field("sha512", "VARCHAR"),
             new Field("typesoffile", "VARCHAR"),
-            new Field("allqualifiers", "VARCHAR"),
-            new Field("allpackagingtype", "VARCHAR"),
-            new Field("allchecksum", "VARCHAR")
+            new Field("allqualifiersfromrepo", "VARCHAR"),
+            new Field("allpackagingtypefromrepo", "VARCHAR"),
+            new Field("allchecksumfromrepo", "VARCHAR")
         };
     }
 
