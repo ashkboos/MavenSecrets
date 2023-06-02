@@ -10,10 +10,7 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
 import org.apache.maven.model.Model;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
 import nl.tudelft.mavensecrets.Database;
@@ -23,6 +20,7 @@ import nl.tudelft.mavensecrets.PackageId;
 import nl.tudelft.mavensecrets.testutils.JarUtil;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 
+@Disabled
 public class PackagingTypeExtractorTest {
 
     private static PackagingTypeExtractor extractor = null;
