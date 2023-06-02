@@ -36,7 +36,7 @@ public class JavaVersionExtractor implements Extractor {
     private static final Name CREATED_BY = new Name("Created-By");
     private static final Name BUILD_JDK = new Name("Build-Jdk");
     private static final Name BUILD_JDK_SPEC = new Name("Build-Jdk-Spec");
-    private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
+    //private static final long CLASS_FILE_LIMIT = 25L; // Arbitrary limit
 
     private final Field[] fields = {
             new Field("java_version_manifest_1", "VARCHAR"), // Created-By
@@ -89,9 +89,10 @@ public class JavaVersionExtractor implements Extractor {
         Map<JavaClassVersion, Integer> versions = new HashMap<>();
         List<JarEntry> entries = jar.stream()
                 .filter(je -> je.getName().endsWith(".class"))
-                .limit(CLASS_FILE_LIMIT)
+                //.limit(CLASS_FILE_LIMIT)
                 .toList();
-        LOGGER.trace("Found {}/{} class file(s) to analyze ({})", entries.size(), CLASS_FILE_LIMIT, pkg.id());
+        //LOGGER.trace("Found {}/{} class file(s) to analyze ({})", entries.size(), CLASS_FILE_LIMIT, pkg.id());
+        LOGGER.trace("Found {} class file(s) to analyze ({})", entries.size(), pkg.id());
         for (JarEntry entry : entries) {
             JavaClassVersion jcv;
             try (InputStream stream = jar.getInputStream(entry)) {
