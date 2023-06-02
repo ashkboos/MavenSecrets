@@ -1,4 +1,4 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
 
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;

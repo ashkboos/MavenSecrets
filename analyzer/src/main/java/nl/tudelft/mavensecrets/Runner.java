@@ -1,4 +1,4 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 
+import nl.tudelft.mavensecrets.extractors.Extractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

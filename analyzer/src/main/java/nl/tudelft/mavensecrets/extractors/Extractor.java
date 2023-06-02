@@ -1,4 +1,9 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets.extractors;
+
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
 
 import java.io.IOException;
 import java.sql.SQLException;

@@ -6,9 +6,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-import nl.tudelft.ArtifactId;
-import nl.tudelft.Database;
-import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.ArtifactId;
+import nl.tudelft.mavensecrets.Database;
 
 /**
  * A {@link PackageSelector} that fetches all available packages from a database.

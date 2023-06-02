@@ -9,11 +9,10 @@ import java.util.zip.ZipEntry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
 
 /**
  * An extractor fetching whether or not an artifact uses Java modules.

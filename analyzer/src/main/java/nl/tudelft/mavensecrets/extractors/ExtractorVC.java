@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
 import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;

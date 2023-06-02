@@ -1,4 +1,4 @@
-package nl.tudelft.mavensecrets;
+package nl.tudelft.mavensecrets.testutils;
 
 import java.io.File;
 import java.io.FileOutputStream;

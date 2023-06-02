@@ -1,4 +1,4 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets.extractors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -15,6 +15,11 @@ import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.PackageId;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

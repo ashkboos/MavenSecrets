@@ -7,9 +7,12 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import nl.tudelft.Package;
-import nl.tudelft.*;
-import nl.tudelft.mavensecrets.NopResolver;
+
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.testutils.NopResolver;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.junit.jupiter.api.AfterAll;

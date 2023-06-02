@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 
-import nl.tudelft.ArtifactId;
+import nl.tudelft.mavensecrets.ArtifactId;
 
 /**
  * A supplier of packages to analyze.

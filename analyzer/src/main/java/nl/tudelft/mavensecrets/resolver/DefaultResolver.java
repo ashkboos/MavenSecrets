@@ -12,7 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.interpolation.AbstractStringBasedModelInterpolator;
 import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
 import org.apache.maven.model.interpolation.ModelInterpolator;
 import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
@@ -39,7 +38,7 @@ import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
-import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.PackageId;
 
 /**
  * A default artefact {@link Resolver}.

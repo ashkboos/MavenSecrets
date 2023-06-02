@@ -16,13 +16,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.mavensecrets.JarUtil;
-import nl.tudelft.mavensecrets.NopResolver;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.testutils.JarUtil;
+import nl.tudelft.mavensecrets.testutils.NopResolver;
 
 public class JavaVersionExtractorTest {
 

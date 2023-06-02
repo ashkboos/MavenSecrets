@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.jar.JarFile;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.JarUtils;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.JarUtils;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
 
 public class MismatchedPackagesExtractor implements Extractor {
     private static final Field[] fields = new Field[] {

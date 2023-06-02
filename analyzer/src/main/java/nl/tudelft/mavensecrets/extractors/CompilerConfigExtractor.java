@@ -24,12 +24,11 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.PackageId;
 import nl.tudelft.mavensecrets.resolver.Resolver;
 
 /**

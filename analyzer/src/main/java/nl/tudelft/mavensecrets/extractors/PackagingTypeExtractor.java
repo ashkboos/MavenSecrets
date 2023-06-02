@@ -12,8 +12,12 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import nl.tudelft.*;
-import nl.tudelft.Package;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.PackageException;
+import nl.tudelft.mavensecrets.PackageId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;

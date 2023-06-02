@@ -1,4 +1,4 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
 
 import java.io.Closeable;
 import java.io.IOException;
