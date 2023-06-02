@@ -68,7 +68,7 @@ public class Runner implements Closeable {
                 offset += result.length;
             }
 
-            db.update(id, fields, values, true);
+            db.update(id, fields, values);
         } catch (PackageException | IOException | SQLException exception) {
             LOGGER.warn("Could not extract fields of {}", id, exception);
             try {

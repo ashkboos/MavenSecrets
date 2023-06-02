@@ -68,7 +68,7 @@ public class DefaultResolver implements Resolver {
         this.modelReader = new DefaultModelReader();
         this.merger = new ModelMerger();
         this.interpolator = new StringVisitorModelInterpolator()
-                .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
+//                .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
                 .setUrlNormalizer(new DefaultUrlNormalizer());
     }
 

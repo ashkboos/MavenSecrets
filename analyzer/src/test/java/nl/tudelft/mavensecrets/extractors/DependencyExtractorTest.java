@@ -1,27 +1,23 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import nl.tudelft.*;
-import nl.tudelft.Package;
-
-import nl.tudelft.mavensecrets.JarUtil;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.*;
+import nl.tudelft.mavensecrets.testutils.JarUtil;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.ArgumentMatcher;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.jar.JarFile;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class DependencyExtractorTest {
     private static Extractor extractor = null;

@@ -1,33 +1,22 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.*;
-
-import nl.tudelft.mavensecrets.resolver.DefaultResolver;
-import org.apache.maven.model.Model;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.collection.CollectRequest;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.resolution.DependencyRequest;
-import org.eclipse.aether.resolution.DependencyResolutionException;
-import org.eclipse.aether.resolution.DependencyResult;
-import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
-//import org.jboss.shrinkwrap.resolver.api.maven;
-
 import nl.tudelft.mavensecrets.Database;
 import nl.tudelft.mavensecrets.Field;
 import nl.tudelft.mavensecrets.Maven;
 import nl.tudelft.mavensecrets.Package;
+import org.apache.maven.model.Model;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class DependencyExtractor implements Extractor {
 
     //private static final Logger LOGGER = LogManager.getLogger(DependencyExtractor.class);
-    private DefaultResolver resolver = new DefaultResolver();
     private static final RemoteRepository MAVEN_CENTRAL = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
     private static List<RemoteRepository> repositories = List.of(MAVEN_CENTRAL);
     private final Field[] fields = {
@@ -73,24 +62,24 @@ public class DependencyExtractor implements Extractor {
         return result;
     }
 
-    private int resolves(String groupId, String artifactId, String version) {
-        Artifact artifact = resolver.createArtifact(groupId, artifactId, version);
-        RepositorySystem repository = resolver.getRepository();
-        RepositorySystemSession session = resolver.getRepositorySystemSession();
-        DependencyResult result;
-        List<Dependency> list = new ArrayList<>();
-        list.add(new Dependency(artifact, null));
-        try {
-            result = repository.resolveDependencies(session, new DependencyRequest(new CollectRequest((Dependency) null, list, repositories), null));
-        } catch (DependencyResolutionException exception) {
-            // Handle exception
-            return -1;
-        }
-        List<Artifact> transDeps = new ArrayList<>();
-        for (ArtifactResult ar : result.getArtifactResults()) {
-            Artifact a = ar.getArtifact();
-            transDeps.add(a);
-        }
-        return transDeps.size();
-    }
+//    private int resolves(String groupId, String artifactId, String version) {
+//        Artifact artifact = resolver.createArtifact(groupId, artifactId, version);
+//        RepositorySystem repository = resolver.getRepository();
+//        RepositorySystemSession session = resolver.getRepositorySystemSession();
+//        DependencyResult result;
+//        List<Dependency> list = new ArrayList<>();
+//        list.add(new Dependency(artifact, null));
+//        try {
+//            result = repository.resolveDependencies(session, new DependencyRequest(new CollectRequest((Dependency) null, list, repositories), null));
+//        } catch (DependencyResolutionException exception) {
+//            // Handle exception
+//            return -1;
+//        }
+//        List<Artifact> transDeps = new ArrayList<>();
+//        for (ArtifactResult ar : result.getArtifactResults()) {
+//            Artifact a = ar.getArtifact();
+//            transDeps.add(a);
+//        }
+//        return transDeps.size();
+//    }
 }

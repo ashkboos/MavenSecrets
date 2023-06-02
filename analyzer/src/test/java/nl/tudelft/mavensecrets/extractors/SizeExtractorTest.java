@@ -1,19 +1,23 @@
 package nl.tudelft.mavensecrets.extractors;
-import java.io.*;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.zip.ZipEntry;
 
-import nl.tudelft.*;
-import nl.tudelft.Package;
-import nl.tudelft.mavensecrets.JarUtil;
-
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.*;
+import nl.tudelft.mavensecrets.testutils.JarUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;

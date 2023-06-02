@@ -80,9 +80,9 @@ public class Database implements Closeable {
         }
     }
 
-    public void createExtensionTable() throws SQLException {
+    public void createNewExtensionTable() throws SQLException {
         if(!tableExists(EXTENSION_TABLE)) {
-            createTable(EXTENSION_TABLE);
+            createExtensionTable();
         }
     }
 
@@ -160,7 +160,6 @@ public class Database implements Closeable {
                 "min BIGINT," +
                 "max BIGINT," +
                 "median BIGINT," +
-                "constraint extension_table_name_pk " +
                 "primary key (id, extension))").execute();
     }
 
@@ -202,7 +201,7 @@ public class Database implements Closeable {
         for (var i = 0; i < fields.length; i++)
             arguments[i + fields.length + 3] = arguments[i + 3] = values[i];
 
-        var table = updatePackageTable ? PACKAGES_TABLE : EXTENSION_TABLE;
+        var table = PACKAGES_TABLE;
         execute("INSERT INTO " + table + "(" + names + ") VALUES (" + qe + ") ON CONFLICT(groupid,artifactid,version) DO UPDATE SET updated = DEFAULT," + upd, arguments);
     }
 

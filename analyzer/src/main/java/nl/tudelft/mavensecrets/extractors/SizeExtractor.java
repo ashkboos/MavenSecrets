@@ -1,16 +1,13 @@
 package nl.tudelft.mavensecrets.extractors;
 
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.*;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-
-import nl.tudelft.mavensecrets.Database;
-import nl.tudelft.mavensecrets.Field;
-import nl.tudelft.mavensecrets.Maven;
-import nl.tudelft.mavensecrets.Package;
-import nl.tudelft.mavensecrets.PackageId;
 
 /**
  * An extractor fetching Jar Size and number of files
