@@ -41,7 +41,7 @@ def packaging_analysis(cur):
 
 def print_plot_packaging_pom(cur):
     cur.execute('SELECT packagingtypefrompom, COUNT(*) FROM packages WHERE packagingtypefrompom IS NOT NULL GROUP BY '
-                'packagingtypefrompom')
+                'packagingtypefrompom ORDER BY COUNT(*) DESC')
     results = cur.fetchall()
     # Create a dictionary to store the "packagingType" values and their counts
     packaging_type_counts = {}
