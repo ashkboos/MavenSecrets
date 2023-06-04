@@ -12,10 +12,13 @@ def main():
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     # Packaging type analysis
-    packaging_analysis(cur)
+    # packaging_analysis(cur)
+
+    # Checksum analysis
+    checksum_analysis(cur)
 
     # Qualifier analysis
-    qualifier_analysis(cur)
+    # qualifier_analysis(cur)
 
     # Close the cursor and connection
     cur.close()
@@ -65,22 +68,6 @@ def print_plot_packaging_pom(cur):
     print(f'Total number of unique packaging types in pom: {unique_packaging_type_count}')
     print('---x----')
     print()
-
-    # Create a bar chart
-    packaging_type_counts = {key: value for key, value in packaging_type_counts.items() if value is not None}
-    plt.bar(packaging_type_counts.keys(), packaging_type_counts.values())
-
-    # Add labels and title
-    plt.xlabel('Packaging Type')
-    plt.ylabel('Count')
-    plt.title('Number of Packages by Packaging Type')
-    plt.xticks(rotation=45, ha='right')
-    x_tick_labels = [packaging_type[:5] + '...' if len(packaging_type) > 5 else packaging_type for packaging_type in
-                     packaging_type_counts.keys()]
-    plt.xticks(list(packaging_type_counts.keys()), x_tick_labels)
-
-    # Show the chart
-    plt.show()
 
 
 def print_frequency_from_repo(cur):
@@ -161,7 +148,7 @@ def print_frequency_index_packaging_different_repo(cur):
 
     count = 0
 
-# Iterate over the rows and check if the values are the same
+    # Iterate over the rows and check if the values are the same
     for row in cur.fetchall():
         allpackagingtype = row['allpackagingtype']
         packagingtypefromindex = row['packagingtypefromrepo']
@@ -202,6 +189,76 @@ def qualifier_analysis(cur):
     print()
 
     print(f'Number of unique qualifiers: {unique_words_count}')
+    print('---x----')
+    print()
+
+
+def print_frequency_of_checksums_over_years(cur):
+    cur.execute("""
+    SELECT EXTRACT(YEAR FROM pl.lastmodified) AS year, p.allchecksum
+    FROM packages p
+    INNER JOIN package_list pl ON p.groupid = pl.groupid AND p.artifactid = pl.artifactid AND p.version = pl.version
+    """)
+
+    # Fetch all the rows from the result
+    rows = cur.fetchall()
+
+    # Extract year and checksums
+    year_checksums = {}
+    for row in rows:
+        year = row[0]
+        checksums = row[1]
+
+        if checksums is not None:
+            # Remove leading/trailing whitespaces and split the string into words
+            checksum_list = checksums.strip('[]').split(',')
+            # Strip each checksum and remove empty strings
+            word_list = [checksum.strip() for checksum in checksum_list if checksum and checksum.strip()]
+            if word_list:
+                # Calculate frequencies for each year
+                word_frequencies = frequency_of_each_word(word_list)
+                # Sum the counts for each checksum type within a year
+                checksum_counts = {}
+                for checksum, count in word_frequencies:
+                    checksum_counts[checksum] = checksum_counts.get(checksum, 0) + count
+                # Store the checksum counts as a dictionary for each year
+                year_checksums.setdefault(year, {}).update(checksum_counts)
+
+    # Print the year and checksum count for each unique checksum
+    for year, checksums in year_checksums.items():
+        print(f"Year: {year}")
+        for checksum, count in checksums.items():
+            print(f"Checksum: {checksum}, Count: {count}")
+        print()
+
+    print('---x----')
+    print()
+
+
+def checksum_analysis(cur):
+    print_frequency_of_checksums(cur)
+
+    print_frequency_of_checksums_over_years(cur)
+
+
+def print_frequency_of_checksums(cur):
+    # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
+    cur.execute("SELECT allchecksum FROM packages")
+
+    # Fetch all the values and store them into the 'all_checksums_list' list
+    all_checksums_list = [row['allchecksum'] for row in cur.fetchall()]
+
+    sorted_frequencies = frequency_of_each_word(all_checksums_list)
+
+    unique_words_count = len(sorted_frequencies)
+
+    print('CHECKSUM')
+    print()
+
+    # Print the word frequencies
+    for word, frequency in sorted_frequencies:
+        print(f'Checksum: {word} - Frequency: {frequency}')
+
     print('---x----')
     print()
 
