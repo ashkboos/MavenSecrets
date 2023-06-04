@@ -1,6 +1,5 @@
 import collections
 
-import matplotlib.pyplot as plt
 import psycopg2
 
 from pyscripts.database import Database
@@ -12,13 +11,13 @@ def main():
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     # Packaging type analysis
-    # packaging_analysis(cur)
+    packaging_analysis(cur)
 
     # Checksum analysis
     checksum_analysis(cur)
 
     # Qualifier analysis
-    # qualifier_analysis(cur)
+    qualifier_analysis(cur)
 
     # Close the cursor and connection
     cur.close()
@@ -193,56 +192,16 @@ def qualifier_analysis(cur):
     print()
 
 
-def print_frequency_of_checksums_over_years(cur):
-    cur.execute("""
-    SELECT EXTRACT(YEAR FROM pl.lastmodified) AS year, p.allchecksum
-    FROM packages p
-    INNER JOIN package_list pl ON p.groupid = pl.groupid AND p.artifactid = pl.artifactid AND p.version = pl.version
-    """)
-
-    # Fetch all the rows from the result
-    rows = cur.fetchall()
-
-    # Extract year and checksums
-    year_checksums = {}
-    for row in rows:
-        year = row[0]
-        checksums = row[1]
-
-        if checksums is not None:
-            # Remove leading/trailing whitespaces and split the string into words
-            checksum_list = checksums.strip('[]').split(',')
-            # Strip each checksum and remove empty strings
-            word_list = [checksum.strip() for checksum in checksum_list if checksum and checksum.strip()]
-            if word_list:
-                # Calculate frequencies for each year
-                word_frequencies = frequency_of_each_word(word_list)
-                # Sum the counts for each checksum type within a year
-                checksum_counts = {}
-                for checksum, count in word_frequencies:
-                    checksum_counts[checksum] = checksum_counts.get(checksum, 0) + count
-                # Store the checksum counts as a dictionary for each year
-                year_checksums.setdefault(year, {}).update(checksum_counts)
-
-    # Print the year and checksum count for each unique checksum
-    for year, checksums in year_checksums.items():
-        print(f"Year: {year}")
-        for checksum, count in checksums.items():
-            print(f"Checksum: {checksum}, Count: {count}")
-        print()
-
-    print('---x----')
-    print()
-
-
 def checksum_analysis(cur):
+    # Frequency of each checksum
     print_frequency_of_checksums(cur)
 
+    # Frequency of each checksum in every year
     print_frequency_of_checksums_over_years(cur)
 
 
 def print_frequency_of_checksums(cur):
-    # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
+    # Execute a query to fetch all values from the 'allchecksum' column in the 'packages' table
     cur.execute("SELECT allchecksum FROM packages")
 
     # Fetch all the values and store them into the 'all_checksums_list' list
@@ -250,14 +209,53 @@ def print_frequency_of_checksums(cur):
 
     sorted_frequencies = frequency_of_each_word(all_checksums_list)
 
-    unique_words_count = len(sorted_frequencies)
-
     print('CHECKSUM')
     print()
 
     # Print the word frequencies
     for word, frequency in sorted_frequencies:
         print(f'Checksum: {word} - Frequency: {frequency}')
+
+    print('---x----')
+    print()
+
+
+def print_frequency_of_checksums_over_years(cur):
+    cur.execute("""
+    SELECT EXTRACT(YEAR FROM pl.lastmodified) AS year, p.allchecksum
+    FROM package_list pl
+    JOIN packages p ON pl.groupid = p.groupid
+    AND pl.artifactid = p.artifactid
+    AND pl.version = p.version;
+    """)
+
+    # Fetch all the rows from the result
+    result = cur.fetchall()
+
+    # Extract year and checksums
+    frequency = collections.defaultdict(lambda: collections.defaultdict(int))
+    # Iterate over the query result
+    for row in result:
+        year = int(row['year'])
+        checksums = row['allchecksum']
+        if checksums is not None:
+            checksums = checksums.strip('[]').split(',')
+            for checksum in checksums:
+                checksum_type = checksum.strip().split('.')[-1]
+                if checksum_type in ['md5', 'sha1', 'sha256', 'sha512']:
+                    # Increment the frequency count for the checksum in the corresponding year
+                    frequency[year][checksum.strip()] += 1
+
+    print('FREQUENCY OF EACH CHECKSUM IN EACH YEAR')
+    print()
+
+    # Print the frequency of each checksum in each year
+    for year, checksums in frequency.items():
+        print(f'Year: {year}')
+        sorted_checksums = sorted(checksums.items(), key=lambda x: x[1], reverse=True)
+        for checksum, count in sorted_checksums:
+            print(f'Checksum: {checksum}, Frequency: {count}')
+        print()
 
     print('---x----')
     print()
