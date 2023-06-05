@@ -12,18 +12,22 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.PackageException;
+import nl.tudelft.mavensecrets.PackageId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.PackageException;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 public class PackagingTypeExtractor implements Extractor {
     private static final Logger LOGGER = LogManager.getLogger(PackagingTypeExtractor.class);
@@ -31,15 +35,18 @@ public class PackagingTypeExtractor implements Extractor {
 
     public PackagingTypeExtractor() {
         this.fields = new Field[]{
-            new Field ("packagingtypefrompom", "VARCHAR(128)"),
-            new Field("packagingtypefromrepo", "VARCHAR(128)"),
-            new Field("qualifiersources", "VARCHAR(128)"),
-            new Field("qualifierjavadoc", "VARCHAR(128)"),
+            new Field ("packagingtypefrompom", "VARCHAR"),
+            new Field("packagingtypefromrepo", "VARCHAR"),
+            new Field("qualifiersources", "VARCHAR"),
+            new Field("qualifierjavadoc", "VARCHAR"),
             new Field("md5", "VARCHAR"),
             new Field("sha1", "VARCHAR"),
             new Field("sha256", "VARCHAR"),
             new Field("sha512", "VARCHAR"),
-            new Field("typesoffile", "VARCHAR(4096)")
+            new Field("typesoffile", "VARCHAR"),
+            new Field("allqualifiers", "VARCHAR"),
+            new Field("allpackagingtype", "VARCHAR"),
+            new Field("allchecksum", "VARCHAR")
         };
     }
 
@@ -61,6 +68,16 @@ public class PackagingTypeExtractor implements Extractor {
         Artifact artifactWithSha1;
         Artifact artifactWithSha256;
         Artifact artifactWithSha512;
+
+        List<String> allArtifacts = request(pkg.id());
+
+        Set<String> allQualifiers = new HashSet<>();
+        Set<String> allTypesOfExecutable = new HashSet<>();
+        Set<String> allTypesOfCheckSum = new HashSet<>();
+
+        extractQualifier(pkg.id(), allArtifacts, allQualifiers);
+
+        extractExecutableTypeAndCheckSum(pkg.id(), allArtifacts, allTypesOfExecutable, allTypesOfCheckSum);
 
 
         artifactSources = getQualifierArtifact(mvn, pkg, "sources");
@@ -97,7 +114,67 @@ public class PackagingTypeExtractor implements Extractor {
 
         extractedFields.add(allFiles.toString());
 
+        extractedFields.add(allQualifiers.toString());
+
+        extractedFields.add(allTypesOfExecutable.toString());
+
+        extractedFields.add(allTypesOfCheckSum.toString());
+
         return extractedFields.toArray();
+    }
+
+    public void extractExecutableTypeAndCheckSum(PackageId id, List<String> allArtifacts, Set<String> allTypesOfExecutable, Set<String> allTypesOfCheckSum) {
+        String baseName = id.artifact() + "-" + id.version() + ".";
+
+        for (String filename : allArtifacts) {
+            String restOfFileName = "";
+            int startIndex = filename.indexOf(baseName) + baseName.length();
+
+            if (startIndex != -1 && startIndex < filename.length()) {
+                restOfFileName = filename.substring(startIndex);
+            }
+
+            int lastIndex = restOfFileName.lastIndexOf(".");
+
+            if(restOfFileName.endsWith("md5") || restOfFileName.endsWith("sha1")
+                || restOfFileName.endsWith("sha256") || restOfFileName.endsWith("sha512")) {
+                allTypesOfCheckSum.add(restOfFileName.substring(lastIndex));
+                continue;
+            }
+
+            if(restOfFileName.contains(".asc") || restOfFileName.contains("-")) {
+                continue;
+            }
+
+            allTypesOfExecutable.add(restOfFileName);
+
+        }
+        if(allTypesOfExecutable.size() > 1) {
+            allTypesOfExecutable.remove("pom");
+        }
+    }
+
+    public void extractQualifier(PackageId id, List<String> allArtifacts, Set<String> allQualifiers) {
+        String baseName = id.artifact() + "-" + id.version();
+        String restOfFileName = "";
+        for(String filename : allArtifacts) {
+            int startIndex = filename.indexOf(baseName) + baseName.length();
+
+            if (startIndex != -1 && startIndex < filename.length()) {
+                restOfFileName = filename.substring(startIndex);
+            }
+
+            if(restOfFileName.contains(".asc")) {
+                continue;
+            }
+
+            int start = restOfFileName.indexOf("-");
+            int endIndex = restOfFileName.indexOf(".");
+
+            if (start != -1 && endIndex != -1) {
+                allQualifiers.add(restOfFileName.substring(start + 1, endIndex));
+            }
+        }
     }
 
     private Artifact getCheckSumArtifact(Maven mvn, Package pkg, String fileExtension, String checksumType) {
@@ -179,5 +256,36 @@ public class PackagingTypeExtractor implements Extractor {
             checksum = reader.readLine().split("\\s+")[0];
         }
         return checksum;
+    }
+
+    public List<String> request(PackageId packageId) {
+        String repositoryUrl = "https://repo.maven.apache.org/maven2/";
+        String url = repositoryUrl + packageId.group().replace('.', '/')
+            + "/" + packageId.artifact() + "/" + packageId.version();
+
+        List<String> allFiles = new ArrayList<>();
+        try {
+            // Send HTTP request and retrieve the response
+
+            Document document = Jsoup.connect(url).get();
+
+            // Find the <pre> element with the id "contents"
+            Elements contentsElement = document.select("pre#contents");
+
+            // Extract the <a> elements within the <pre> element
+            Elements linkElements = contentsElement.select("a[href]");
+
+            // Iterate over the link elements and print the titles
+            for (Element linkElement : linkElements) {
+                String title = linkElement.attr("href");
+                if (title.endsWith("/")) {  // Skip directories
+                    continue;
+                }
+                allFiles.add(title);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return allFiles;
     }
 }

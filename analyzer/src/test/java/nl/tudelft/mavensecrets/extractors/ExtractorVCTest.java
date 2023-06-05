@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Properties;
 
 import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
@@ -14,12 +15,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.PackageId;
-import nl.tudelft.mavensecrets.NopResolver;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.PackageId;
+import nl.tudelft.mavensecrets.testutils.NopResolver;
 
 class ExtractorVCTest {
     private static Extractor extractor;
@@ -69,7 +69,7 @@ class ExtractorVCTest {
     }
 
     @Test
-    void testExtractAll() throws SQLException, IOException {
+    void testExtractAllUrls() throws SQLException, IOException {
         Package pkg = createPackage(testModel);
         Object[] results = extractor.extract(maven, pkg, pkgName, db);
         Assertions.assertNotNull(results);
@@ -78,7 +78,8 @@ class ExtractorVCTest {
                 defaultHomepageUrl,
                 defaultDistMgmtUrl,
                 defaultConnUrl,
-                defaultDevConnUrl
+                defaultDevConnUrl,
+                null
         }, results);
     }
 
@@ -87,8 +88,20 @@ class ExtractorVCTest {
         Model emptyModel = new Model();
         Package pkg = createPackage(emptyModel);
         Object[] results = extractor.extract(maven, pkg, pkgName, db);
-        Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+        Assertions.assertArrayEquals(new Object[] {null, null, null, null, null, null}, results);
     }
+
+    @Test
+    void testReproducibilityProperty() throws SQLException, IOException {
+        Model emptyModel = new Model();
+        Properties props = new Properties();
+        props.put("project.build.outputTimestamp","2023-04-22T15:25:31Z");
+        emptyModel.setProperties(props);
+        Package pkg = createPackage(emptyModel);
+        Object[] results = extractor.extract(maven, pkg, pkgName, db);
+        Assertions.assertArrayEquals(new Object[] {null, null, null, null, null, "2023-04-22T15:25:31Z"}, results);
+    }
+
 
     private static Package createPackage(Model model) {
         return new Package(new PackageId("org.test","test", "1.42"), null, model);

@@ -6,8 +6,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-import nl.tudelft.Database;
-import nl.tudelft.PackageId;
+import nl.tudelft.mavensecrets.ArtifactId;
+import nl.tudelft.mavensecrets.Database;
 
 /**
  * A {@link PackageSelector} that fetches all available packages from a database.
@@ -26,7 +26,7 @@ public class AllPackageSelector implements PackageSelector {
     }
 
     @Override
-    public Collection<? extends PackageId> getPackages() throws IOException, SQLException {
-        return Collections.unmodifiableCollection(db.getPackageIds());
+    public Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws IOException, SQLException {
+        return Collections.unmodifiableCollection(db.getArtifactIds(page, pageSize));
     }
 }

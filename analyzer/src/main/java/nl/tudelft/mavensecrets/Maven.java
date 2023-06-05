@@ -1,4 +1,4 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,14 +25,14 @@ public class Maven {
         this.resolver = Objects.requireNonNull(resolver);
     }
 
-    public Package getPackage(PackageId id, String pkgType) throws PackageException {
+    public Package getPackage(ArtifactId id) throws PackageException {
         Objects.requireNonNull(id);
 
         Artifact artifact = resolver.createArtifact(id.group(), id.artifact(), id.version());
 
         File jar;
         try {
-            jar = pkgType.equals("pom") ? null : resolver.getJar(artifact, pkgType);
+            jar = id.extension().equals("pom") ? null : resolver.getJar(artifact, id.extension());
         } catch (ArtifactResolutionException exception) {
             LOGGER.warn("Could not fetch archive ({})", id, exception);
             jar = null;

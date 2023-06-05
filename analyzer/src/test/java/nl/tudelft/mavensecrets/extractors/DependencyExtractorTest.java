@@ -1,9 +1,11 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets.extractors;
 
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.extractors.Extractor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

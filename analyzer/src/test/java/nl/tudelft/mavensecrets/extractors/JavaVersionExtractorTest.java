@@ -16,13 +16,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
-import nl.tudelft.Database;
-import nl.tudelft.Extractor;
-import nl.tudelft.Field;
-import nl.tudelft.Maven;
-import nl.tudelft.Package;
-import nl.tudelft.mavensecrets.JarUtil;
-import nl.tudelft.mavensecrets.NopResolver;
+import nl.tudelft.mavensecrets.Database;
+import nl.tudelft.mavensecrets.Field;
+import nl.tudelft.mavensecrets.Maven;
+import nl.tudelft.mavensecrets.Package;
+import nl.tudelft.mavensecrets.testutils.JarUtil;
+import nl.tudelft.mavensecrets.testutils.NopResolver;
 
 public class JavaVersionExtractorTest {
 
@@ -52,8 +51,9 @@ public class JavaVersionExtractorTest {
     @Test
     public void test_no_jar() throws IOException, SQLException {
         try (Package pkg = createPackage(null)) {
+            Object[] expected = new Object[extractor.fields().length];
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -73,8 +73,10 @@ public class JavaVersionExtractorTest {
             mf.getMainAttributes().put(new Name("Created-By"), "1.7.0_06");
         }), JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[0] = "1.7.0_06";
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {"1.7.0_06", null, null, null, null}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -84,8 +86,10 @@ public class JavaVersionExtractorTest {
             mf.getMainAttributes().put(new Name("Build-Jdk"), "1.8.0_201");
         }), JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[1] = "1.8.0_201";
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, "1.8.0_201", null, null, null}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -95,8 +99,48 @@ public class JavaVersionExtractorTest {
             mf.getMainAttributes().put(new Name("Build-Jdk-Spec"), "1.8");
         }), JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[2] = "1.8";
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, "1.8", null, null}, results);
+            Assertions.assertArrayEquals(expected, results);
+        }
+    }
+
+    @Test
+    public void test_manifest_multi_release_true() throws IOException, SQLException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
+            mf.getMainAttributes().put(Name.MULTI_RELEASE, "true");
+        }), JarUtil.DEFAULT_RESOURCES);
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[3] = true;
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertArrayEquals(expected, results);
+        }
+    }
+
+    @Test
+    public void test_manifest_multi_release_false() throws IOException, SQLException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
+            mf.getMainAttributes().put(Name.MULTI_RELEASE, "false");
+        }), JarUtil.DEFAULT_RESOURCES);
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[3] = false;
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertArrayEquals(expected, results);
+        }
+    }
+
+    @Test
+    public void test_manifest_multi_release_malformed() throws IOException, SQLException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST.andThen(mf -> {
+            mf.getMainAttributes().put(Name.MULTI_RELEASE, "abc");
+        }), JarUtil.DEFAULT_RESOURCES);
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -108,8 +152,9 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -121,8 +166,9 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -138,8 +184,11 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[4] = new byte[] {3, 4};
+            expected[5] = new byte[] {1, 2};
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {3, 4}, new byte[] {1, 2}}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -147,8 +196,9 @@ public class JavaVersionExtractorTest {
     public void test_class_absent() throws IOException, SQLException {
         JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_RESOURCES);
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -161,8 +211,11 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[4] = new byte[] {3, 4};
+            expected[5] = new byte[] {1, 2};
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {3, 4}, new byte[] {1, 2}}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 
@@ -183,8 +236,12 @@ public class JavaVersionExtractorTest {
             jos.closeEntry();
         }));
         try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] expected = new Object[extractor.fields().length];
+            expected[4] = new byte[] {7, 8};
+            expected[5] = new byte[] {5, 6};
+            expected[6] = new byte[] {7, 8, 5, 6, 0, 0, 0, 2, 3, 4, 1, 2, 0, 0, 0, 1};
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {null, null, null, new byte[] {7, 8}, new byte[] {5, 6}}, results);
+            Assertions.assertArrayEquals(expected, results);
         }
     }
 

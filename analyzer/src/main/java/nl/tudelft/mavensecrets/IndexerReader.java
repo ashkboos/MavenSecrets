@@ -1,16 +1,10 @@
-package nl.tudelft;
+package nl.tudelft.mavensecrets;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.sql.Date;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
+import java.util.*;
 import org.apache.maven.index.reader.ChunkReader;
 
 public class IndexerReader {
@@ -26,6 +20,7 @@ public class IndexerReader {
         Objects.requireNonNull(file);
 
         db.createIndexesTable(false);
+        db.createIndexesTableWithAllPackaging(false);
 
         List<String[]> indexInfo = new ArrayList<>();
 
@@ -40,12 +35,16 @@ public class IndexerReader {
                     String epochDate = chunk.get("m");
                     newList[3] = epochDate;
                     newList[4] = arti[arti.length - 1];
+                    if(newList[1].equals("presto-benchto-benchmarks")) {
+                        System.out.println(Arrays.toString(newList));
+                    }
                     if (!newList[4].contains(".") && tokens[3].equals("NA")) {
                         indexInfo.add(newList);
                     }
                     // Insert batch into database
                     if (indexInfo.size() == BATCH_SIZE) {
                         db.batchUpdateIndexTable(indexInfo);
+                        db.batchUpdateIndexTableWithPackaging(indexInfo);
                         indexInfo.clear();
                     }
                 }
@@ -54,6 +53,7 @@ public class IndexerReader {
 
         // Remainder that is not part of a batch
         db.batchUpdateIndexTable(indexInfo);
+        db.batchUpdateIndexTableWithPackaging(indexInfo);
     }
 
 }

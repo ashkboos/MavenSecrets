@@ -6,8 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-import nl.tudelft.Extractor;
-import nl.tudelft.mavensecrets.config.Config.Database;
+import nl.tudelft.mavensecrets.extractors.Extractor;
 
 /**
  * An in-memory {@link Config}.
