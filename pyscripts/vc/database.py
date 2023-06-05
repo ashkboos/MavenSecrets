@@ -28,10 +28,7 @@ class Database:
     def get_urls(self, fieldname: str):
         self.cur.execute(
             f'''
-            SELECT split_part(id, ':', 1) AS groupid,
-            split_part(id, ':', 2) AS artifactid,
-            split_part(id, ':', 3) AS version,
-            {fieldname}
+            SELECT groupid, artifactid, version, {fieldname}
             FROM {self.PKG_TABLE}
             WHERE {fieldname} IS NOT NULL AND {fieldname} != '';
             '''
@@ -42,11 +39,8 @@ class Database:
     def get_distinct_urls(self, fieldname: str):
         self.cur.execute(
             f'''
-            SELECT DISTINCT ON (split_part(id, ':', 1), split_part(id, ':', 2))
-                split_part(id, ':', 1) AS groupid,
-                split_part(id, ':', 2) AS artifactid,
-                split_part(id, ':', 3) AS version,
-                {fieldname}
+            SELECT DISTINCT ON (groupid, artifactid)
+                groupid, artifactid, version, {fieldname}
             FROM {self.PKG_TABLE}
             WHERE {fieldname} IS NOT NULL AND {fieldname} != '';
             '''

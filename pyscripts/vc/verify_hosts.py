@@ -59,7 +59,8 @@ class VerifyHost:
 
 
     def run_cmd(self, url: str):
-        return subprocess.run(['env', 'GIT_TERMINAL_PROMPT=0', 'git', 'ls-remote', url, 'HEAD'], 
+        return subprocess.run(['env', 'GIT_TERMINAL_PROMPT=0', 'GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no',
+                               'git', 'ls-remote', url, 'HEAD'], 
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=self.timeout)
     
 
@@ -105,16 +106,7 @@ class VerifyHost:
 # http://github.com/ericmedvet/jgea/tree/main/jgea.experimenter
 # SHOULD remove everything from /tree onwards
 
-
-
-# Trying with https://github.com/cerner/ccl-testing/tree/master/ftp-util
-# Exit code: 128
-# remote: Please upgrade your git client.
-# remote: GitHub.com no longer supports git over dumb-http: https://github.com/blog/809-git-dumb-http-transport-to-be-turned-off-in-90-days
-# fatal: unable to access 'https://github.com/cerner/ccl-testing/tree/master/ftp-util/': The requested URL returned error: 403
-
-# Ideas:
-# - Try scm_url, homepage_url, etc (all regex'd) until something hits
+# Skip ssh prompt: https://unix.stackexchange.com/a/469318
 
 
 
