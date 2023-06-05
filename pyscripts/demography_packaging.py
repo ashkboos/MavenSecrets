@@ -126,9 +126,11 @@ def print_frequency_of_packages_with_frequency_packaging_types(cur):
 
 
 def print_difference_with_individual_freq(cur):
-    cur.execute('SELECT packagingtypefrompom, packagingtypefromrepo, COUNT(*) FROM packages WHERE '
-                'packagingtypefrompom != packagingtypefromrepo GROUP BY '
-                'packagingtypefrompom, packagingtypefromrepo')
+    cur.execute("""
+    SELECT packagingtypefrompom, packagingtypefromrepo, COUNT(*) FROM packages WHERE 
+    packagingtypefrompom != packagingtypefromrepo GROUP BY 
+    packagingtypefrompom, packagingtypefromrepo ORDER BY COUNT(*) DESC
+    """)
 
     results = cur.fetchall()
 
