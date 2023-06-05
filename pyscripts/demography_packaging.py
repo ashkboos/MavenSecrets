@@ -19,6 +19,9 @@ def main():
     # Qualifier analysis
     qualifier_analysis(cur)
 
+    # Executable analysis
+    executable_analysis(cur)
+
     # Close the cursor and connection
     cur.close()
     conn.close()
@@ -60,11 +63,14 @@ def print_plot_packaging_pom(cur):
     print('PACKAGING TYPE FROM POM')
     print()
 
+    total_count = 0
     for packaging_type, count in packaging_type_counts.items():
+        total_count = total_count + count
         print(f'Packaging type: {packaging_type}, Count: {count}')
     print()
 
     print(f'Total number of unique packaging types in pom: {unique_packaging_type_count}')
+    print(f'Total number of packaging types in pom: {total_count}')
     print('---x----')
     print()
 
@@ -81,12 +87,15 @@ def print_frequency_from_repo(cur):
     print('PACKAGING TYPE FROM THE REPO')
     print()
 
+    total_count = 0
     # Print the word frequencies
     for word, frequency in sorted_frequencies:
+        total_count = total_count + frequency
         print(f'Packaging type: {word} - Frequency: {frequency}')
     print()
 
     print(f'Number of unique packaging types from the repo: {unique_words_count}')
+    print(f'Total number: {total_count}')
     print('---x----')
     print()
 
@@ -168,30 +177,6 @@ def print_frequency_index_packaging_different_repo(cur):
     print()
 
 
-def qualifier_analysis(cur):
-    # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
-    cur.execute("SELECT allqualifiers FROM packages")
-
-    # Fetch all the values and store them into the 'all_qualifiers_list' list
-    all_qualifiers_list = [row['allqualifiers'] for row in cur.fetchall()]
-
-    sorted_frequencies = frequency_of_each_word(all_qualifiers_list)
-
-    unique_words_count = len(sorted_frequencies)
-
-    print('QUALIFIER')
-    print()
-
-    # Print the word frequencies
-    for word, frequency in sorted_frequencies:
-        print(f'Qualifier: {word} - Frequency: {frequency}')
-    print()
-
-    print(f'Number of unique qualifiers: {unique_words_count}')
-    print('---x----')
-    print()
-
-
 def checksum_analysis(cur):
     # Frequency of each checksum
     print_frequency_of_checksums(cur)
@@ -213,9 +198,12 @@ def print_frequency_of_checksums(cur):
     print()
 
     # Print the word frequencies
+    total_count = 0
     for word, frequency in sorted_frequencies:
+        total_count = total_count + frequency
         print(f'Checksum: {word} - Frequency: {frequency}')
 
+    print(f'Total count:{total_count}')
     print('---x----')
     print()
 
@@ -257,6 +245,60 @@ def print_frequency_of_checksums_over_years(cur):
             print(f'Checksum: {checksum}, Frequency: {count}')
         print()
 
+    print('---x----')
+    print()
+
+
+def qualifier_analysis(cur):
+    # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
+    cur.execute("SELECT allqualifiers FROM packages")
+
+    # Fetch all the values and store them into the 'all_qualifiers_list' list
+    all_qualifiers_list = [row['allqualifiers'] for row in cur.fetchall()]
+
+    sorted_frequencies = frequency_of_each_word(all_qualifiers_list)
+
+    unique_words_count = len(sorted_frequencies)
+
+    print('QUALIFIER')
+    print()
+
+    # Print the word frequencies
+    total_count = 0
+    for word, frequency in sorted_frequencies:
+        total_count = total_count + frequency
+        print(f'Qualifier: {word} - Frequency: {frequency}')
+    print()
+
+    print(f'Number of unique qualifiers: {unique_words_count}')
+    print(f'Total count:{total_count}')
+    print('---x----')
+    print()
+
+
+def executable_analysis(cur):
+    # Execute a query to fetch all values from the 'typeoffile' column in the 'packages' table
+    cur.execute("SELECT typesoffile FROM packages")
+
+    # Fetch all the values and store them into the 'all_qualifiers_list' list
+    all_file_type_list = [row['typesoffile'] for row in cur.fetchall()]
+
+    sorted_frequencies = frequency_of_each_word(all_file_type_list)
+
+    unique_words_count = len(sorted_frequencies)
+
+    print('TYPE OF FILE')
+    print()
+
+    # Print the word frequencies
+    total_count = 0
+    for word, frequency in sorted_frequencies:
+        total_count =total_count + frequency
+        print(f'File type: {word} - Frequency: {frequency}')
+    print()
+
+    print(f'Number of unique file types: {unique_words_count}')
+    print(f'Total count:{total_count}')
     print('---x----')
     print()
 
