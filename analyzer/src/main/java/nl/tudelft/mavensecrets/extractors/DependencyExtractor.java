@@ -4,6 +4,7 @@ import nl.tudelft.mavensecrets.Database;
 import nl.tudelft.mavensecrets.Field;
 import nl.tudelft.mavensecrets.Maven;
 import nl.tudelft.mavensecrets.Package;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
@@ -36,8 +37,13 @@ public class DependencyExtractor implements Extractor {
         Objects.requireNonNull(pkg);
         Object[] result = new Object[2];
         Model m = pkg.pom();
+        int directDependencies = 0;
         List<org.apache.maven.model.Dependency> dependencies = m.getDependencies();
-        int directDependencies = dependencies.size();
+        for(Dependency d : dependencies){
+            if(d.getScope() == null || d.getScope().equals("compile")) {
+                directDependencies++;
+            }
+        }
         String id = pkg.id().group() + ":" + pkg.id().artifact() + ":" + pkgType + ":" + pkg.id().version();
         int trans = timeoutResolve(id);
 //        int trans = resolves(pkg.id().group(), pkg.id().artifact(), pkg.id().version());
@@ -64,7 +70,6 @@ public class DependencyExtractor implements Extractor {
         } catch (TimeoutException | InterruptedException | ExecutionException e) {
             return -1;
         } finally {
-            future.cancel(true); // Cancel the future to stop execution if not completed
             executor.shutdown(); // Shutdown the executor
         }
     }
