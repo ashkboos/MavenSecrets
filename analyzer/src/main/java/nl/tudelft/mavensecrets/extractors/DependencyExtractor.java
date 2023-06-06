@@ -59,7 +59,7 @@ public class DependencyExtractor implements Extractor {
         }, executor);
 
         try {
-            int result = future.get(60, TimeUnit.SECONDS); // Timeout set to 60 seconds
+            int result = future.get(600, TimeUnit.SECONDS); // Timeout set to 600 seconds
             return result;
         } catch (TimeoutException | InterruptedException | ExecutionException e) {
             return -1;
