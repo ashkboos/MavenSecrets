@@ -44,7 +44,7 @@ def packaging_analysis(cur):
     print_frequency_index_packaging_different_repo(cur)
 
 
-def print_plot_packaging_pom(cur):
+def print_packaging_from_pom(cur):
     cur.execute('SELECT packagingtypefrompom, COUNT(*) FROM packages WHERE packagingtypefrompom IS NOT NULL GROUP BY '
                 'packagingtypefrompom ORDER BY COUNT(*) DESC')
     results = cur.fetchall()
@@ -96,6 +96,37 @@ def print_frequency_from_repo(cur):
 
     print(f'Number of unique packaging types from the repo: {unique_words_count}')
     print(f'Total number: {total_count}')
+    print('---x----')
+    print()
+
+
+def print_frequency_from_index(cur):
+    cur.execute('SELECT packagingtypefromrepo, COUNT(*) FROM packages WHERE packagingtypefromrepo IS NOT NULL GROUP BY '
+                'packagingtypefromrepo ORDER BY COUNT(*) DESC')
+    results = cur.fetchall()
+    # Create a dictionary to store the "packagingType" values and their counts
+    packaging_type_counts = {}
+    distinct_packaging_types = set()
+
+    for row in results:
+        packaging_type = row[0]
+        count = row[1]
+        packaging_type_counts[packaging_type] = count
+        distinct_packaging_types.add(packaging_type)
+
+    unique_packaging_type_count = len(distinct_packaging_types)
+
+    print('PACKAGING TYPE FROM INDEX')
+    print()
+
+    total_count = 0
+    for packaging_type, count in packaging_type_counts.items():
+        total_count = total_count + count
+        print(f'Packaging type: {packaging_type}, Count: {count}')
+    print()
+
+    print(f'Total number of unique packaging types in index: {unique_packaging_type_count}')
+    print(f'Total number of packaging types in index: {total_count}')
     print('---x----')
     print()
 
@@ -295,7 +326,7 @@ def executable_analysis(cur):
     # Print the word frequencies
     total_count = 0
     for word, frequency in sorted_frequencies:
-        total_count =total_count + frequency
+        total_count = total_count + frequency
         print(f'File type: {word} - Frequency: {frequency}')
     print()
 
