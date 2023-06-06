@@ -18,6 +18,7 @@ public class Database implements Closeable {
     private static final String SELECTED_INDEX_TABLE = "selected_packages";
     private static final String EXTENSION_TABLE = "extensions";
     private static final String UNRESOLVED_PACKAGES = "unresolved_packages";
+    private static final String TEMP_TABLE = "package_list_distinct";
     private static final int BACKOFF_TIME_MS = 1000;
     private static final int BACKOFF_BASE = 2;
     private static final int BACKOFF_RETRIES = 3;
@@ -290,13 +291,19 @@ public class Database implements Closeable {
         return yearCounts;
     }
 
-    public void extractStrataSample(long seed, double percent, int year) throws SQLException {
-       String sql = "INSERT INTO selected_packages SELECT DISTINCT ON (groupid, artifactid) * FROM "
-               + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent +") REPEATABLE ("+ seed + ")" +
-               "WHERE date_part('year', lastmodified) = " + year;
-       execute(sql);
+    public void extractStrataSample(double seed, double percent, int year) throws SQLException {
+        String sql = "INSERT INTO selected_packages SELECT * FROM " + TEMP_TABLE +
+                " TABLESAMPLE bernoulli(" + percent +") REPEATABLE ("+ seed + ")" +
+                " WHERE date_part('year', lastmodified) = " + year;
+        execute(sql);
     }
 
+    public void createTempTable(double seed) throws SQLException {
+        execute("SELECT setseed(" + seed + ")");
+        String sql = "CREATE TEMP TABLE " + TEMP_TABLE + " AS (SELECT DISTINCT ON (groupid, artifactid) * " +
+                "FROM " + PACKAGE_INDEX_TABLE + " ORDER BY groupid, artifactid, random());";
+        execute(sql);
+    }
 
     @Override
     public void close() throws IOException {
