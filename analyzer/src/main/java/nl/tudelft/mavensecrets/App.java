@@ -53,6 +53,7 @@ public class App {
         try {
             db = openDatabase(config.getDatabaseConfig());
             db.createUnresolvedTable();
+            db.createNewExtensionTable();
         } catch (SQLException exception) {
             LOGGER.error("Could not open database", exception);
             return;
