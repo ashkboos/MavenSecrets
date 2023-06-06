@@ -48,7 +48,7 @@ public class App {
 
         long startTime = System.currentTimeMillis();
 
-        // Databse
+        // Database
         Database db;
         try {
             db = openDatabase(config.getDatabaseConfig());
