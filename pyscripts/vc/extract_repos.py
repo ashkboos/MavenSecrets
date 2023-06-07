@@ -20,7 +20,6 @@ class Extractor:
 
     def extract(self) -> None:
         self.db.create_table()
-        self.db.create_err_table()
         unparseable = self.process_url("scm_url")
         unparseable_home = self.process_url("homepage_url")
         unparseable_dev_conn = self.process_url("dev_conn_url")
