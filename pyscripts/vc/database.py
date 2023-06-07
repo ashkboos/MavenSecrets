@@ -91,13 +91,13 @@ class Database:
 
     def collate_hosts_yearly(self):
         query = f'''
-        SELECT hostname, COUNT(hostname), date_part('year', lastmodified) AS year
+        SELECT host, COUNT(host), date_part('year', lastmodified) AS year
         FROM {self.HOST_TABLE} h
         JOIN {self.PKG_LIST_TABLE} pl ON h.groupid = pl.groupid
         AND h.artifactid = pl.artifactid
         AND h.version = pl.version
-        GROUP BY year, hostname
-        ORDER BY year, hostname;
+        GROUP BY year, host
+        ORDER BY year, host;
         '''
         self.cur.execute(query)
         return self.cur.fetchall()
