@@ -29,7 +29,7 @@ def main():
 
 def packaging_analysis(cur):
     # Individual frequency of each packaging type from pom
-    print_plot_packaging_pom(cur)
+    print_packaging_from_pom(cur)
 
     # Individual frequency of each packaging type from repo
     print_frequency_from_repo(cur)
@@ -76,9 +76,9 @@ def print_packaging_from_pom(cur):
 
 
 def print_frequency_from_repo(cur):
-    cur.execute("SELECT allpackagingtype FROM packages")
+    cur.execute("SELECT allpackagingtypefromrepo FROM packages")
 
-    all_packagingtype_list = [row['allpackagingtype'] for row in cur.fetchall()]
+    all_packagingtype_list = [row['allpackagingtypefromrepo'] for row in cur.fetchall()]
 
     sorted_frequencies = frequency_of_each_word(all_packagingtype_list)
 
@@ -101,8 +101,9 @@ def print_frequency_from_repo(cur):
 
 
 def print_frequency_from_index(cur):
-    cur.execute('SELECT packagingtypefromrepo, COUNT(*) FROM packages WHERE packagingtypefromrepo IS NOT NULL GROUP BY '
-                'packagingtypefromrepo ORDER BY COUNT(*) DESC')
+    cur.execute('SELECT packagingtypefromindex, COUNT(*) FROM packages WHERE packages.packagingtypefromindex IS NOT '
+                'NULL GROUP BY '
+                'packagingtypefromindex ORDER BY COUNT(*) DESC')
     results = cur.fetchall()
     # Create a dictionary to store the "packagingType" values and their counts
     packaging_type_counts = {}
@@ -133,18 +134,34 @@ def print_frequency_from_index(cur):
 
 def print_frequency_of_packages_with_frequency_packaging_types(cur):
     # Execute a query to fetch all values from the 'allpackagingtype' column in the table
-    cur.execute("SELECT allpackagingtype FROM packages")
+    cur.execute("SELECT allpackagingtypefromrepo FROM packages")
 
     # Create a dictionary to store the frequency of packaging types for each row
     row_frequency = collections.defaultdict(int)
 
+    packaging_types_gt_4 = {}
+
     # Iterate over the rows and count the distinct packaging types for each row
     for row in cur.fetchall():
-        allpackagingtype = row['allpackagingtype']
+        allpackagingtype = row['allpackagingtypefromrepo']
         if allpackagingtype is not None:
             packaging_types = set(allpackagingtype.strip('[]').split(','))
-            num_packaging_types = len(packaging_types)
+            filtered_packaging_types = set()
+            for packaging_type in packaging_types:
+                packaging_type = packaging_type.strip()
+                if len(packaging_type) > 2 \
+                        and not packaging_type.endswith('.xml') \
+                        and not packaging_type.endswith('.jar') \
+                        and not packaging_type.endswith('.pom') \
+                        and not packaging_type.endswith('.asc'):
+                    filtered_packaging_types.add(packaging_type)
+
+            num_packaging_types = len(filtered_packaging_types)
             row_frequency[num_packaging_types] += 1
+
+            # Check if the number of packaging types is more than 4
+            if num_packaging_types > 3:
+                packaging_types_gt_4[num_packaging_types] = filtered_packaging_types
 
     print('FREQUENCY OF PACKAGES WITH DIFFERENT PACKAGING TYPES')
     print()
@@ -152,15 +169,24 @@ def print_frequency_of_packages_with_frequency_packaging_types(cur):
     # Print the frequency of rows with each distinct count of packaging types
     for num_packaging_types, frequency in row_frequency.items():
         print(f'Frequency of packages with {num_packaging_types} packaging types: {frequency}')
+
+    # Print the packaging types when num_packaging_types > 4
+    if len(packaging_types_gt_4) > 0:
+        print('PACKAGING TYPES WHEN NUM_PACKAGING_TYPES > 4:')
+        for num_packaging_types, packaging_types in packaging_types_gt_4.items():
+            print(f'Number of Packaging Types: {num_packaging_types}')
+            print(f'Packaging Types: {", ".join(packaging_types)}')
+            print('---')
+        print()
     print('---x----')
     print()
 
 
 def print_difference_with_individual_freq(cur):
     cur.execute("""
-    SELECT packagingtypefrompom, packagingtypefromrepo, COUNT(*) FROM packages WHERE 
-    packagingtypefrompom != packagingtypefromrepo GROUP BY 
-    packagingtypefrompom, packagingtypefromrepo ORDER BY COUNT(*) DESC
+    SELECT packagingtypefrompom, packagingtypefromindex, COUNT(*) FROM packages WHERE 
+    packagingtypefrompom != packages.packagingtypefromindex GROUP BY 
+    packagingtypefrompom, packagingtypefromindex ORDER BY COUNT(*) DESC
     """)
 
     results = cur.fetchall()
@@ -185,14 +211,14 @@ def print_difference_with_individual_freq(cur):
 
 def print_frequency_index_packaging_different_repo(cur):
     # Execute a query to fetch the values from the 'allpackagingtype' and 'packagingtypefromrepo' columns
-    cur.execute("SELECT allpackagingtype, packagingtypefromrepo FROM packages")
+    cur.execute("SELECT allpackagingtypefromrepo, packagingtypefromindex FROM packages")
 
     count = 0
 
     # Iterate over the rows and check if the values are the same
     for row in cur.fetchall():
-        allpackagingtype = row['allpackagingtype']
-        packagingtypefromindex = row['packagingtypefromrepo']
+        allpackagingtype = row['allpackagingtypefromrepo']
+        packagingtypefromindex = row['packagingtypefromindex']
 
         if allpackagingtype is not None:
             # Remove the square brackets and split the 'allpackagingtype' string into a list
@@ -220,10 +246,10 @@ def checksum_analysis(cur):
 
 def print_frequency_of_checksums(cur):
     # Execute a query to fetch all values from the 'allchecksum' column in the 'packages' table
-    cur.execute("SELECT allchecksum FROM packages")
+    cur.execute("SELECT allchecksumfromrepo FROM packages")
 
     # Fetch all the values and store them into the 'all_checksums_list' list
-    all_checksums_list = [row['allchecksum'] for row in cur.fetchall()]
+    all_checksums_list = [row['allchecksumfromrepo'] for row in cur.fetchall()]
 
     sorted_frequencies = frequency_of_each_word(all_checksums_list)
 
@@ -243,7 +269,7 @@ def print_frequency_of_checksums(cur):
 
 def print_frequency_of_checksums_over_years(cur):
     cur.execute("""
-    SELECT EXTRACT(YEAR FROM pl.lastmodified) AS year, p.allchecksum
+    SELECT EXTRACT(YEAR FROM pl.lastmodified) AS year, p.allchecksumfromrepo
     FROM package_list pl
     JOIN packages p ON pl.groupid = p.groupid
     AND pl.artifactid = p.artifactid
@@ -258,7 +284,7 @@ def print_frequency_of_checksums_over_years(cur):
     # Iterate over the query result
     for row in result:
         year = int(row['year'])
-        checksums = row['allchecksum']
+        checksums = row['allchecksumfromrepo']
         if checksums is not None:
             checksums = checksums.strip('[]').split(',')
             for checksum in checksums:
@@ -284,10 +310,10 @@ def print_frequency_of_checksums_over_years(cur):
 
 def qualifier_analysis(cur):
     # Execute a query to fetch all values from the 'allqualifiers' column in the 'packages' table
-    cur.execute("SELECT allqualifiers FROM packages")
+    cur.execute("SELECT allqualifiersfromrepo FROM packages")
 
     # Fetch all the values and store them into the 'all_qualifiers_list' list
-    all_qualifiers_list = [row['allqualifiers'] for row in cur.fetchall()]
+    all_qualifiers_list = [row['allqualifiersfromrepo'] for row in cur.fetchall()]
 
     sorted_frequencies = frequency_of_each_word(all_qualifiers_list)
 
@@ -349,7 +375,12 @@ def frequency_of_each_word(word_list):
             # Iterate through each word and update the frequencies
             for word in qualifiers_list:
                 word = word.strip()  # Remove leading/trailing whitespaces
-                if word:
+                # Exclude one-letter words, empty words, and words ending with ".xml"
+                if len(word) > 2 and word != "" \
+                        and not word.endswith(".xml") \
+                        and not word.endswith('.jar') \
+                        and not word.endswith('.pom') \
+                        and not word.endswith('.asc'):
                     word_frequencies[word] = word_frequencies.get(word, 0) + 1
 
     # Sort the word frequencies by their values in descending order
