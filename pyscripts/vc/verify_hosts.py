@@ -1,4 +1,5 @@
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from database import *
 from utils import *
@@ -8,54 +9,48 @@ class VerifyHost:
 
     def __init__(self, db: Database):
         self.db = db
-        self.TABLE = 'hosts'
         self.timeout = 30
         self.funcs = [lambda x : (x, True), scm_to_url, git_to_https, remove_tree_path]
 
-    # TODO mark them as processed
-    # TODO write tests to try different formats
     def verify_hosts(self):
         records = self.db.get_all()
-        valid = 0
 
-        for i, record in enumerate(records):
-            print(f'{i}/{len(records)}')
-            success = False
-            errs = []
-            print('-'*50)
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(self.verify_single_host, record) for record in records]
+            for future in as_completed(futures):
+                success = future.result()
+            print("All done. Thread Pool shutting down...")
 
-            urls = [record['url'], record['url_home'], record['url_scm_conn'], record['url_dev_conn']]
-            valid_fields = ['valid', 'valid_home', 'valid_scm_conn', 'valid_dev_conn']
 
-            pkg = PackageId(record['groupid'], record['artifactid'], record['version'])
+    def verify_single_host(self, record):
+        success = False
+        print('-'*50)
 
-            for j, url in enumerate(urls): 
-                if url is None:
-                    continue
+        urls = [record['url'], record['url_home'], record['url_scm_conn'], record['url_dev_conn']]
+        valid_fields = ['valid', 'valid_home', 'valid_scm_conn', 'valid_dev_conn']
 
-                for convert_func in self.funcs:
-                    converted_url, changed = convert_func(url)
-                    if not changed:
-                        continue 
+        pkg = PackageId(record['groupid'], record['artifactid'], record['version'])
 
-                    err = self.try_with(converted_url)
-                    if err is None:
-                        success = True
-                        # TODO add working url to table
-                        self.db.update_validity(valid_fields[j], pkg, converted_url)
-                        print('VALID:', valid_fields[j])
-                        break
-                    else:
-                        errs.append(err)
-                        self.db.insert_error(pkg, converted_url, err)
-            
-                if success:
-                    valid += 1
+        for j, url in enumerate(urls): 
+            if url is None:
+                continue
+
+            for convert_func in self.funcs:
+                converted_url, changed = convert_func(url)
+                if not changed:
+                    continue 
+
+                err = self.try_with(converted_url)
+                if err is None:
+                    success = True
+                    self.db.update_validity(valid_fields[j], pkg, converted_url)
+                    print('VALID:', valid_fields[j])
+                    break
                 else:
-                    print(errs)
-            self.db.mark_processed(pkg)
-
-        print(f'There were {valid} repos out of {len(records)}')
+                    self.db.insert_error(pkg, converted_url, err)
+        
+        self.db.mark_processed(pkg)
+        return success
 
 
     def run_cmd(self, url: str):
@@ -80,41 +75,3 @@ class VerifyHost:
             return None
         else:
             return err
-        
-
-
-# Exceptions:
-
-# git@gitee.com:fluent-mybatis/generator.git DOESNT WORK
-# BUT
-# https://gitee.com/fluent-mybatis/generator.git WORKS
-
-# https://github.com/Auties00/noise-java/tree/master/ DOESNT WORK
-# BUT
-# https://github.com/Auties00/noise-java/ WORKS
-
-# http needs to be transformed to https, otherwise github rejects
-
-# scm:git:git@github.com:jitsni/jcifs.git we need to get rid of scm:git:
-
-# http://github.com:jlangch/venice/tree/master HAS TYPO?
-
-# git://github.com/instaclustr/instaclustr-icarus.git TIMES OUT
-# BUT
-# https://github.com/instaclustr/instaclustr-icarus.git WORKS
-
-# http://github.com/ericmedvet/jgea/tree/main/jgea.experimenter
-# SHOULD remove everything from /tree onwards
-
-# Skip ssh prompt: https://unix.stackexchange.com/a/469318
-
-
-
-
-
-
-
-    
-        
-    
-
