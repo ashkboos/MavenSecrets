@@ -43,28 +43,28 @@ public class SizeExtractor implements Extractor {
             return new Object[fields.length];
         }
 
-        jar.size();
+//        jar.size();
         long size = 0;
         Enumeration<JarEntry> enumerator = jar.entries();
         int numberOfFiles = 0;
         List<String> extensions = new ArrayList<String>();
         while(enumerator.hasMoreElements()) {
             JarEntry entry = enumerator.nextElement();
-            size += entry.getSize();
+            size += entry.getCompressedSize();
             String[] name = entry.getName().split("\\.");
 
             if(!entry.isDirectory()) {
                 if(name[name.length - 1].contains("/")) {
                     String ext = "noextension";
-                    extensionTuples.add(new ExtensionTuple(ext, entry.getSize()));
+                    extensionTuples.add(new ExtensionTuple(ext, entry.getCompressedSize()));
                     extensions.add(ext);
                 } else if(name[name.length - 1].contains("-")) {
                     String ext = "containshyphen";
-                    extensionTuples.add(new ExtensionTuple(ext, entry.getSize()));
+                    extensionTuples.add(new ExtensionTuple(ext, entry.getCompressedSize()));
                     extensions.add(ext);
                 } else {
                     String ext = name[name.length - 1].toLowerCase();
-                    extensionTuples.add(new ExtensionTuple(ext, entry.getSize()));
+                    extensionTuples.add(new ExtensionTuple(ext, entry.getCompressedSize()));
                     extensions.add(ext);
                 }
             }
