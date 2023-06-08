@@ -35,9 +35,6 @@ public class IndexerReader {
                     String epochDate = chunk.get("m");
                     newList[3] = epochDate;
                     newList[4] = arti[arti.length - 1];
-                    if(newList[1].equals("presto-benchto-benchmarks")) {
-                        System.out.println(Arrays.toString(newList));
-                    }
                     if (!newList[4].contains(".") && tokens[3].equals("NA")) {
                         indexInfo.add(newList);
                     }

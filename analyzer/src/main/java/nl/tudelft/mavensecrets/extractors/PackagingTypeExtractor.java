@@ -36,7 +36,7 @@ public class PackagingTypeExtractor implements Extractor {
     public PackagingTypeExtractor() {
         this.fields = new Field[]{
             new Field ("packagingtypefrompom", "VARCHAR"),
-            new Field("packagingtypefromrepo", "VARCHAR"),
+            new Field("packagingtypefromindex", "VARCHAR"),
             new Field("qualifiersources", "VARCHAR"),
             new Field("qualifierjavadoc", "VARCHAR"),
             new Field("md5", "VARCHAR"),
@@ -44,9 +44,9 @@ public class PackagingTypeExtractor implements Extractor {
             new Field("sha256", "VARCHAR"),
             new Field("sha512", "VARCHAR"),
             new Field("typesoffile", "VARCHAR"),
-            new Field("allqualifiers", "VARCHAR"),
-            new Field("allpackagingtype", "VARCHAR"),
-            new Field("allchecksum", "VARCHAR")
+            new Field("allqualifiersfromrepo", "VARCHAR"),
+            new Field("allpackagingtypefromrepo", "VARCHAR"),
+            new Field("allchecksumfromrepo", "VARCHAR")
         };
     }
 
@@ -136,10 +136,12 @@ public class PackagingTypeExtractor implements Extractor {
 
             int lastIndex = restOfFileName.lastIndexOf(".");
 
-            if(restOfFileName.endsWith("md5") || restOfFileName.endsWith("sha1")
-                || restOfFileName.endsWith("sha256") || restOfFileName.endsWith("sha512")) {
-                allTypesOfCheckSum.add(restOfFileName.substring(lastIndex));
-                continue;
+            if(lastIndex != -1) {
+                if (restOfFileName.endsWith("md5") || restOfFileName.endsWith("sha1")
+                    || restOfFileName.endsWith("sha256") || restOfFileName.endsWith("sha512")) {
+                    allTypesOfCheckSum.add(restOfFileName.substring(lastIndex));
+                    continue;
+                }
             }
 
             if(restOfFileName.contains(".asc") || restOfFileName.contains("-")) {
@@ -266,14 +268,10 @@ public class PackagingTypeExtractor implements Extractor {
         List<String> allFiles = new ArrayList<>();
         try {
             // Send HTTP request and retrieve the response
-
             Document document = Jsoup.connect(url).get();
 
-            // Find the <pre> element with the id "contents"
-            Elements contentsElement = document.select("pre#contents");
-
             // Extract the <a> elements within the <pre> element
-            Elements linkElements = contentsElement.select("a[href]");
+            Elements linkElements = document.select("a[href]");
 
             // Iterate over the link elements and print the titles
             for (Element linkElement : linkElements) {

@@ -135,11 +135,11 @@ public class YamlConfig {
                 .map(File::new)
                 .orElseGet(() -> new File(System.getProperty("user.home"), ".m2/repository"));
 
-        long seed = Optional.ofNullable(map)
+        double seed = Optional.ofNullable(map)
                 .map(x -> x.get("seed"))
                 .map(x -> x instanceof Number ? (Number) x : null)
-                .map(Number::longValue)
-                .orElseGet(System::currentTimeMillis);
+                .map(Number::doubleValue)
+                .orElse(1d);
 
         float samplePercent = Optional.ofNullable(map)
                 .map(x -> x.get("sample-percentage"))

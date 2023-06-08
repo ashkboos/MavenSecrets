@@ -11,7 +11,7 @@ import nl.tudelft.mavensecrets.extractors.Extractor;
 /**
  * An in-memory {@link Config}.
  */
-public record MemoryConfig(Collection<? extends Extractor> extractors, int threads, Database databaseConfig, Collection<? extends String> indices, File repository, long seed, float samplePercent) implements Config {
+public record MemoryConfig(Collection<? extends Extractor> extractors, int threads, Database databaseConfig, Collection<? extends String> indices, File repository, double seed, float samplePercent) implements Config {
 
     /**
      * Create a configuration instance.
@@ -21,7 +21,7 @@ public record MemoryConfig(Collection<? extends Extractor> extractors, int threa
      * @param databaseConfig Database configuration.
      * @param indices Index file names to run.
      */
-    public MemoryConfig(Collection<? extends Extractor> extractors, int threads, Database databaseConfig, Collection<? extends String> indices, File repository, long seed, float samplePercent) {
+    public MemoryConfig(Collection<? extends Extractor> extractors, int threads, Database databaseConfig, Collection<? extends String> indices, File repository, double seed, float samplePercent) {
         this.extractors = Collections.unmodifiableCollection(new ArrayList<>(Objects.requireNonNull(extractors)));
         this.threads = threads;
         this.databaseConfig = Objects.requireNonNull(databaseConfig);
@@ -66,7 +66,7 @@ public record MemoryConfig(Collection<? extends Extractor> extractors, int threa
      * @return 
      */
     @Override
-    public long getSeed() {
+    public double getSeed() {
         return seed();
     }
 

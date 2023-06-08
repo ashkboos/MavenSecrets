@@ -15,11 +15,11 @@ import nl.tudelft.mavensecrets.Database;
 public class StratifiedSampleSelector implements PackageSelector {
 
     private final Database db;
-    private final long seed;
+    private final double seed;
     private final double samplePercent;
     private final AtomicBoolean generated = new AtomicBoolean(false);
 
-    public StratifiedSampleSelector(Database db, long seed, double samplePercent) {
+    public StratifiedSampleSelector(Database db, double seed, double samplePercent) {
         this.db = Objects.requireNonNull(db);
         this.seed = seed;
         this.samplePercent = samplePercent;
@@ -50,6 +50,7 @@ public class StratifiedSampleSelector implements PackageSelector {
     private void generateSubset() throws SQLException {
         Map<Integer, Integer> yearPopulationMap = db.getYearCounts();
         db.createSelectedTable();
+        db.createTempTable(seed);
         for (Entry<Integer, Integer> entry : yearPopulationMap.entrySet()) {
             int year = entry.getKey();
             db.extractStrataSample(seed, samplePercent, year);

@@ -18,6 +18,7 @@ public class Database implements Closeable {
     private static final String SELECTED_INDEX_TABLE = "selected_packages";
     private static final String EXTENSION_TABLE = "extensions";
     private static final String UNRESOLVED_PACKAGES = "unresolved_packages";
+    private static final String TEMP_TABLE = "package_list_distinct";
     private static final int BACKOFF_TIME_MS = 1000;
     private static final int BACKOFF_BASE = 2;
     private static final int BACKOFF_RETRIES = 3;
@@ -80,9 +81,9 @@ public class Database implements Closeable {
         }
     }
 
-    public void createExtensionTable(boolean checked) throws SQLException {
-        if(!checked && !tableExists(EXTENSION_TABLE)) {
-            createTable(EXTENSION_TABLE);
+    public void createNewExtensionTable() throws SQLException {
+        if(!tableExists(EXTENSION_TABLE)) {
+            createExtensionTable();
         }
     }
 
@@ -120,6 +121,17 @@ public class Database implements Closeable {
 
     private void createUnresolvedTable0() throws SQLException {
         execute("CREATE TABLE " + UNRESOLVED_PACKAGES + "(groupid VARCHAR, artifactid VARCHAR, version VARCHAR, error VARCHAR, PRIMARY KEY (groupid, artifactid, version))");
+    }
+
+    private void createExtensionTable() throws SQLException {
+        conn.prepareStatement("CREATE TABLE " + EXTENSION_TABLE + "(id varchar(128)," +
+                "extension varchar(128)," +
+                "count BIGINT," +
+                "size BIGINT," +
+                "min BIGINT," +
+                "max BIGINT," +
+                "median BIGINT," +
+                "primary key (id, extension))").execute();
     }
 
     private void createTable(String tableName) throws SQLException {
@@ -240,6 +252,20 @@ public class Database implements Closeable {
                 new Object[] { id.group(), id.artifact(), id.version(), error });
     }
 
+    public void updateExtensionTable(String id, String extension, long count, long size, long min, long max, long median) throws SQLException {
+        PreparedStatement query = conn.prepareStatement("INSERT INTO " + EXTENSION_TABLE +
+                "(id, extension, count, size, min, max, median) VALUES(?,?,?,?,?,?,?) ON CONFLICT DO NOTHING");
+        query.setString(1, id);
+        query.setString(2, extension);
+        query.setLong(3, count);
+        query.setLong(4, size);
+        query.setLong(5, min);
+        query.setLong(6, max);
+        query.setLong(7, median);
+        query.execute();
+    }
+
+
     /**
      * @return list of package ids of packages to be fed to the runner
      */
@@ -290,13 +316,19 @@ public class Database implements Closeable {
         return yearCounts;
     }
 
-    public void extractStrataSample(long seed, double percent, int year) throws SQLException {
-       String sql = "INSERT INTO selected_packages SELECT DISTINCT ON (groupid, artifactid) * FROM "
-               + PACKAGE_INDEX_TABLE + " TABLESAMPLE bernoulli(" + percent +") REPEATABLE ("+ seed + ")" +
-               "WHERE date_part('year', lastmodified) = " + year;
-       execute(sql);
+    public void extractStrataSample(double seed, double percent, int year) throws SQLException {
+        String sql = "INSERT INTO selected_packages SELECT * FROM " + TEMP_TABLE +
+                " TABLESAMPLE bernoulli(" + percent +") REPEATABLE ("+ seed + ")" +
+                " WHERE date_part('year', lastmodified) = " + year;
+        execute(sql);
     }
 
+    public void createTempTable(double seed) throws SQLException {
+        execute("SELECT setseed(" + seed + ")");
+        String sql = "CREATE TEMP TABLE " + TEMP_TABLE + " AS (SELECT DISTINCT ON (groupid, artifactid) * " +
+                "FROM " + PACKAGE_INDEX_TABLE + " ORDER BY groupid, artifactid, random());";
+        execute(sql);
+    }
 
     @Override
     public void close() throws IOException {
