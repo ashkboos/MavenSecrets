@@ -1,3 +1,4 @@
+import logging
 from time import sleep
 from giturlparse import parse
 import requests
@@ -9,11 +10,14 @@ from database import Database
 class CompareBuilds:
 
     def __init__(self, db: Database):
+        self.log = logging.getLogger(__name__)
         self.db = db
         self.env = dotenv_values()
         self.rate_lim_remain = 5000
         self.rate_lim_reset = None
+        
 
+    # TODO try each field until 1 hits
     def find_github_release(self):
         records = self.db.get_all()
         for record in records:
@@ -80,10 +84,6 @@ class CompareBuilds:
                 print('Problem encountered')
                 continue
             
-            
-
-
-
 
     def make_request(self, owner: str, repo: str, version: str):
         token = self.env.get("TOKEN")

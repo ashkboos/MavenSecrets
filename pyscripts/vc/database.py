@@ -1,3 +1,4 @@
+import logging
 import psycopg2
 from psycopg2.extras import DictCursor, execute_batch
 
@@ -6,6 +7,7 @@ from packageId import PackageId
 
 class Database:
     def __init__(self, host, port, user, password):
+        self.log = logging.getLogger(__name__)
         self.conn = psycopg2.connect(
             dbname='postgres',
             user=user,
@@ -26,7 +28,7 @@ class Database:
         }
 
     def get_urls(self, fieldname: str):
-        self.cur.execute(
+        self.execute(
             f'''
             SELECT groupid, artifactid, version, {fieldname}
             FROM {self.PKG_TABLE}
@@ -37,7 +39,7 @@ class Database:
     
 
     def get_distinct_urls(self, fieldname: str):
-        self.cur.execute(
+        self.execute(
             f'''
             SELECT DISTINCT ON (groupid, artifactid)
                 groupid, artifactid, version, {fieldname}
@@ -49,7 +51,7 @@ class Database:
 
     
     def get_all(self):
-        self.cur.execute(f'SELECT * FROM {self.HOST_TABLE} ORDER BY url ASC')
+        self.execute(f'SELECT * FROM {self.HOST_TABLE} ORDER BY url ASC')
         return self.cur.fetchall()
 
 
@@ -85,7 +87,7 @@ class Database:
             PRIMARY KEY(groupid,artifactid,version)
         )
         '''
-        self.cur.execute(query)
+        self.execute(query)
         self.conn.commit()
     
 
@@ -102,7 +104,7 @@ class Database:
         GROUP BY year, {field}
         ORDER BY year, count DESC;
         '''
-        self.cur.execute(query)
+        self.execute(query)
         return self.cur.fetchall()
     
 
@@ -116,7 +118,7 @@ class Database:
             error VARCHAR
         )
         '''
-        self.cur.execute(query)
+        self.execute(query)
         self.conn.commit()
     
     def insert_error(self, pkg: PackageId, url: str, err: str):
@@ -125,7 +127,7 @@ class Database:
         (groupid, artifactid, version, url, error)
         VALUES (%s,%s,%s,%s,%s)
         '''
-        self.cur.execute(query, [pkg.groupid, pkg.artifactid, pkg.version, url, err])
+        self.execute(query, [pkg.groupid, pkg.artifactid, pkg.version, url, err])
         self.conn.commit()
     
 
@@ -135,7 +137,7 @@ class Database:
         UPDATE {self.HOST_TABLE} SET {field} = '{url}'
         WHERE groupid='{pkg.groupid}' AND artifactid='{pkg.artifactid}' AND version='{pkg.version}'
         '''
-        self.cur.execute(query)
+        self.execute(query)
         self.conn.commit()
 
 
@@ -145,8 +147,12 @@ class Database:
         UPDATE {self.HOST_TABLE} SET processed = true
         WHERE groupid='{pkg.groupid}' AND artifactid='{pkg.artifactid}' AND version='{pkg.version}'
         '''
-        self.cur.execute(query)
+        self.execute(query)
         self.conn.commit()
+    
+    def execute(self, query: str):
+        self.log.debug(f'Executing query: {query}')
+        self.cur.execute(query)
 
 
     def close(self):

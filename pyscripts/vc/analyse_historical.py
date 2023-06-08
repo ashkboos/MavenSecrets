@@ -1,4 +1,5 @@
 
+import logging
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -8,6 +9,8 @@ from database import Database
 class HistoricalAnalyzer:
 
     def __init__(self, db: Database, fields: list):
+        self.log = logging.getLogger(__name__)
+        plt.set_loglevel("warning")
         self.db = db
         self.fields = fields
 

@@ -10,7 +10,7 @@ from verify_hosts import VerifyHost
 def main():
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s.%(msecs)03d [%(threadName)s] %(levelname)s %(name)s    - %(message)s",
+        format="%(asctime)s.%(msecs)03d [%(threadName)s] %(levelname)s %(name)s  - %(message)s",
         datefmt="%H:%M:%S",
     )
 
