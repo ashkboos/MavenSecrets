@@ -7,9 +7,10 @@ from dotenv import dotenv_values
 from typing import Dict
 
 from database import Database
+from packageId import PackageId
+
 
 class CompareBuilds:
-
     def __init__(self, db: Database):
         self.log = logging.getLogger(__name__)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -17,91 +18,119 @@ class CompareBuilds:
         self.env = dotenv_values()
         self.rate_lim_remain = 5000
         self.rate_lim_reset = None
-        
 
     # TODO try each field until 1 hits
     def find_github_release(self):
-        field = 'valid'
-        records = self.db.get_valid_urls(field)
-        for record in records:
+        self.db.create_tags_table()
 
-            version = record['version']
-            url = record['url']
+        field = "valid"
+        records = self.db.get_valid_github_urls(field)
+        for record in records:
+            pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
+            url = record["url"]
 
             print(url)
             try:
                 p = parse(url)
             except Exception as e:
-               self.log.error(e)
+                self.log.error(e)
             if p.valid:
-                self.log.debug(f'REPO INFO: {p.host}, {p.owner}, {p.name}')
+                self.log.debug(f"REPO INFO: {p.host}, {p.owner}, {p.name}")
             else:
-                print('invalid')
+                print("invalid")
                 continue
 
             if self.rate_lim_remain < 2:
-                 # TODO wait until self.rate_lim_reset before making next request
-                 print("Waiting for rate limit!")
-                 sleep(60)
-
-            res = self.make_request(p.owner, p.name, version)
-
-            if (res.status_code != 200):
-                print(f"Bad status code received ({res.status_code})!")
-                continue
-            
-            json = res.json()
-            data: Dict = json['data']
-
-            self.rate_lim_remain = data['rateLimit']['remaining']
-            self.rate_lim_reset = data['rateLimit']['resetAt']
-            self.log.debug(f'Rate Lim Remaining: {self.rate_lim_remain}')
+                # TODO wait until self.rate_lim_reset before making next request
+                print("Waiting for rate limit!")
+                sleep(60)
 
             try:
-                tag_exists = len(data['repository']['refs']['nodes']) > 0
+                res = self.make_request(p.owner, p.name, pkg.version)
+                json = res.json()
+                data: Dict = json["data"]
             except Exception as e:
-              self.log.exception(e)
-              self.log.error(f'Probably response did not contain all fields! Request: ({p.owner},{p.name},{version})')
-              continue
-            if not tag_exists:
-                # TODO pagination
-              try:
-                  releases = data['repository']['releases']['nodes']
-                  if len(releases) > 0:
-                    matches = [rel for rel in releases if rel.get("name") == version]
-                    for rel in matches:
-                      rel_name = rel['name']
-                      tag_name = rel['tag']['name']
-                      commit_hash = rel['tagCommit']
-                      self.log.debug(f'Release {rel_name} with Tag {tag_name} found for Version {version}!')
+                self.log.exception(e)
+                # TODO add to unresolved
+                continue
 
-              except Exception as e:
-                  self.log.exception(e)
-                  continue
-            else:
-                # TODO mark it as found
-                commit_hash = data['repository']['refs']['nodes'][0]['target']['oid']
-                tag_name = data['repository']['refs']['nodes'][0]['name']
-                self.log.debug(f"Version {version} with Tag {tag_name} and commit hash {commit_hash} FOUND!")
-            
+            if res.status_code != 200:
+                self.log.error(f"Bad status code received ({res.status_code})!")
+                continue
+
+            self.rate_lim_remain = data["rateLimit"]["remaining"]
+            self.rate_lim_reset = data["rateLimit"]["resetAt"]
+            self.log.debug(f"Rate Lim Remaining: {self.rate_lim_remain}")
+
+            # TODO pagination
+            rel_name, rel_tag_name, rel_commit_hash = None, None, None
+            tag_name, tag_commit_hash = None, None
+            release_exists, tag_exists = False, False
+            try:
+                releases = data["repository"]["releases"]["nodes"]
+                if len(releases) == 100:
+                    self.log.warn(
+                        "This repo has more than 100 releases. Need to paginate!"
+                    )
+            except Exception as e:
+                self.log.exception(e)
+                continue
+            if len(releases) > 0:
+                matches = [rel for rel in releases if rel.get("name") == pkg.version]
+                release_exists = len(matches) > 0
+
+            try:
+                tag_exists = len(data["repository"]["refs"]["nodes"]) > 0
+            except Exception as e:
+                self.log.exception(e)
+                self.log.error(
+                    f"Repository likely does not exist! Request: ({p.owner},{p.name},{pkg.version})"
+                )
+                continue
+
+            if release_exists:
+                rel_name = matches[0]["name"]
+                rel_tag_name = matches[0]["tag"]["name"]
+                rel_commit_hash = matches[0]["tagCommit"]["oid"]
+                self.log.debug(
+                    f"Release {rel_name} with Tag {rel_tag_name} found for Version {pkg.version}!"
+                )
+
+            if tag_exists:
+                tag_commit_hash = data["repository"]["refs"]["nodes"][0]["target"][
+                    "oid"
+                ]
+                tag_name = data["repository"]["refs"]["nodes"][0]["name"]
+                self.log.debug(
+                    f"Version {pkg.version} with Tag {tag_name} and commit hash {tag_commit_hash} FOUND!"
+                )
+
+            if release_exists or tag_exists:
+                self.db.insert_tag(
+                    pkg,
+                    tag_name,
+                    tag_commit_hash,
+                    rel_name,
+                    rel_tag_name,
+                    rel_commit_hash,
+                )
+
             sleep(0.1)
 
-    
     def build_and_compare(self):
         # TODO replace with only github repos that have a matching tag
         records = self.db.get_all()
-        clone_dir = './clones'
+        clone_dir = "./clones"
         for record in records:
-            url = record['url']
-            process = subprocess.run(['git', 'clone', url, clone_dir])
+            url = record["url"]
+            process = subprocess.run(["git", "clone", url, clone_dir])
             if process.returncode != 0:
-                print('Problem encountered')
+                print("Problem encountered")
                 continue
-            
 
     def make_request(self, owner: str, repo: str, version: str):
         token = self.env.get("TOKEN")
-        query ='''
+        query = """
         query ($owner: String!, $repo: String!, $version: String!) {
           rateLimit {
             cost
@@ -130,21 +159,19 @@ class CompareBuilds:
             }
           }
         }
-        '''
-        variables = {
-            'owner': owner,
-            'repo': repo,
-            'version': version
-        }
-        payload = {
-            "query": query,
-            "variables": variables
-        }
+        """
+        variables = {"owner": owner, "repo": repo, "version": version}
+        payload = {"query": query, "variables": variables}
         headers = {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
+        res = requests.post(
+            "https://api.github.com/graphql", json=payload, headers=headers
+        )
+        return res
 
-        return requests.post("https://api.github.com/graphql", json=payload, headers=headers)
-        
-            
+
+# exceptions
+# org.dispatchhttp,dispatch-all_2.11,0.14.0,v0.14.0-RC1
+# org.apache.hudi,hudi-metaserver-server,0.13.0,release-0.13.0-rc1

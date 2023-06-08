@@ -18,16 +18,16 @@ def main():
     log.info(f"Executing...)")
 
     db = Database("localhost", "5432", "postgres", "SuperSekretPassword")
-    fields = ['host', 'host_home', 'host_scm_conn', 'host_dev_conn']
+    fields = ["host", "host_home", "host_scm_conn", "host_dev_conn"]
 
     extractor = Extractor(db)
     verifier = VerifyHost(db)
     analyser = HistoricalAnalyzer(db, fields)
     comparer = CompareBuilds(db)
 
-    extractor.extract()
-    verifier.verify_hosts()
-    analyser.analyse_all()
+    # extractor.extract()
+    # verifier.verify_hosts()
+    # analyser.analyse_all()
     comparer.find_github_release()
 
 

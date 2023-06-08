@@ -4,7 +4,6 @@ import numpy as np
 
 
 def demo_plot(n_files, size):
-
     fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 
     # We can set the number of bins with the *bins* keyword argument.
@@ -18,12 +17,12 @@ def demo_plot(n_files, size):
 
 
 def main():
-    db = Database('localhost', '5432', 'postgres', 'SuperSekretPassword')
+    db = Database("localhost", "5432", "postgres", "SuperSekretPassword")
     conn = db.connect()
     print("Connected")
     # cur = conn.cursor()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute('SELECT * FROM packages_big')
+    cur.execute("SELECT * FROM packages_big")
 
     results = cur.fetchall()
 
@@ -31,8 +30,8 @@ def main():
     size = np.zeros(len(results))
 
     for i in range(len(results)):
-        n_files[i] = results[i]['numberoffiles']
-        size[i] = results[i]['size']
+        n_files[i] = results[i]["numberoffiles"]
+        size[i] = results[i]["size"]
 
     demo_plot(n_files, size)
 

@@ -3,8 +3,6 @@ import re
 
 # https://maven.apache.org/scm/scm-url-format.html
 # https://maven.apache.org/scm/git.html
-# TODO convert scm urls
-# also might be broken because of the : after the username
 def git_to_https(url: str) -> tuple:
     pattern = r"(git://|git@)([^:]*):(.*)"
     replacement = r"https://\2/\3"
@@ -19,6 +17,6 @@ def remove_tree_path(url: str) -> tuple:
 
 
 def remove_scm_prefix(url: str) -> str:
-    return re.sub(r'^scm:(git@|git:)', lambda x: x.group(1) if x.group(1) != 'git:' else '', url)
-
-
+    return re.sub(
+        r"^scm:(git@|git:)", lambda x: x.group(1) if x.group(1) != "git:" else "", url
+    )
