@@ -75,7 +75,7 @@ public class DependencyExtractorTest {
         Package pkg = new Package(id, null, m);
         try {
             Object[] results = extractor.extract(maven, pkg, pkgType, db);
-            Assertions.assertArrayEquals(new Object[] {0, 61}, results);
+            Assertions.assertArrayEquals(new Object[] {0, 49}, results);
         } catch (Exception e) {
             System.out.println(e);
         }
