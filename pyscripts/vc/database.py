@@ -89,15 +89,18 @@ class Database:
         self.conn.commit()
     
 
-    def collate_hosts_yearly(self):
+    def collate_hosts_yearly(self, field: str):
+        mapping = {'host': 'valid', 'host_home': 'valid_home', 'host_scm_conn': 'valid_scm_conn', 'host_dev_conn': 'valid_dev_conn'}
+        
         query = f'''
-        SELECT host, COUNT(host), date_part('year', lastmodified) AS year
+        SELECT {field}, COUNT({field}) AS count, date_part('year', lastmodified) AS year
         FROM {self.HOST_TABLE} h
         JOIN {self.PKG_LIST_TABLE} pl ON h.groupid = pl.groupid
         AND h.artifactid = pl.artifactid
         AND h.version = pl.version
-        GROUP BY year, host
-        ORDER BY year, host;
+        WHERE h.{mapping[field]} IS NOT NULL
+        GROUP BY year, {field}
+        ORDER BY year, count DESC;
         '''
         self.cur.execute(query)
         return self.cur.fetchall()

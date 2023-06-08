@@ -7,27 +7,35 @@ from database import Database
 
 class HistoricalAnalyzer:
 
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, fields: list):
         self.db = db
+        self.fields = fields
 
 
-    def analyse(self):
+    def analyse_all(self):
+        for field in self.fields:
+            self.analyse(field)
+
+
+    def analyse(self, field: str):
         cmap = 'viridis'
         threshold = 0.05
 
-        records = self.db.collate_hosts_yearly()
+        records = self.db.collate_hosts_yearly(field)
         # records = self.gen_test_data()
         df = pd.DataFrame(records, columns=['host','count', 'year'])
         df['market_share'] = df.groupby('year')['count'].transform(lambda x: x / x.sum())
 
         below = df[df['market_share'] < threshold]
         if len(below) > 1:
-            others = below.groupby('year').agg({'host': lambda x: ' '.join(['others']), 'count': sum, 'market_share': sum}).reset_index()
+            others = below.groupby('year').agg({'host': lambda x: ' '.join(['Others']), 'count': sum, 'market_share': sum}).reset_index()
             df = pd.concat([df, others])
             df = df[~df.isin(below)].dropna()
 
         pivot_df = df.pivot(index='year', columns='host', values='market_share')
+        print(pivot_df)
         pivot_df.plot(kind='area', stacked=True, colormap=cmap)
+        # TODO save to file instead of showing
         plt.show()
 
     
@@ -45,29 +53,4 @@ class HistoricalAnalyzer:
                     count = 5000
                 entry = [host, count,year]
                 data.append(entry)
-
-        # data = [
-        # ['host1', 11, 2021],
-        # ['host2', 26, 2021],
-        # ['host3', 38, 2021],
-        # ['host1', 11, 2022],
-        # ['host2', 24, 2022],
-        # ['host3', 32, 2022],
-        # ['host1', 18, 2023],
-        # ['host2', 20, 2023],
-        # ['host3', 32, 2023],
-        # ['host1', 14, 2024],
-        # ['host2', 26, 2024],
-        # ['host3', 37, 2024],
-        # ['host1', 39, 2025],
-        # ['host2', 10, 2025],
-        # ['host3', 35, 2025],
-        # ['host1', 18, 2026],
-        # ['host2', 29, 2026],
-        # ['host3', 33, 2026],
-        # ['host1', 14, 2027],
-        # ['host2', 26, 2027],
-        # ['host3', 1, 2027],
-        # ['host4', 1, 2027],
-        # ]
         return data 
