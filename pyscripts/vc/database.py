@@ -37,6 +37,16 @@ class Database:
         )
         return self.cur.fetchall()
     
+    def get_valid_urls(self, fieldname: str):
+        self.execute(
+            f'''
+            SELECT groupid, artifactid, version, {fieldname} AS url
+            FROM {self.HOST_TABLE}
+            WHERE {fieldname} IS NOT NULL AND {fieldname} != ''
+            AND HOST LIKE '%github.com';
+            '''
+        )
+        return self.cur.fetchall()
 
     def get_distinct_urls(self, fieldname: str):
         self.execute(

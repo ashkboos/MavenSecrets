@@ -4,6 +4,7 @@ from giturlparse import parse
 import requests
 import subprocess
 from dotenv import dotenv_values
+from typing import Dict
 
 from database import Database
 
@@ -11,6 +12,7 @@ class CompareBuilds:
 
     def __init__(self, db: Database):
         self.log = logging.getLogger(__name__)
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
         self.db = db
         self.env = dotenv_values()
         self.rate_lim_remain = 5000
@@ -19,25 +21,20 @@ class CompareBuilds:
 
     # TODO try each field until 1 hits
     def find_github_release(self):
-        records = self.db.get_all()
+        field = 'valid'
+        records = self.db.get_valid_urls(field)
         for record in records:
 
             version = record['version']
             url = record['url']
 
-            # TODO Make new SQL query that does this
-            host = record['hostname']
-            if host != 'github.com':
-                continue
-
             print(url)
             try:
                 p = parse(url)
             except Exception as e:
-               print(e) 
+               self.log.error(e)
             if p.valid:
-                print('REPO INFO:')
-                print(p.host, p.owner,p.name)
+                self.log.debug(f'REPO INFO: {p.host}, {p.owner}, {p.name}')
             else:
                 print('invalid')
                 continue
@@ -53,25 +50,42 @@ class CompareBuilds:
                 print(f"Bad status code received ({res.status_code})!")
                 continue
             
-            data = res.json()['data']
+            json = res.json()
+            data: Dict = json['data']
+
             self.rate_lim_remain = data['rateLimit']['remaining']
             self.rate_lim_reset = data['rateLimit']['resetAt']
-            print(self.rate_lim_remain)
+            self.log.debug(f'Rate Lim Remaining: {self.rate_lim_remain}')
+
             try:
-                tag_exists = len(data['repository']['refs']['nodes']) != 0
-            except TypeError as err:
-              print("Something was not found! Repo is probably missing/private.")
+                tag_exists = len(data['repository']['refs']['nodes']) > 0
+            except Exception as e:
+              self.log.exception(e)
+              self.log.error(f'Probably response did not contain all fields! Request: ({p.owner},{p.name},{version})')
               continue
             if not tag_exists:
-                # TODO look in releases
-                print("Checking releases")
+                # TODO pagination
+              try:
+                  releases = data['repository']['releases']['nodes']
+                  if len(releases) > 0:
+                    matches = [rel for rel in releases if rel.get("name") == version]
+                    for rel in matches:
+                      rel_name = rel['name']
+                      tag_name = rel['tag']['name']
+                      commit_hash = rel['tagCommit']
+                      self.log.debug(f'Release {rel_name} with Tag {tag_name} found for Version {version}!')
 
+              except Exception as e:
+                  self.log.exception(e)
+                  continue
             else:
                 # TODO mark it as found
                 commit_hash = data['repository']['refs']['nodes'][0]['target']['oid']
-                print(f"Tag {version} with commit hash {commit_hash} FOUND!")
+                tag_name = data['repository']['refs']['nodes'][0]['name']
+                self.log.debug(f"Version {version} with Tag {tag_name} and commit hash {commit_hash} FOUND!")
             
             sleep(0.1)
+
     
     def build_and_compare(self):
         # TODO replace with only github repos that have a matching tag
