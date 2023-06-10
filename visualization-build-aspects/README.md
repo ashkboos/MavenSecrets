@@ -1,0 +1,15 @@
+# Java Build Aspects
+A data dumper for some Java build aspects.
+Important numbers are logged, tables are both logged and dumped in `csv` files.
+
+## Prerequisites
+Run the analyzer with at least the following extractors:
+- ArtifactExistsExctractor
+- CompilerConfigExtractor
+- JavaModuleExtractor
+- JavaVersionExtractor
+
+## Usage
+To build the JAR: `mvn package`
+
+To run the JAR: `java -jar <jar_name> <hostname> <port> <database> [<username> <password>]`
