@@ -1,4 +1,5 @@
 import collections
+import statistics
 
 import psycopg2
 
@@ -11,13 +12,13 @@ def main():
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     # Packaging type analysis
-    packaging_analysis(cur)
+   # packaging_analysis(cur)
 
     # Checksum analysis
-    checksum_analysis(cur)
+    #checksum_analysis(cur)
 
     # Qualifier analysis
-    qualifier_analysis(cur)
+    # qualifier_analysis(cur)
 
     # Executable analysis
     executable_analysis(cur)
@@ -33,6 +34,9 @@ def packaging_analysis(cur):
 
     # Individual frequency of each packaging type from repo
     print_frequency_from_repo(cur)
+
+    # Individual frequency of each packaging type from index
+    print_frequency_from_index(cur)
 
     # Frequency of packages with frequency of packaging types
     print_frequency_of_packages_with_frequency_packaging_types(cur)
@@ -153,7 +157,8 @@ def print_frequency_of_packages_with_frequency_packaging_types(cur):
                         and not packaging_type.endswith('.xml') \
                         and not packaging_type.endswith('.jar') \
                         and not packaging_type.endswith('.pom') \
-                        and not packaging_type.endswith('.asc'):
+                        and not packaging_type.endswith('.asc') \
+                        and not packaging_type.startswith('.'):
                     filtered_packaging_types.add(packaging_type)
 
             num_packaging_types = len(filtered_packaging_types)
@@ -251,7 +256,7 @@ def print_frequency_of_checksums(cur):
     # Fetch all the values and store them into the 'all_checksums_list' list
     all_checksums_list = [row['allchecksumfromrepo'] for row in cur.fetchall()]
 
-    sorted_frequencies = frequency_of_each_word(all_checksums_list)
+    sorted_frequencies = frequency_of_each_word_checksum(all_checksums_list)
 
     print('CHECKSUM')
     print()
@@ -324,13 +329,17 @@ def qualifier_analysis(cur):
 
     # Print the word frequencies
     total_count = 0
+    frequencies = []
     for word, frequency in sorted_frequencies:
         total_count = total_count + frequency
+        frequencies.append(frequency)
         print(f'Qualifier: {word} - Frequency: {frequency}')
     print()
 
     print(f'Number of unique qualifiers: {unique_words_count}')
     print(f'Total count:{total_count}')
+    median_frequency = statistics.median(frequencies)
+    print(f'Median of qualifiers: {median_frequency}')
     print('---x----')
     print()
 
@@ -363,6 +372,34 @@ def executable_analysis(cur):
 
 
 def frequency_of_each_word(word_list):
+    # Create an empty dictionary to store word frequencies
+    word_frequencies = {}
+
+    # Iterate through each 'list' value
+    for qualifiers_string in word_list:
+        if qualifiers_string is not None:
+            # Remove the square brackets and split the string into words
+            qualifiers_list = qualifiers_string.strip('[]').split(',')
+
+            # Iterate through each word and update the frequencies
+            for word in qualifiers_list:
+                word = word.strip()  # Remove leading/trailing whitespaces
+                # Exclude one-letter words, empty words, and words ending with ".xml"
+                if len(word) > 2 and word != "" \
+                        and not word.endswith(".xml") \
+                        and not word.endswith('.jar') \
+                        and not word.endswith('.pom') \
+                        and not word.endswith('.asc') \
+                        and not word.startswith('.'):
+                    word_frequencies[word] = word_frequencies.get(word, 0) + 1
+
+    # Sort the word frequencies by their values in descending order
+    sorted_frequencies = collections.Counter(word_frequencies).most_common()
+
+    return sorted_frequencies
+
+
+def frequency_of_each_word_checksum(word_list):
     # Create an empty dictionary to store word frequencies
     word_frequencies = {}
 
