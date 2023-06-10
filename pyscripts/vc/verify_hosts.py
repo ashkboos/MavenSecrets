@@ -1,6 +1,7 @@
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
+from time import sleep
 from typing import Dict
 
 from database import *
@@ -15,8 +16,6 @@ class VerifyHost:
         self.funcs = [lambda x: (x, True), git_to_https, remove_tree_path]
         self.log = logging.getLogger(__name__)
 
-    # TODO subversion hosts
-    # TODO fix git-to-https
     def verify_hosts(self):
         self.db.create_err_table()
         records = self.db.get_all()
@@ -43,14 +42,18 @@ class VerifyHost:
         valid_fields = ["valid", "valid_home", "valid_scm_conn", "valid_dev_conn"]
 
         pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
+        errors: Dict[str, str] = {}
 
         for j, url in enumerate(urls):
             if url is None:
                 continue
-
-            errors: Dict[str, str] = {}
+            if re.match(r"svn\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", url):
+                self.log.debug(f"Possible SVN url ignored: {url}")
+                continue
 
             url = remove_scm_prefix(url)
+            if re.search("apache.org", url):
+                url = convert_link_to_github(url)
 
             for convert_func in self.funcs:
                 converted_url, changed = convert_func(url)
@@ -67,10 +70,12 @@ class VerifyHost:
                     # TODO only insert errors if all failed
                     errors[converted_url] = err
 
-            for url, err in errors.items():
-                self.db.insert_error(pkg, url, err)
-
+        if not success:
+            for err_url, err in errors.items():
+                self.log.critical(err_url)
+                self.db.insert_error(pkg, err_url, err)
         self.db.mark_processed(pkg)
+        sleep(0.2)
         return success
 
     def run_cmd(self, url: str):
@@ -105,7 +110,7 @@ class VerifyHost:
         if process.returncode == 0:
             return None
         else:
-            return err
+            return f'({process.returncode}):{err}'
 
 
 # Exceptions:

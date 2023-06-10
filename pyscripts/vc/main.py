@@ -27,10 +27,10 @@ def main():
     tag_finder = GetTags(db)
     builder = BuildPackages(db)
 
-    # extractor.extract()
-    # verifier.verify_hosts()
-    # analyser.analyse_all()
-    # tag_finder.find_github_release()
+    extractor.extract()
+    verifier.verify_hosts()
+    analyser.analyse_all()
+    tag_finder.find_github_release()
     builder.clone_rep_central()
     builder.build_and_compare()
     # Don't forget to note down the last commit of the cloned Reproducible Central repo

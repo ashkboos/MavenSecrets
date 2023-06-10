@@ -20,3 +20,14 @@ def remove_scm_prefix(url: str) -> str:
     return re.sub(
         r"^scm:(git@|git:)", lambda x: x.group(1) if x.group(1) != "git:" else "", url
     )
+
+def convert_link_to_github(url: str) -> str:
+    pattern = re.compile(r'([\w-]+\.git)')
+    match = pattern.search(url)
+    if match:
+        repo_name = match.group(1).replace(".git", "")
+        return f'https://github.com/apache/{repo_name}'
+    else:
+        pattern = r"https?://[\w-]+\.apache\.org/repos/asf/(\w+)"
+        replacement = r"https://github.com/apache/\1"
+        return re.sub(pattern, replacement, url)
