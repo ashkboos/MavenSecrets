@@ -1,0 +1,26 @@
+# Central Repository coordinates for the Reference release (for multi-module, pick an artitrary module)
+groupId={{ groupId }}
+artifactId={{ artifactId }}
+version={{ version }}
+
+# Source code
+gitRepo={{ gitRepo }}
+gitTag={{ gitTag }}
+
+# Rebuild environment prerequisites
+tool={{ tool }}
+# or tool=mvn-3.8.5 if default 3.6.3 version does not match your prerequisites (available version may be limited by images available on Dockerhub)
+# or tool=gradle or tool=sbt
+jdk={{ jdk }}
+newline={{ newline }}
+# crlf for Windows, lf for Unix
+
+# Rebuild command
+command="mvn -Papache-release clean package -DskipTests -Dmaven.javadoc.skip -Dgpg.skip"
+
+# Location of the buildinfo file generated during rebuild to record output fingerprints
+buildinfo=target/${artifactId}-${version}.buildinfo
+
+# if the release is finally not reproducible, link to an issue tracker entry if one was created
+#diffoscope=${artifactId}-${version}.diffoscope
+#issue=https://github.com/project_org/${artifactId}/issues/xx

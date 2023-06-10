@@ -10,7 +10,7 @@ from database import Database
 from packageId import PackageId
 
 
-class CompareBuilds:
+class GetTags:
     def __init__(self, db: Database):
         self.log = logging.getLogger(__name__)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -37,7 +37,7 @@ class CompareBuilds:
             if p.valid:
                 self.log.debug(f"REPO INFO: {p.host}, {p.owner}, {p.name}")
             else:
-                print("invalid")
+                self.log.debug("invalid")
                 continue
 
             if self.rate_lim_remain < 2:
@@ -58,9 +58,12 @@ class CompareBuilds:
                 self.log.error(f"Bad status code received ({res.status_code})!")
                 continue
 
-            self.rate_lim_remain = data["rateLimit"]["remaining"]
-            self.rate_lim_reset = data["rateLimit"]["resetAt"]
-            self.log.debug(f"Rate Lim Remaining: {self.rate_lim_remain}")
+            try:
+                self.rate_lim_remain = data["rateLimit"]["remaining"]
+                self.rate_lim_reset = data["rateLimit"]["resetAt"]
+                self.log.debug(f"Rate Lim Remaining: {self.rate_lim_remain}")
+            except KeyError as e:
+                self.log.error("Rate lim response missing!")
 
             # TODO pagination
             rel_name, rel_tag_name, rel_commit_hash = None, None, None

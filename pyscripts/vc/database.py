@@ -141,6 +141,7 @@ class Database:
         )
         self.conn.commit()
 
+    # TODO change on conflict to just update the values!
     def insert_tag(
         self,
         pkg: PackageId,
@@ -152,7 +153,8 @@ class Database:
     ):
         query = f"""
         INSERT INTO tags(groupid, artifactid, version, tag_name, tag_commit_hash, release_name, release_tag_name, release_commit_hash)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s);
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT DO NOTHING;
         """
         self.execute(
             query,
