@@ -1,119 +1,109 @@
 package nl.tudelft.mavensecrets.extractors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import nl.tudelft.mavensecrets.*;
+import nl.tudelft.mavensecrets.testutils.JarUtil;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.sql.SQLException;
 import java.util.Enumeration;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
-import org.apache.maven.model.Model;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
-import nl.tudelft.mavensecrets.Database;
-import nl.tudelft.mavensecrets.Field;
-import nl.tudelft.mavensecrets.Maven;
-import nl.tudelft.mavensecrets.Package;
-import nl.tudelft.mavensecrets.PackageId;
-import nl.tudelft.mavensecrets.resolver.Resolver;
-
-@Disabled // Broken tests
 public class SizeExtractorTest {
+    private static SizeExtractor extractor = null;
+    private static Maven maven = null;
+    private static String pkgName = "jar";
+    private static File file = null;
+    private static Database db = mock(Database.class);
 
-    private static String pkgType = "jar";
-
-    @Test
-    public void test() throws Exception {
-        Database db = mock(Database.class);
-        List<File> files = new ArrayList<>();
-        String name = System.getProperty("user.home") +"/.m2/test/demo.jar";
-        File pomFile = new File(System.getProperty("user.home"), "/.m2/test/pom.xml");
-        File classFile = new File(System.getProperty("user.home"), "/.m2/test/hello.class");
-        files.add(pomFile);
-        files.add(classFile);
-        JarFile j = createJarFileFromFiles(name, files);
-        Resolver resolver = mock(Resolver.class);
-        Maven mvn = new Maven(resolver);
-        Model model = new Model();
-        String groupId = "antlr";
-        String artifactId = "antlr";
-        String version = "2.7.7";
-        PackageId id = new PackageId(groupId, artifactId, version);
-        Package pkg = new Package(id, j, model);
-        SizeExtractor sizeExtractor = mock(SizeExtractor.class);
-        java.lang.reflect.Field checked = SizeExtractor.class.getDeclaredField("checked");
-        checked.set(sizeExtractor, true);
-        checked.setAccessible(true);
-        //ArgumentCaptor<Field[]> fields = ArgumentCaptor.forClass(Field[].class);
-        //ArgumentCaptor<Object[]> values = ArgumentCaptor.forClass(Object[].class);
-        Mockito.doNothing().when(sizeExtractor).extensionDatabase(
-                Mockito.any(Database.class),
-                Mockito.anyBoolean(),
-                Mockito.any(Field[].class),
-                Mockito.any(Object[].class),
-                Mockito.any(PackageId.class));
-        when(sizeExtractor.extract(mvn, pkg, pkgType, db)).thenCallRealMethod();
-        //verify(sizeExtractor).extensionDatabase(Mockito.any(Database.class), Mockito.anyBoolean(), fields.capture(), values.capture(), Mockito.any(PackageId.class));
-        Object[] obj = sizeExtractor.extract(mvn, pkg, pkgType, db);
-        //Field[] o = fields.getValue();
-        assertEquals(files.size(), obj[1]);
-
-
-    }
-
+    @TempDir
+    private static File dir;
 
     @Test
-    public void testMockSizeExtractor() throws Exception {
-        Database db = mock(Database.class);
-        Resolver resolver = mock(Resolver.class);
-        Maven mvn = new Maven(resolver);
-        Model model = new Model();
-        String groupId = "antlr";
-        String artifactId = "antlr";
-        String version = "2.7.7";
-        PackageId id = new PackageId(groupId, artifactId, version);
-        File file = new File(System.getProperty("user.home"),".m2/repository/" + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + ".jar");
-        JarFile jarFile = new JarFile(file);
-        Package pkg = new Package(id, jarFile, model);
-        SizeExtractor sizeExtractor = mock(SizeExtractor.class);
-        java.lang.reflect.Field checked = SizeExtractor.class.getDeclaredField("checked");
-        checked.set(sizeExtractor, true);
-        checked.setAccessible(true);
-        Mockito.doNothing().when(sizeExtractor).extensionDatabase(Mockito.any(Database.class),
-                Mockito.anyBoolean(),
-                Mockito.any(Field[].class),
-                Mockito.any(Object[].class),
-                Mockito.any(PackageId.class));
-        when(sizeExtractor.extract(mvn, pkg, pkgType, db)).thenCallRealMethod();
-        Object[] obj = sizeExtractor.extract(mvn, pkg, pkgType, db);
-        assertEquals(jarFile.size() - countDirectories(jarFile), obj[1]);
-        assertEquals((long) 881724, obj[0]);
-    }
-
-    public JarFile createJarFileFromFiles(String jarFileName, List<File> files) throws IOException {
-        File jarFile = new File(jarFileName);
-//        Manifest manifest = new Manifest();
-//        manifest.getMainAttributes().put(Manifest.Attribute.MANIFEST_VERSION, "1.0");
-        JarOutputStream jarOutputStream = new JarOutputStream(new FileOutputStream(jarFile));
-        for (File file : files) {
-            ZipEntry zipEntry = new ZipEntry(file.getName());
-            jarOutputStream.putNextEntry(zipEntry);
-            // Write the contents of the file to the JarOutputStream
-            // You can use a FileInputStream to read the contents of the file and write them to the JarOutputStream
-            jarOutputStream.closeEntry();
+    public void test_fields_valid() {
+        Field[] fields = extractor.fields();
+        Assertions.assertNotNull(fields);
+        Set<String> names = new HashSet<>();
+        for (Field field : fields) {
+            Assertions.assertNotNull(field);
+            Assertions.assertNotNull(field.name());
+            Assertions.assertNotNull(field.type());
+            Assertions.assertTrue(names.add(field.name().toLowerCase()), "Duplicate field name: " + field.name());
         }
-        jarOutputStream.close();
-        return new JarFile(jarFile);
+    }
+
+    @Test
+    public void test_correct_number_of_fields() throws IOException, SQLException {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_CONTENT);
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(extractor.fields().length, results.length);
+        }
+    }
+
+    @Test
+    public void test_no_jar() throws IOException, SQLException {
+        try (Package pkg = createPackage(null)) {
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            Assertions.assertArrayEquals(new Object[] {null, null}, results);
+        }
+    }
+
+    @Test
+    public void testSizeAndNumberOfFiles() throws Exception {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_CONTENT.andThen(jos -> {
+            jos.putNextEntry(new ZipEntry("module-info.class"));
+            JarUtil.writeBytes(jos);
+            jos.closeEntry();
+        }));
+        try (Package pkg = createPackage(new JarFile(file))) {
+            Object[] results = extractor.extract(maven, pkg, pkgName, db);
+            long size = 0;
+            Enumeration<JarEntry> files = pkg.jar().entries();
+            while (files.hasMoreElements()) {
+                size += files.nextElement().getSize();
+            }
+            Assertions.assertArrayEquals(new Object[] {size, (pkg.jar().size() - countDirectories(pkg.jar()))}, results);
+        }
+
+
+    }
+
+
+    @Test
+    public void testSizeExtractorExtensions() throws Exception {
+        JarUtil.createJar(file, JarUtil.DEFAULT_MANIFEST, JarUtil.DEFAULT_CONTENT.andThen(jos -> {
+            jos.putNextEntry(new ZipEntry("module-info.class"));
+            jos.putNextEntry(new ZipEntry("demo.class"));
+            jos.putNextEntry(new ZipEntry("demo2.class"));
+            jos.putNextEntry(new ZipEntry("demo3.class"));
+            jos.putNextEntry(new ZipEntry("pom.xml"));
+            jos.putNextEntry(new ZipEntry("hello.ending"));
+            jos.putNextEntry(new ZipEntry("helloworld.ending"));
+            JarUtil.writeBytes(jos);
+            jos.closeEntry();
+        }));
+        try (Package pkg = createPackage(new JarFile(file))) {
+            extractor.extract(maven, pkg, pkgName, db);
+            Map<String, SizeExtractor.ExtensionInfo> extensionInfo = extractor.getExtensionsTesting();
+            assertEquals(1, extensionInfo.get("mf").count);
+            assertEquals(4, extensionInfo.get("class").count - 2);
+            assertEquals(1, extensionInfo.get("xml").count);
+            assertEquals(2, extensionInfo.get("ending").count);
+        }
     }
 
     public static int countDirectories(JarFile jar) {
@@ -126,5 +116,16 @@ public class SizeExtractorTest {
             }
         }
         return count;
+    }
+
+    @BeforeAll
+    public static void setup() {
+        extractor = new SizeExtractor();
+        maven = mock(Maven.class);
+        file = new File(dir, "my-jar.jar");
+    }
+
+    private static Package createPackage(JarFile jar) {
+        return new Package(new PackageId("a", "b", "1.0"), jar, null);
     }
 }

@@ -60,6 +60,8 @@ public class PackagingTypeExtractorTest {
 
         id = new PackageId("de.mediathekview","MServer","3.1.60");
         allArtifacts = new ArrayList<>();
+        allArtifacts.add("MServer-3.1.60.sha512");
+        allArtifacts.add("MServer-3.1.60.sha512.md5");
         allArtifacts.add("MServer-3.1.60.tar.gz");
         allArtifacts.add("MServer-3.1.60.jar");
         allArtifacts.add("MServer-3.1.60.jar.sha512");
@@ -132,14 +134,32 @@ public class PackagingTypeExtractorTest {
         resultExecutable.add("tar.bz2");
         resultExecutable.add("tar.gz");
         resultExecutable.add("jar");
+        resultExecutable.add("sha512");
 
         Set<String> resultChecksum = new HashSet<>();
         resultChecksum.add(".sha1");
         resultChecksum.add(".sha256");
         resultChecksum.add(".sha512");
+        resultChecksum.add(".md5");
 
         Assertions.assertEquals(resultExecutable, allExecutable);
         Assertions.assertEquals(resultChecksum, allChecksum);
+    }
+
+    @Test
+    public void testRequests() {
+        PackageId id  = new PackageId("org.cicomponents",  "cicomponents-ci", "0.1.0");
+        List<String> res = extractor.request(id);
+
+        Assertions.assertEquals(48, res.size());
+    }
+
+    @Test
+    public void testRequests1() {
+        PackageId id  = new PackageId("org.jomc.logging", "jomc-logging-it", "1.0-alpha-8");
+        List<String> res = extractor.request(id);
+
+        Assertions.assertEquals(48, res.size());
     }
 
     @Test
@@ -160,7 +180,6 @@ public class PackagingTypeExtractorTest {
             Assertions.assertEquals("2e315dcaa77983999bf11106c65229dc", results[4]);
         }
         f.delete();
-
     }
 
     @Test

@@ -50,7 +50,7 @@ public interface Config {
      *
      * @return The seed.
      */
-    long getSeed();
+    double getSeed();
 
 
     /**
