@@ -10,6 +10,7 @@
 
     <modules>
         <module>analyzer</module>
+        <module>visualization-build-aspects</module>
     </modules>
 
     <!-- FIXME change it to the project's website -->

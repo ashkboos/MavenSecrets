@@ -161,19 +161,44 @@ public class JavaVersion implements Comparable<JavaVersion> {
         this.lts = parent.isLongTermSupportVersion();
     }
 
+    /**
+     * Get the name of the version.
+     *
+     * @return The name.
+     */
     @NotNull
     public String getName() {
         return name;
     }
 
+    /**
+     * Get the major version number.
+     * Note that this is an unsigned short.
+     *
+     * @return The major version.
+     */
     public short getMajorVersion() {
         return major;
     }
 
+    /**
+     * Get if the version has a minor version number.
+     *
+     * @return If there is a minor version.
+     * @see #getMinorVersion()
+     */
     public boolean hasMinorVersion() {
         return minor != null;
     }
 
+    /**
+     * Get the minor version number.
+     * Note that this is an unsigned short.
+     *
+     * @return The minor version.
+     * @throws IllegalStateException If no minor version is set.
+     * @see #hasMinorVersion()
+     */
     public short getMinorVersion() {
         // Preconditions
         if (!hasMinorVersion()) {
@@ -183,15 +208,31 @@ public class JavaVersion implements Comparable<JavaVersion> {
         return minor.shortValue();
     }
 
+    /**
+     * Get if the version is a long-term support version.
+     *
+     * @return If the version is a long-term support version.
+     */
     public boolean isLongTermSupportVersion() {
         return lts;
     }
 
+    /**
+     * Get the version with a minor version.
+     *
+     * @param minor Minor version.
+     * @return The version.
+     */
     @NotNull
     public JavaVersion withMinorVersion(short minor) {
         return new JavaVersion(this, minor);
     }
 
+    /**
+     * Get the version without a minor version.
+     *
+     * @return The version.
+     */
     @NotNull
     public JavaVersion withoutMinorVersion() {
         return MAJOR_VERSION_MAP.get(getMajorVersion());
@@ -249,6 +290,13 @@ public class JavaVersion implements Comparable<JavaVersion> {
         return builder.toString();
     }
 
+    /**
+     * Get the version from class header bytes.
+     *
+     * @param major Major version bytes.
+     * @param minor Minor version bytes.
+     * @return the version wrapped in an {@link Optional}.
+     */
     @NotNull
     public static Optional<? extends JavaVersion> fromClassVersion(@NotNull byte[] major, @NotNull byte[] minor) {
         // Preconditions
@@ -269,13 +317,15 @@ public class JavaVersion implements Comparable<JavaVersion> {
         return majorVersion == null ? Optional.empty() : Optional.of(new JavaVersion(majorVersion, minorNum));
     }
 
+    /**
+     * Get the version from a string.
+     * The string is formatted as <code>major(.minor)?(.micro)?(_patch)?( \(text\))?</code>.
+     *
+     * @param string Input string.
+     * @return the version wrapped in an {@link Optional}.
+     */
     @NotNull
     public static Optional<? extends JavaVersion> fromString(@NotNull String string) {
-        return fromString(string, true);
-    }
-
-    @NotNull
-    public static Optional<? extends JavaVersion> fromString(@NotNull String string, boolean withMinor) {
         // Preconditions
         Objects.requireNonNull(string);
 
@@ -323,42 +373,55 @@ public class JavaVersion implements Comparable<JavaVersion> {
                 case "8":
                     majorVersion = JavaVersion.JAVA_8;
                     break;
+                case "1.9":
                 case "9":
                     majorVersion = JavaVersion.JAVA_9;
                     break;
+                case "1.10":
                 case "10":
                     majorVersion = JavaVersion.JAVA_10;
                     break;
+                case "1.11":
                 case "11":
                     majorVersion = JavaVersion.JAVA_11;
                     break;
+                case "1.12":
                 case "12":
                     majorVersion = JavaVersion.JAVA_12;
                     break;
+                case "1.13":
                 case "13":
                     majorVersion = JavaVersion.JAVA_13;
                     break;
+                case "1.14":
                 case "14":
                     majorVersion = JavaVersion.JAVA_14;
                     break;
+                case "1.15":
                 case "15":
                     majorVersion = JavaVersion.JAVA_15;
                     break;
+                case "1.16":
                 case "16":
                     majorVersion = JavaVersion.JAVA_16;
                     break;
+                case "1.17":
                 case "17":
                     majorVersion = JavaVersion.JAVA_17;
                     break;
+                case "1.18":
                 case "18":
                     majorVersion = JavaVersion.JAVA_18;
                     break;
+                case "1.19":
                 case "19":
                     majorVersion = JavaVersion.JAVA_19;
                     break;
+                case "1.20":
                 case "20":
                     majorVersion = JavaVersion.JAVA_20;
                     break;
+                case "1.21":
                 case "21":
                     majorVersion = JavaVersion.JAVA_21;
                     break;
@@ -369,16 +432,14 @@ public class JavaVersion implements Comparable<JavaVersion> {
             String minorArg = matcher.group(4);
             if (minorArg == null) {
                 return Optional.of(majorVersion);
-            } else {
-                if (withMinor) {
-                    try {
-                        short minorNum = Short.parseShort(minorArg.substring(1));
-                        return Optional.of(majorVersion.withMinorVersion(minorNum));
-                    } catch (NumberFormatException exception) {
-                        // Fall-through
-                    }
-                }
-            } 
+            }
+
+            try {
+                short minorNum = Short.parseShort(minorArg.substring(1));
+                return Optional.of(majorVersion.withMinorVersion(minorNum));
+            } catch (NumberFormatException exception) {
+                // Fall-through
+            }
         }
         return Optional.empty();
     }

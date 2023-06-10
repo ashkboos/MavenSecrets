@@ -3,10 +3,58 @@ package nl.tudelft.mavensecrets.visualization.buildaspects;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class JavaVersionTest {
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void test_lts() {
+        Assertions.assertFalse(JavaVersion.JAVA_0.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_0.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_1.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_1.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_2.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_2.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_3.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_3.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_4.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_4.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_5.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_5.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_6.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_6.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_7.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_7.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertTrue(JavaVersion.JAVA_8.isLongTermSupportVersion());
+        Assertions.assertTrue(JavaVersion.JAVA_8.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_9.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_9.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_10.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_10.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertTrue(JavaVersion.JAVA_11.isLongTermSupportVersion());
+        Assertions.assertTrue(JavaVersion.JAVA_11.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_12.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_12.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_13.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_13.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_14.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_14.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_15.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_15.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_16.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_16.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertTrue(JavaVersion.JAVA_17.isLongTermSupportVersion());
+        Assertions.assertTrue(JavaVersion.JAVA_17.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_18.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_18.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_19.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_19.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_20.isLongTermSupportVersion());
+        Assertions.assertFalse(JavaVersion.JAVA_20.withMinorVersion((short) 1).isLongTermSupportVersion());
+        Assertions.assertTrue(JavaVersion.JAVA_21.isLongTermSupportVersion());
+        Assertions.assertTrue(JavaVersion.JAVA_21.withMinorVersion((short) 1).isLongTermSupportVersion());
+    }
 
     @Test
     public void test_minor_absent() {
@@ -194,16 +242,14 @@ public class JavaVersionTest {
         // Assuming class version 0x0000 is not valid
         Optional<? extends JavaVersion> optional = JavaVersion.fromClassVersion(new byte[2], new byte[2]);
 
-        Assertions.assertNotNull(optional);
-        Assertions.assertTrue(optional.isEmpty());
+        AssertionsUtil.assertEmpty(optional);
     }
 
     @Test
     public void test_from_bytes_major() {
         Optional<? extends JavaVersion> optional = JavaVersion.fromClassVersion(new byte[] {0x00, 0x34}, new byte[] {0x00, 0x01});
 
-        Assertions.assertNotNull(optional);
-        Assertions.assertTrue(optional.isPresent());
+        AssertionsUtil.assertPresent(optional);
 
         JavaVersion version = optional.get();
         JavaVersion expected = JavaVersion.JAVA_8.withMinorVersion((short) 1);
@@ -211,15 +257,61 @@ public class JavaVersionTest {
         Assertions.assertEquals(expected, version);
     }
 
-    @Disabled
+    @Test
+    public void test_from_string_malformed() {
+        Optional<? extends JavaVersion> optional1 = JavaVersion.fromString(" 0.0.0_0 (Oracle)");
+        Optional<? extends JavaVersion> optional2 = JavaVersion.fromString("0.0.0_0 (Oracle) ");
+        Optional<? extends JavaVersion> optional3 = JavaVersion.fromString("x.0.0_0 (Oracle)");
+        Optional<? extends JavaVersion> optional4 = JavaVersion.fromString("0.x.0_0 (Oracle)");
+        Optional<? extends JavaVersion> optional5 = JavaVersion.fromString("0.0.x_0 (Oracle)");
+        Optional<? extends JavaVersion> optional6 = JavaVersion.fromString("0.0.0_x (Oracle)");
+
+        AssertionsUtil.assertEmpty(optional1);
+        AssertionsUtil.assertEmpty(optional2);
+        AssertionsUtil.assertEmpty(optional3);
+        AssertionsUtil.assertEmpty(optional4);
+        AssertionsUtil.assertEmpty(optional5);
+        AssertionsUtil.assertEmpty(optional6);
+    }
+    
     @Test
     public void test_from_string() {
-        JavaVersion.fromString("");
-    }
+        Optional<? extends JavaVersion> optional1 = JavaVersion.fromString("8");
+        Optional<? extends JavaVersion> optional2 = JavaVersion.fromString("8.0");
+        Optional<? extends JavaVersion> optional3 = JavaVersion.fromString("8.0.0");
+        Optional<? extends JavaVersion> optional4 = JavaVersion.fromString("8_1");
+        Optional<? extends JavaVersion> optional5 = JavaVersion.fromString("8.0_1");
+        Optional<? extends JavaVersion> optional6 = JavaVersion.fromString("8.0.0_1");
+        Optional<? extends JavaVersion> optional7 = JavaVersion.fromString("8 (Oracle)");
+        Optional<? extends JavaVersion> optional8 = JavaVersion.fromString("8.0 (Oracle)");
+        Optional<? extends JavaVersion> optional9 = JavaVersion.fromString("8.0.0 (Oracle)");
+        Optional<? extends JavaVersion> optional10 = JavaVersion.fromString("8_1 (Oracle)");
+        Optional<? extends JavaVersion> optional11 = JavaVersion.fromString("8.0_1 (Oracle)");
+        Optional<? extends JavaVersion> optional12 = JavaVersion.fromString("8.0.0_1 (Oracle)");
 
-    @Disabled
-    @Test
-    public void test_from_string_minor() {
-        JavaVersion.fromString("", true);
+        AssertionsUtil.assertPresent(optional1);
+        Assertions.assertEquals(JavaVersion.JAVA_8, optional1.get());
+        AssertionsUtil.assertPresent(optional2);
+        Assertions.assertEquals(JavaVersion.JAVA_8, optional2.get());
+        AssertionsUtil.assertPresent(optional3);
+        Assertions.assertEquals(JavaVersion.JAVA_8, optional3.get());
+        AssertionsUtil.assertPresent(optional4);
+        Assertions.assertEquals(JavaVersion.JAVA_8.withMinorVersion((short) 1), optional4.get());
+        AssertionsUtil.assertPresent(optional5);
+        Assertions.assertEquals(JavaVersion.JAVA_8.withMinorVersion((short) 1), optional5.get());
+        AssertionsUtil.assertPresent(optional6);
+        Assertions.assertEquals(JavaVersion.JAVA_8.withMinorVersion((short) 1), optional6.get());
+        AssertionsUtil.assertPresent(optional7);
+        Assertions.assertEquals(JavaVersion.JAVA_8, optional7.get());
+        AssertionsUtil.assertPresent(optional8);
+        Assertions.assertEquals(JavaVersion.JAVA_8, optional8.get());
+        AssertionsUtil.assertPresent(optional9);
+        Assertions.assertEquals(JavaVersion.JAVA_8, optional9.get());
+        AssertionsUtil.assertPresent(optional10);
+        Assertions.assertEquals(JavaVersion.JAVA_8.withMinorVersion((short) 1), optional10.get());
+        AssertionsUtil.assertPresent(optional11);
+        Assertions.assertEquals(JavaVersion.JAVA_8.withMinorVersion((short) 1), optional11.get());
+        AssertionsUtil.assertPresent(optional12);
+        Assertions.assertEquals(JavaVersion.JAVA_8.withMinorVersion((short) 1), optional12.get());
     }
 }

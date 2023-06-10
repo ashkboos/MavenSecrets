@@ -146,6 +146,35 @@ public class ConnectionWrapper implements AutoCloseable {
         }
     }
 
+    /**
+     * Execute an update.
+     *
+     * @param query SQL query.
+     * @throws SQLException If an SQL error occurs.
+     * @see #update(String, ThrowingConsumer)
+     */
+    public void update(@NotNull String query) throws SQLException {
+        update(query, ps -> {});
+    }
+
+    /**
+     * Execute an update.
+     *
+     * @param query SQL query.
+     * @param psMapper Statement mapper.
+     * @throws SQLException If an SQL error occurs.
+     */
+    public void update(@NotNull String query, @NotNull ThrowingConsumer<? super PreparedStatement, ? extends SQLException> psMapper) throws SQLException {
+        // Preconditions
+        Objects.requireNonNull(query);
+        Objects.requireNonNull(psMapper);
+
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            psMapper.accept(statement);
+            statement.executeUpdate();
+        }
+    }
+
     @Override
     public synchronized void close() throws SQLException {
         if (closed) {

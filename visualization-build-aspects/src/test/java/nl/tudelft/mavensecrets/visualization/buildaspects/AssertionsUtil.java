@@ -3,6 +3,7 @@ package nl.tudelft.mavensecrets.visualization.buildaspects;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
@@ -11,6 +12,16 @@ public class AssertionsUtil {
 
     private AssertionsUtil() {
         // Nothing
+    }
+
+    public static void assertEmpty(@Nullable Optional<?> optional) {
+        Assertions.assertNotNull(optional);
+        Assertions.assertTrue(optional.isEmpty());
+    }
+
+    public static void assertPresent(@Nullable Optional<?> optional) {
+        Assertions.assertNotNull(optional);
+        Assertions.assertTrue(optional.isPresent());
     }
 
     public static void assertGreaterThan(int x, int y) {
