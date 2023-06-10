@@ -210,6 +210,24 @@ class Database:
         """
         self.execute(query)
         self.conn.commit()
+    
+    def get_hosts_with_tags(self):
+        query =f"""
+        SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
+               valid, valid_home, valid_dev_conn, valid_scm_conn, java_version_manifest_2,
+               java_version_manifest_3, java_version_class_major, output_timestamp_prop
+        FROM tags AS t
+        JOIN hosts h on t.groupid = h.groupid
+            AND t.artifactid = h.artifactid
+            AND t.version = h.version
+        JOIN packages p on t.groupid = p.groupid
+            AND t.artifactid = p.artifactid
+            AND t.version = p.version
+        ORDER BY t.version
+        """
+        # TODO remove the ORDER BY!!!!
+        self.execute(query)
+        return self.cur.fetchall()
 
     def execute(self, query: str, vars: list = None):
         if vars is None:
