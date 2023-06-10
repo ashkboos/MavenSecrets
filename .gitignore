@@ -53,3 +53,5 @@ buildNumber.properties
 
 __pycache__/
 /config.yml
+
+pyscripts/vc/temp/
