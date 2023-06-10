@@ -12,4 +12,4 @@ Run the analyzer with at least the following extractors:
 ## Usage
 To build the JAR: `mvn package`
 
-To run the JAR: `java -jar <jar_name> <hostname> <port> <database> [<username> <password>]`
+To run the JAR: `java -jar <jar_name> <hostname> <port> <database> [<username> <password>]` (requires Java 17 or above)
