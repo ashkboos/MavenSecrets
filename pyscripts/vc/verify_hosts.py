@@ -73,7 +73,7 @@ class VerifyHost:
         if not success:
             for err_url, err in errors.items():
                 self.log.critical(err_url)
-                self.db.insert_error(pkg, err_url, err)
+                self.db.insert_error(pkg, err_url, f'(VERIFIER) {err}')
         self.db.mark_processed(pkg)
         sleep(0.2)
         return success

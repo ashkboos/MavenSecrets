@@ -19,7 +19,7 @@ class HistoricalAnalyzer:
 
     def analyse(self, field: str):
         cmap = "viridis"
-        threshold = 0.05
+        threshold = 0.01
 
         records = self.db.collate_hosts_yearly(field)
         # records = self.gen_test_data()

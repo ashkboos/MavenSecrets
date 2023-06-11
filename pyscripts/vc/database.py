@@ -57,6 +57,7 @@ class Database:
         )
         return self.cur.fetchall()
 
+    # TODO where processed = false ?
     def get_all(self):
         self.execute(f"SELECT * FROM {self.HOST_TABLE} ORDER BY url ASC")
         return self.cur.fetchall()
@@ -239,3 +240,26 @@ class Database:
     def close(self):
         self.cur.close()
         self.conn.close()
+
+# SELECT *
+# FROM errors AS e
+# WHERE NOT EXISTS (
+#     SELECT 1
+#     FROM hosts AS h
+#     WHERE e.groupid = h.groupid
+#     AND e.artifactid = h.artifactid
+#     AND e.version = h.version
+# );
+
+# Query to find all packages that didn't have urls or the hostnames couldn't be parsed
+# SELECT *
+# FROM packages AS p
+# WHERE NOT EXISTS (
+#     SELECT 1
+#     FROM hosts AS h
+#     WHERE p.groupid = h.groupid
+#     AND p.artifactid = h.artifactid
+#     AND p.version = h.version
+# );
+
+

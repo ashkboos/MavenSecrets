@@ -1,4 +1,5 @@
 import logging
+import re
 from time import sleep
 from giturlparse import parse
 import requests
@@ -19,7 +20,7 @@ class GetTags:
         self.rate_lim_remain = 5000
         self.rate_lim_reset = None
 
-    # TODO try each field until 1 hits
+    # TODO TRY WITH EACH FIELD UNTIL 1 HITS!
     def find_github_release(self):
         self.db.create_tags_table()
 
@@ -31,13 +32,17 @@ class GetTags:
 
             print(url)
             try:
-                p = parse(url)
+                # http not supported
+                # trailing slash not supported
+                p = self.parsePlus(url)
             except Exception as e:
                 self.log.error(e)
+                self.db.insert_error(pkg, url, f"(GET TAGS) {e}!")
             if p.valid:
                 self.log.debug(f"REPO INFO: {p.host}, {p.owner}, {p.name}")
             else:
-                self.log.debug("invalid")
+                self.log.error('Invalid url')
+                self.db.insert_error(pkg, url, f"(GET TAGS) Invalid URL!")
                 continue
 
             if self.rate_lim_remain < 2:
@@ -118,7 +123,7 @@ class GetTags:
                     rel_commit_hash,
                 )
 
-            sleep(0.1)
+            sleep(0.05)
 
     def build_and_compare(self):
         # TODO replace with only github repos that have a matching tag
@@ -173,6 +178,17 @@ class GetTags:
             "https://api.github.com/graphql", json=payload, headers=headers
         )
         return res
+    
+    # Replaces http with https and removes trailing slashes then parses urls
+    def parsePlus(self, url: str):
+        url = re.sub(r'\/+$', '', url)
+        if re.match(r'^git@', url) and not re.search(r'\.git$', url):
+            return parse(url + '.git')
+        https_url = re.sub(r'http:', 'https:', url)
+        return parse(https_url)
+
+
+
 
 
 # exceptions

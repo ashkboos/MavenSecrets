@@ -18,6 +18,7 @@ class Extractor:
     # TODO save the unparseable to an error table
 
     def extract(self) -> None:
+        self.db.create_err_table()
         self.db.create_table()
         unparseable = self.process_url("scm_url")
         unparseable_home = self.process_url("homepage_url")
@@ -29,8 +30,6 @@ class Extractor:
         print(*unparseable_dev_conn, sep="\n")
         print(*unparseable_scm_conn, sep="\n")
         # self.process_url('homepage_url', cur)
-
-    # every 100 records, insert the hostnames into new database
 
     def process_url(self, field: str) -> list:
         # TODO make these into a class
@@ -45,9 +44,7 @@ class Extractor:
 
         # if not enough memory, look into server-side cursors
         for record in records:
-            groupid = record["groupid"]
-            artifactid = record["artifactid"]
-            version = record["version"]
+            pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
             url = record[field]
 
             host = self.parse_git_url(url)
@@ -55,13 +52,15 @@ class Extractor:
             if host:
                 urls.append(url)
                 hosts.append(host)
-                groupids.append(groupid)
-                artifactids.append(artifactid)
-                versions.append(version)
+                groupids.append(pkg.groupid)
+                artifactids.append(pkg.artifactid)
+                versions.append(pkg.version)
             else:
                 unparseable.append(url)
+                self.db.insert_error(pkg, url, f"(EXTRACTOR) Couldn\'t parse")
 
-            if len(hosts) == 100:
+            # every 100 records, insert the hostnames into new database
+            if len(hosts) == 1000:
                 self.db.insert_hosts(
                     groupids, artifactids, versions, urls, hosts, field
                 )

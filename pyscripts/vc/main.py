@@ -1,7 +1,7 @@
 import logging
 
 from database import Database
-from extract_repos import Extractor
+from extract_hosts import Extractor
 from analyse_historical import HistoricalAnalyzer
 from get_tags import GetTags
 from build_packages import BuildPackages
