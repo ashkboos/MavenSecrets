@@ -38,7 +38,7 @@ class GetTags:
             if p.valid:
                 self.log.debug(f"REPO INFO: {p.host}, {p.owner}, {p.name}")
             else:
-                self.log.error('Invalid url')
+                self.log.error("Invalid url")
                 self.db.insert_error(pkg, url, f"(GET TAGS) Invalid URL!")
                 continue
 
@@ -130,7 +130,9 @@ class GetTags:
             url = record["url"]
             process = subprocess.run(["git", "clone", url, clone_dir])
             if process.returncode != 0:
-                self.log.error(f"Error encountered when cloning {process.stderr.decode()}")
+                self.log.error(
+                    f"Error encountered when cloning {process.stderr.decode()}"
+                )
                 continue
 
     def make_request(self, owner: str, repo: str, version: str):
@@ -175,18 +177,15 @@ class GetTags:
             "https://api.github.com/graphql", json=payload, headers=headers
         )
         return res
-    
+
     # Replaces http with https, removes trailing slashes
     # and adds .git to git@ urls to make it work with parsing lib
     def parsePlus(self, url: str):
-        url = re.sub(r'\/+$', '', url)
-        if re.match(r'^git@', url) and not re.search(r'\.git$', url):
-            return parse(url + '.git')
-        https_url = re.sub(r'http:', 'https:', url)
+        url = re.sub(r"\/+$", "", url)
+        if re.match(r"^git@", url) and not re.search(r"\.git$", url):
+            return parse(url + ".git")
+        https_url = re.sub(r"http:", "https:", url)
         return parse(https_url)
-
-
-
 
 
 # exceptions

@@ -62,7 +62,9 @@ class Database:
         return self.cur.fetchall()
 
     def get_all_unprocessed(self):
-        self.execute(f"SELECT * FROM {self.HOST_TABLE} WHERE processed = false ORDER BY url ASC")
+        self.execute(
+            f"SELECT * FROM {self.HOST_TABLE} WHERE processed = false ORDER BY url ASC"
+        )
         return self.cur.fetchall()
 
     def insert_hosts(
@@ -214,9 +216,9 @@ class Database:
         """
         self.execute(query)
         self.conn.commit()
-    
+
     def get_hosts_with_tags(self):
-        query =f"""
+        query = f"""
         SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
                valid, valid_home, valid_dev_conn, valid_scm_conn, java_version_manifest_2,
                java_version_manifest_3, java_version_class_major, output_timestamp_prop
@@ -244,6 +246,7 @@ class Database:
         self.cur.close()
         self.conn.close()
 
+
 # SELECT *
 # FROM errors AS e
 # WHERE NOT EXISTS (
@@ -264,5 +267,3 @@ class Database:
 #     AND p.artifactid = h.artifactid
 #     AND p.version = h.version
 # );
-
-

@@ -75,7 +75,7 @@ class VerifyHost:
         if not success:
             for err_url, err in errors.items():
                 self.log.critical(err_url)
-                self.db.insert_error(pkg, err_url, f'(VERIFIER) {err}')
+                self.db.insert_error(pkg, err_url, f"(VERIFIER) {err}")
         self.db.mark_processed(pkg)
         sleep(0.2)
         return success
@@ -112,7 +112,7 @@ class VerifyHost:
         if process.returncode == 0:
             return None
         else:
-            return f'({process.returncode}):{err}'
+            return f"({process.returncode}):{err}"
 
 
 # Exceptions:

@@ -36,7 +36,6 @@ class BuildPackages:
         if process.returncode != 0:
             self.log.error("Problem encountered")
 
-
     def create_buildspec(
         self, pkg: PackageId, git_repo, git_tag, tool, jdk, newline
     ) -> str:
@@ -59,7 +58,7 @@ class BuildPackages:
         path = f"./temp/builder/research/{values['groupId']}-{values['artifactId']}-{values['version']}/"
         if not os.path.exists(path):
             os.makedirs(path)
-        filepath = os.path.join(path, '.buildspec')
+        filepath = os.path.join(path, ".buildspec")
         with open(filepath, "w") as file:
             file.write(rendered)
         return filepath
@@ -89,7 +88,6 @@ class BuildPackages:
         buildspec_path = self.create_buildspec(pkg, url, tag, "mvn", jdk, "lf")
         self.build(buildspec_path)
 
-    
     def build(self, buildspec_path):
         return subprocess.run(["./temp/builder/rebuild.sh", buildspec_path])
 
@@ -135,7 +133,6 @@ class BuildPackages:
             paths.append(path)
 
         return paths
-
 
     def compare(self):
         pass

@@ -58,7 +58,7 @@ class Extractor:
                 versions.append(pkg.version)
             else:
                 unparseable.append(url)
-                self.db.insert_error(pkg, url, f"(EXTRACTOR) Couldn\'t parse")
+                self.db.insert_error(pkg, url, f"(EXTRACTOR) Couldn't parse")
 
             # every 1000 records, insert the hostnames into new database
             if len(hosts) == 1000:
