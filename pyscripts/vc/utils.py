@@ -1,4 +1,5 @@
 import re
+from giturlparse import parse
 
 
 # https://maven.apache.org/scm/scm-url-format.html
@@ -32,3 +33,12 @@ def convert_link_to_github(url: str) -> str:
         pattern = r"https?://[\w-]+\.apache\.org/repos/asf/(\w+)"
         replacement = r"https://github.com/apache/\1"
         return re.sub(pattern, replacement, url)
+
+# Replaces http with https, removes trailing slashes
+# and adds .git to git@ urls to make it work with parsing lib
+def parse_plus(url: str):
+    url = re.sub(r"\/+$", "", url)
+    if re.match(r"^git@", url) and not re.search(r"\.git$", url):
+        return parse(url + ".git")
+    https_url = re.sub(r"http:", "https:", url)
+    return parse(https_url)
