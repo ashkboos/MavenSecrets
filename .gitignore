@@ -55,3 +55,4 @@ __pycache__/
 /config.yml
 
 pyscripts/vc/temp/
+pyscripts/vc/config.yaml

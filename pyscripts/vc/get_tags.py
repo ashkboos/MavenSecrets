@@ -4,19 +4,19 @@ from time import sleep
 from giturlparse import parse
 import requests
 import subprocess
-from dotenv import dotenv_values
 from typing import Dict
 
 from database import Database
 from packageId import PackageId
+from config import Config
 
 
 class GetTags:
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, config: Config):
         self.log = logging.getLogger(__name__)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
         self.db = db
-        self.env = dotenv_values()
+        self.config = config
         self.rate_lim_remain = 5000
         self.rate_lim_reset = None
 
@@ -30,10 +30,7 @@ class GetTags:
             pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
             url = record["url"]
 
-            print(url)
             try:
-                # http not supported
-                # trailing slash not supported
                 p = self.parsePlus(url)
             except Exception as e:
                 self.log.error(e)
@@ -47,7 +44,7 @@ class GetTags:
 
             if self.rate_lim_remain < 2:
                 # TODO wait until self.rate_lim_reset before making next request
-                print("Waiting for rate limit!")
+                self.log.warn("Waiting for rate limit!")
                 sleep(60)
 
             try:
@@ -133,11 +130,11 @@ class GetTags:
             url = record["url"]
             process = subprocess.run(["git", "clone", url, clone_dir])
             if process.returncode != 0:
-                print("Problem encountered")
+                self.log.error(f"Error encountered when cloning {process.stderr.decode()}")
                 continue
 
     def make_request(self, owner: str, repo: str, version: str):
-        token = self.env.get("TOKEN")
+        token = self.config.GITHUB_API_KEY
         query = """
         query ($owner: String!, $repo: String!, $version: String!) {
           rateLimit {
@@ -179,7 +176,8 @@ class GetTags:
         )
         return res
     
-    # Replaces http with https and removes trailing slashes then parses urls
+    # Replaces http with https, removes trailing slashes
+    # and adds .git to git@ urls to make it work with parsing lib
     def parsePlus(self, url: str):
         url = re.sub(r'\/+$', '', url)
         if re.match(r'^git@', url) and not re.search(r'\.git$', url):

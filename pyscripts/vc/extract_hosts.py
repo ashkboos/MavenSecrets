@@ -1,7 +1,11 @@
 from urllib.parse import urlparse
-
-from database import *
+import logging
 import re
+
+from database import Database
+from config import Config
+from packageId import PackageId
+
 
 # Scenarios
 # 1. ONLY scm_url
@@ -12,26 +16,23 @@ import re
 
 
 class Extractor:
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, config: Config):
+        self.log = logging.getLogger(__name__)
         self.db = db
+        self.config = config
 
     # TODO save the unparseable to an error table
 
     def extract(self) -> None:
         self.db.create_err_table()
         self.db.create_table()
-        unparseable = self.process_url("scm_url")
-        unparseable_home = self.process_url("homepage_url")
-        unparseable_dev_conn = self.process_url("dev_conn_url")
-        unparseable_scm_conn = self.process_url("scm_conn_url")
-        # TODO save unparseable to errortable
-        print(*unparseable, sep="\n")
-        print(*unparseable_home, sep="\n")
-        print(*unparseable_dev_conn, sep="\n")
-        print(*unparseable_scm_conn, sep="\n")
-        # self.process_url('homepage_url', cur)
+        self.process_urls("scm_url")
+        self.process_urls("homepage_url")
+        self.process_urls("dev_conn_url")
+        self.process_urls("scm_conn_url")
 
-    def process_url(self, field: str) -> list:
+    def process_urls(self, field: str):
+        self.log.info(f"Parsing hosts for {field} field")
         # TODO make these into a class
         groupids = []
         artifactids = []
@@ -59,7 +60,7 @@ class Extractor:
                 unparseable.append(url)
                 self.db.insert_error(pkg, url, f"(EXTRACTOR) Couldn\'t parse")
 
-            # every 100 records, insert the hostnames into new database
+            # every 1000 records, insert the hostnames into new database
             if len(hosts) == 1000:
                 self.db.insert_hosts(
                     groupids, artifactids, versions, urls, hosts, field
@@ -70,15 +71,10 @@ class Extractor:
                 urls.clear()
                 hosts.clear()
 
-        # TODO final request
         if len(hosts) > 0:
             self.db.insert_hosts(groupids, artifactids, versions, urls, hosts, field)
 
-        print("*" * 50)
-        print(field)
-        return unparseable
-
-    def parse_git_url(self, url) -> str:
+    def parse_git_url(self, url: str) -> str:
         n_url = re.sub(r"^(scm|svn):git:", "", url)
         n_url = re.sub(r"^(scm|svn):", "", n_url)
         n_url = re.sub(r"^git@", "ssh://git@", n_url)
@@ -88,6 +84,6 @@ class Extractor:
         parsed_url = urlparse(n_url)
         return parsed_url.hostname
 
-    def parse_homepage_url(self, url) -> str:
+    def parse_homepage_url(self, url: str) -> str:
         parsed_url = urlparse(url)
         return parsed_url.hostname

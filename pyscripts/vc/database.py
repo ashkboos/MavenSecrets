@@ -57,9 +57,12 @@ class Database:
         )
         return self.cur.fetchall()
 
-    # TODO where processed = false ?
     def get_all(self):
         self.execute(f"SELECT * FROM {self.HOST_TABLE} ORDER BY url ASC")
+        return self.cur.fetchall()
+
+    def get_all_unprocessed(self):
+        self.execute(f"SELECT * FROM {self.HOST_TABLE} WHERE processed = false ORDER BY url ASC")
         return self.cur.fetchall()
 
     def insert_hosts(

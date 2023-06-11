@@ -4,21 +4,23 @@ import logging
 from time import sleep
 from typing import Dict
 
-from database import *
-from utils import *
+from database import Database
 from packageId import PackageId
+from config import Config
+from utils import *
 
 
 class VerifyHost:
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, config: Config):
         self.db = db
+        self.config = config
         self.timeout = 15
         self.funcs = [lambda x: (x, True), git_to_https, remove_tree_path]
         self.log = logging.getLogger(__name__)
 
     def verify_hosts(self):
         self.db.create_err_table()
-        records = self.db.get_all()
+        records = self.db.get_all_unprocessed()
 
         with ThreadPoolExecutor() as executor:
             futures = [

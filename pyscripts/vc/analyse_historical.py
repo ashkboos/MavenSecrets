@@ -4,13 +4,15 @@ import pandas as pd
 import numpy as np
 
 from database import Database
+from config import Config
 
 
 class HistoricalAnalyzer:
-    def __init__(self, db: Database, fields: list):
+    def __init__(self, fields: list, db: Database, config: Config):
         self.log = logging.getLogger(__name__)
         plt.set_loglevel("warning")
         self.db = db
+        self.config = config
         self.fields = fields
 
     def analyse_all(self):
