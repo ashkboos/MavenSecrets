@@ -22,7 +22,7 @@ class VerifyHost:
         self.db.create_err_table()
         records = self.db.get_all_unprocessed()
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=16) as executor:
             futures = [
                 executor.submit(self.verify_single_host, record) for record in records
             ]
@@ -107,7 +107,6 @@ class VerifyHost:
 
         output = process.stdout.decode()
         err = process.stderr.decode()
-        print(output)
         self.log.debug(f"Exit code: {process.returncode}")
         if process.returncode == 0:
             return None
