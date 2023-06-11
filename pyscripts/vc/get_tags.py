@@ -4,6 +4,7 @@ from time import sleep
 from giturlparse import parse
 import requests
 import subprocess
+from datetime import datetime
 from typing import Dict
 
 from database import Database
@@ -18,7 +19,7 @@ class GetTags:
         self.db = db
         self.config = config
         self.rate_lim_remain = 5000
-        self.rate_lim_reset = None
+        self.rate_lim_reset = datetime.utcnow()
 
     # TODO TRY WITH EACH FIELD UNTIL 1 HITS!
     def find_github_release(self):
@@ -42,11 +43,7 @@ class GetTags:
                 self.db.insert_error(pkg, url, f"(GET TAGS) Invalid URL!")
                 continue
 
-            if self.rate_lim_remain < 2:
-                # TODO wait until self.rate_lim_reset before making next request
-                self.log.warn("Waiting for rate limit!")
-                sleep(60)
-
+            # TODO retry on rate_limit message (shouldn't happen though)
             try:
                 res = self.make_request(p.owner, p.name, pkg.version)
                 json = res.json()
@@ -62,7 +59,10 @@ class GetTags:
 
             try:
                 self.rate_lim_remain = data["rateLimit"]["remaining"]
-                self.rate_lim_reset = data["rateLimit"]["resetAt"]
+                date_string = data["rateLimit"]["resetAt"]
+                self.rate_lim_reset = datetime.strptime(
+                    date_string, "%Y-%m-%dT%H:%M:%SZ"
+                )
                 self.log.debug(f"Rate Lim Remaining: {self.rate_lim_remain}")
             except KeyError as e:
                 self.log.error("Rate lim response missing!")
@@ -136,6 +136,7 @@ class GetTags:
                 continue
 
     def make_request(self, owner: str, repo: str, version: str):
+        self.check_rate_lim()
         token = self.config.GITHUB_API_KEY
         query = """
         query ($owner: String!, $repo: String!, $version: String!) {
@@ -177,6 +178,15 @@ class GetTags:
             "https://api.github.com/graphql", json=payload, headers=headers
         )
         return res
+
+    def check_rate_lim(self):
+        if self.rate_lim_remain <= 5:
+            timenow = datetime.utcnow()
+            sleep_time = (self.rate_lim_reset - timenow).total_seconds()
+            self.log.warn(
+                f"Waiting for rate limit...\nSleeping for {sleep_time} secs.\nCurrent time: {timenow}\nReset at: {self.rate_lim_reset}"
+            )
+            sleep(sleep_time + 30)  # +30s to account for possible time desync
 
     # Replaces http with https, removes trailing slashes
     # and adds .git to git@ urls to make it work with parsing lib
