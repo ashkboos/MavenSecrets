@@ -35,13 +35,29 @@ class Database:
         )
         return self.cur.fetchall()
 
-    def get_valid_github_urls(self, fieldname: str):
+    def get_valid_github_urls(self):
         self.execute(
             f"""
-            SELECT groupid, artifactid, version, {fieldname} AS url
-            FROM {self.HOST_TABLE}
-            WHERE {fieldname} IS NOT NULL AND {fieldname} != ''
-            AND HOST LIKE '%github.com';
+            SELECT groupid, artifactid, version, valid, valid_home, valid_scm_conn, valid_dev_conn
+            FROM {self.HOST_TABLE} AS h
+            WHERE
+                ((valid IS NOT NULL
+                    AND valid LIKE '%github.com%')
+                    OR
+                 (valid_home IS NOT NULL
+                     AND valid_home LIKE '%github.com%')
+                    OR
+                 (valid_scm_conn IS NOT NULL
+                     AND  valid_scm_conn LIKE '%github.com%')
+                    OR
+                 (valid_dev_conn IS NOT NULL
+                     AND valid_dev_conn LIKE '%github.com%'))
+              AND NOT EXISTS
+                (SELECT 1
+                 FROM {self.TAGS_TABLE} AS t
+                 WHERE  h.groupid = t.groupid
+                   AND h.artifactid = t.artifactid
+                   AND h.version = t.version);
             """
         )
         return self.cur.fetchall()

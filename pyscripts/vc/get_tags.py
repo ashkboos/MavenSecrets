@@ -1,7 +1,6 @@
 import logging
 from time import sleep
 import requests
-import subprocess
 from datetime import datetime
 from typing import Dict
 
@@ -24,82 +23,91 @@ class GetTags:
     # TODO MATCH RELEASE USING SEQ. MATCHING ALGO
     def find_github_release(self):
         checkpoint = 0
+        valid_fields = ["valid", "valid_home", "valid_scm_conn", "valid_dev_conn"]
         field = "valid"
 
         self.db.create_tags_table()
-        records = self.db.get_valid_github_urls(field)
+        records = self.db.get_valid_github_urls()
         for record in records:
+            checkpoint += 1
+            if checkpoint % 1000 == 0:
+                self.log.info(f"Checkpoint: Processed {checkpoint} packages...")
             rel_name, rel_tag_name, rel_commit_hash = None, None, None
             tag_name, tag_commit_hash = None, None
             release_exists, tag_exists = False, False
             pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
-            url = record["url"]
+            urls = [
+                record["valid"],
+                record["valid_home"],
+                record["valid_scm_conn"],
+                record["valid_dev_conn"],
+            ]
+            urls_set = set(urls)
+            urls_set.discard(None)
+            for url in urls_set:
+                try:
+                    repo = parse_plus(url)
+                    if not repo.valid:
+                        self.log.error("Invalid url")
+                        self.db.insert_error(pkg, url, f"(GET TAGS) Invalid URL!")
+                        continue # invalid repo, try next URL
+                except Exception as e:
+                    self.log.error(e)
+                    self.db.insert_error(pkg, url, f"(GET TAGS) {e}!")
+                    continue # cannot parse repo owner and name, try next URL
 
-            try:
-                repo = parse_plus(url)
-            except Exception as e:
-                self.log.error(e)
-                self.db.insert_error(pkg, url, f"(GET TAGS) {e}!")
-            if not repo.valid:
-                self.log.error("Invalid url")
-                self.db.insert_error(pkg, url, f"(GET TAGS) Invalid URL!")
-                continue
+                # TODO retry on rate_limit message (shouldn't happen though)
+                try:
+                    res = self.make_request(repo.owner, repo.name, pkg.version)
+                    json = res.json()
+                    data: Dict = json["data"]
+                except Exception as e:
+                    self.log.exception(e)
+                    # TODO add to unresolved
+                    continue
 
-            # TODO retry on rate_limit message (shouldn't happen though)
-            try:
-                res = self.make_request(repo.owner, repo.name, pkg.version)
-                json = res.json()
-                data: Dict = json["data"]
-            except Exception as e:
-                self.log.exception(e)
-                # TODO add to unresolved
-                continue
+                if res.status_code != 200:
+                    self.log.error(f"Bad status code received ({res.status_code})!")
+                    continue
+                self.update_rate_lim(data)
 
-            if res.status_code != 200:
-                self.log.error(f"Bad status code received ({res.status_code})!")
-                continue
-            self.update_rate_lim(data)
+                # Release
+                try:
+                    rel_name, rel_tag_name, rel_commit_hash = self.search_release(
+                        data, pkg, repo
+                    )
+                except Exception as e:
+                    self.log.exception(e)
+                release_exists = rel_name is not None
 
-            # Release
-            try:
-                rel_name, rel_tag_name, rel_commit_hash = self.search_release(
-                    data, pkg, repo
-                )
-            except Exception as e:
-                self.log.exception(e)
-                continue
-            release_exists = rel_name is not None
+                # Tag
+                try:
+                    tag_exists = len(data["repository"]["refs"]["nodes"]) > 0
+                except Exception as e:
+                    self.log.exception(e)
+                    self.log.error(
+                        f"Repository likely does not exist! Request: ({repo.owner},{repo.name},{pkg.version})"
+                    )
+                    continue # Response doesn't contain all fields, go to next URL
 
-            # Tag
-            try:
-                tag_exists = len(data["repository"]["refs"]["nodes"]) > 0
-            except Exception as e:
-                self.log.exception(e)
-                self.log.error(
-                    f"Repository likely does not exist! Request: ({repo.owner},{repo.name},{pkg.version})"
-                )
-                continue
+                if tag_exists:
+                    tag_commit_hash, tag_name = self.extract_tag(data)
+                    self.log.debug(
+                        f"Version {pkg.version} with Tag {tag_name} and commit hash {tag_commit_hash} FOUND!"
+                    )
 
-            if tag_exists:
-                tag_commit_hash, tag_name = self.extract_tag(data)
-                self.log.debug(
-                    f"Version {pkg.version} with Tag {tag_name} and commit hash {tag_commit_hash} FOUND!"
-                )
+                if release_exists or tag_exists:
+                    self.db.insert_tag(
+                        pkg,
+                        tag_name,
+                        tag_commit_hash,
+                        rel_name,
+                        rel_tag_name,
+                        rel_commit_hash,
+                    )
+                    break # Don't try with the other URLS, go to next package
 
-            if release_exists or tag_exists:
-                self.db.insert_tag(
-                    pkg,
-                    tag_name,
-                    tag_commit_hash,
-                    rel_name,
-                    rel_tag_name,
-                    rel_commit_hash,
-                )
-
-            checkpoint += 1
-            if checkpoint % 1000 == 0:
-                self.log.info(f'Checkpoint: Processed {checkpoint} packages...')
-            sleep(0.05)
+                sleep(0.05)
 
     def search_release(self, data, pkg: PackageId, repo):
         releases: list = data["repository"]["releases"]["nodes"]
@@ -145,6 +153,7 @@ class GetTags:
 
     def make_request(self, owner: str, repo: str, version: str, cursor: str = None):
         self.check_rate_lim()
+        self.log.debug(f'Making request for {owner}:{repo}:{version}, cursor={cursor}')
         token = self.config.GITHUB_API_KEY
         query = """
         query ($owner: String!, $repo: String!, $version: String!, $cursor: String) {
