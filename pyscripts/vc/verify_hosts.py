@@ -21,6 +21,7 @@ class VerifyHost:
     def verify_hosts(self):
         self.db.create_err_table()
         records = self.db.get_all_unprocessed()
+        checkpoint = 0
 
         with ThreadPoolExecutor(max_workers=16) as executor:
             futures = [
@@ -29,6 +30,9 @@ class VerifyHost:
             self.log.info("Tasks submitted...")
             for future in as_completed(futures):
                 success = future.result()
+                checkpoint += 1
+                if checkpoint % 1000 == 0:
+                    self.log.info(f'Checkpoint: Processed {checkpoint} packages...')
 
             self.log.info("All done. Thread Pool shutting down...")
 
@@ -74,7 +78,6 @@ class VerifyHost:
 
         if not success:
             for err_url, err in errors.items():
-                self.log.critical(err_url)
                 self.db.insert_error(pkg, err_url, f"(VERIFIER) {err}")
         self.db.mark_processed(pkg)
         sleep(0.2)
@@ -102,7 +105,6 @@ class VerifyHost:
             self.log.debug(f"Trying with {url}")
             process = self.run_cmd(url)
         except subprocess.TimeoutExpired:
-            self.log.error(f"TIMED OUT after {self.timeout}s!")
             return "TIMED OUT"
 
         output = process.stdout.decode()

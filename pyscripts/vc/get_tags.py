@@ -23,9 +23,10 @@ class GetTags:
     # TODO TRY WITH EACH FIELD UNTIL 1 HITS!
     # TODO MATCH RELEASE USING SEQ. MATCHING ALGO
     def find_github_release(self):
-        self.db.create_tags_table()
-
+        checkpoint = 0
         field = "valid"
+
+        self.db.create_tags_table()
         records = self.db.get_valid_github_urls(field)
         for record in records:
             rel_name, rel_tag_name, rel_commit_hash = None, None, None
@@ -95,6 +96,9 @@ class GetTags:
                     rel_commit_hash,
                 )
 
+            checkpoint += 1
+            if checkpoint % 1000 == 0:
+                self.log.info(f'Checkpoint: Processed {checkpoint} packages...')
             sleep(0.05)
 
     def search_release(self, data, pkg: PackageId, repo):
