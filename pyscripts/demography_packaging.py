@@ -12,13 +12,13 @@ def main():
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     # Packaging type analysis
-   # packaging_analysis(cur)
+    packaging_analysis(cur)
 
     # Checksum analysis
-    #checksum_analysis(cur)
+    checksum_analysis(cur)
 
     # Qualifier analysis
-    # qualifier_analysis(cur)
+    qualifier_analysis(cur)
 
     # Executable analysis
     executable_analysis(cur)
