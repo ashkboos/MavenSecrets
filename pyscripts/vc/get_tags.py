@@ -19,15 +19,12 @@ class GetTags:
         self.rate_lim_remain = 5000
         self.rate_lim_reset = datetime.utcnow()
 
-    # TODO TRY WITH EACH FIELD UNTIL 1 HITS!
     # TODO MATCH RELEASE USING SEQ. MATCHING ALGO
     def find_github_release(self):
-        checkpoint = 0
-        valid_fields = ["valid", "valid_home", "valid_scm_conn", "valid_dev_conn"]
-        field = "valid"
-
         self.db.create_tags_table()
         records = self.db.get_valid_github_urls()
+        checkpoint = 0
+
         for record in records:
             checkpoint += 1
             if checkpoint % 1000 == 0:
@@ -65,11 +62,12 @@ class GetTags:
                     self.log.exception(e)
                     # TODO add to unresolved
                     continue
+                
+                self.update_rate_lim(data)
 
                 if res.status_code != 200:
                     self.log.error(f"Bad status code received ({res.status_code})!")
                     continue
-                self.update_rate_lim(data)
 
                 # Release
                 try:
@@ -77,15 +75,16 @@ class GetTags:
                         data, pkg, repo
                     )
                 except Exception as e:
-                    self.log.exception(e)
+                    self.log.exception(
+                        f"Repository likely does not exist! Request: ({repo.owner},{repo.name},{pkg.version})"
+                    )
                 release_exists = rel_name is not None
 
                 # Tag
                 try:
                     tag_exists = len(data["repository"]["refs"]["nodes"]) > 0
                 except Exception as e:
-                    self.log.exception(e)
-                    self.log.error(
+                    self.log.exception(
                         f"Repository likely does not exist! Request: ({repo.owner},{repo.name},{pkg.version})"
                     )
                     continue # Response doesn't contain all fields, go to next URL
@@ -99,6 +98,7 @@ class GetTags:
                 if release_exists or tag_exists:
                     self.db.insert_tag(
                         pkg,
+                        url,
                         tag_name,
                         tag_commit_hash,
                         rel_name,

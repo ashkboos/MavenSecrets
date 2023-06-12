@@ -36,6 +36,10 @@ class Database:
         return self.cur.fetchall()
 
     def get_valid_github_urls(self):
+        """
+        Gets all packages that have a valid github url and are not already in tags table.
+        This does not exclude packages that have failed before.
+        """
         self.execute(
             f"""
             SELECT groupid, artifactid, version, valid, valid_home, valid_scm_conn, valid_dev_conn
@@ -157,6 +161,7 @@ class Database:
             release_name TEXT,
             release_tag_name TEXT,
             release_commit_hash TEXT,
+            url TEXT,
             PRIMARY KEY (artifactid, groupid, version)
         )
         """
@@ -167,6 +172,7 @@ class Database:
     def insert_tag(
         self,
         pkg: PackageId,
+        url: str,
         tag_name=None,
         tag_commit_hash=None,
         release_name=None,
@@ -174,8 +180,8 @@ class Database:
         release_commit_hash=None,
     ):
         query = f"""
-        INSERT INTO tags(groupid, artifactid, version, tag_name, tag_commit_hash, release_name, release_tag_name, release_commit_hash)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        INSERT INTO tags(groupid, artifactid, version, tag_name, tag_commit_hash, release_name, release_tag_name, release_commit_hash, url)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ON CONFLICT DO NOTHING;
         """
         self.execute(
@@ -189,6 +195,7 @@ class Database:
                 release_name,
                 release_tag_name,
                 release_commit_hash,
+                url,
             ],
         )
         self.conn.commit()
