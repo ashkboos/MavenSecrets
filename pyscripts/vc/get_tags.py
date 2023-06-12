@@ -3,6 +3,7 @@ from time import sleep
 import requests
 from datetime import datetime
 from typing import Dict
+import difflib
 
 from database import Database
 from packageId import PackageId
@@ -19,7 +20,6 @@ class GetTags:
         self.rate_lim_remain = 5000
         self.rate_lim_reset = datetime.utcnow()
 
-    # TODO MATCH RELEASE USING SEQ. MATCHING ALGO
     def find_github_release(self):
         self.db.create_tags_table()
         records = self.db.get_valid_github_urls()
@@ -133,12 +133,14 @@ class GetTags:
         else:
             return None, None, None
 
-    def find_best_match(self, releases: list, pkg):
-        matches = [rel for rel in releases if rel.get("name") == pkg.version]
-        if len(matches) > 0:
-            return matches[0]
-        else:
-            return None
+    def find_best_match(self, releases: list, pkg: PackageId):
+        '''
+        returns the best release match given that version is a substring of the release name
+        '''
+        mapping = dict([(rel["name"], rel) for rel in releases if pkg.version in rel["name"]])
+        matches = difflib.get_close_matches(pkg.version, mapping.keys(), n=1, cutoff=0.1)
+        self.log.debug(f'{mapping}\nMatches= {matches}')
+        return mapping.get(matches[0]) if len(matches) > 0 else None
 
     def extract_release(self, release):
         rel_name = release["name"]
