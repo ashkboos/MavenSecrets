@@ -4,14 +4,12 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
-import nl.tudelft.mavensecrets.Field;
-import nl.tudelft.mavensecrets.extractors.Extractor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import nl.tudelft.mavensecrets.extractors.DependencyExtractor;
+import nl.tudelft.mavensecrets.Field;
 
 public class DependencyExtractorTest {
     private static Extractor extractor = null;
