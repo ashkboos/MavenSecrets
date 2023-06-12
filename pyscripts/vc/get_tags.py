@@ -48,11 +48,11 @@ class GetTags:
                     if not repo.valid:
                         self.log.error("Invalid url")
                         self.db.insert_error(pkg, url, f"(GET TAGS) Invalid URL!")
-                        continue # invalid repo, try next URL
+                        continue  # invalid repo, try next URL
                 except Exception as e:
                     self.log.error(e)
                     self.db.insert_error(pkg, url, f"(GET TAGS) {e}!")
-                    continue # cannot parse repo owner and name, try next URL
+                    continue  # cannot parse repo owner and name, try next URL
 
                 # TODO retry on rate_limit message (shouldn't happen though)
                 try:
@@ -63,8 +63,6 @@ class GetTags:
                     self.log.exception(e)
                     # TODO add to unresolved
                     continue
-                
-                self.update_rate_lim(data)
 
                 if res.status_code != 200:
                     self.log.error(f"Bad status code received ({res.status_code})!")
@@ -88,7 +86,7 @@ class GetTags:
                     self.log.exception(
                         f"Repository likely does not exist! Request: ({repo.owner},{repo.name},{pkg.version})"
                     )
-                    continue # Response doesn't contain all fields, go to next URL
+                    continue  # Response doesn't contain all fields, go to next URL
 
                 if tag_exists:
                     tag_commit_hash, tag_name = self.extract_tag(data)
@@ -106,7 +104,7 @@ class GetTags:
                         rel_tag_name,
                         rel_commit_hash,
                     )
-                    break # Don't try with the other URLS, go to next package
+                    break  # Don't try with the other URLS, go to next package
 
                 sleep(0.05)
 
@@ -135,12 +133,16 @@ class GetTags:
             return None, None, None
 
     def find_best_match(self, releases: list, pkg: PackageId):
-        '''
+        """
         returns the best release match given that version is a substring of the release name
-        '''
-        mapping = dict([(rel["name"], rel) for rel in releases if pkg.version in rel["name"]])
-        matches = difflib.get_close_matches(pkg.version, mapping.keys(), n=1, cutoff=0.1)
-        self.log.debug(f'{mapping}\nMatches= {matches}')
+        """
+        mapping = dict(
+            [(rel["name"], rel) for rel in releases if pkg.version in rel["name"]]
+        )
+        matches = difflib.get_close_matches(
+            pkg.version, mapping.keys(), n=1, cutoff=0.1
+        )
+        self.log.debug(f"{mapping}\nMatches= {matches}")
         return mapping.get(matches[0]) if len(matches) > 0 else None
 
     def extract_release(self, release):
@@ -156,7 +158,7 @@ class GetTags:
 
     def make_request(self, owner: str, repo: str, version: str, cursor: str = None):
         self.check_rate_lim()
-        self.log.debug(f'Making request for {owner}:{repo}:{version}, cursor={cursor}')
+        self.log.debug(f"Making request for {owner}:{repo}:{version}, cursor={cursor}")
         token = self.config.GITHUB_API_KEY
         query = """
         query ($owner: String!, $repo: String!, $version: String!, $cursor: String) {
@@ -207,16 +209,18 @@ class GetTags:
         res = requests.post(
             "https://api.github.com/graphql", json=payload, headers=headers
         )
+        self.update_rate_lim(res)
         return res
 
-    def update_rate_lim(self, data):
+    def update_rate_lim(self, res: requests.Response):
+        data = res.json()["data"]
         try:
             self.rate_lim_remain = data["rateLimit"]["remaining"]
             date_string = data["rateLimit"]["resetAt"]
             self.rate_lim_reset = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
             self.log.debug(f"Rate Lim Remaining: {self.rate_lim_remain}")
-        except KeyError as e:
-            self.log.error("Rate lim response missing!")
+        except Exception as e:
+            self.log.exception(f"Rate lim response missing!\nData:{data}")
 
     def check_rate_lim(self):
         if self.rate_lim_remain <= 5:
