@@ -24,6 +24,7 @@ class GetTags:
         self.db.create_tags_table()
         records = self.db.get_valid_github_urls()
         checkpoint = 0
+        self.log.info(f"Retrieved {len(records)} packages that need to be checked")
 
         for record in records:
             checkpoint += 1

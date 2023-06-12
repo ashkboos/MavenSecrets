@@ -21,6 +21,7 @@ class VerifyHost:
     def verify_hosts(self):
         self.db.create_err_table()
         records = self.db.get_all_unprocessed()
+        self.log.info(f"Retrieved {len(records)} packages that need to be verified")
         checkpoint = 0
 
         with ThreadPoolExecutor(max_workers=16) as executor:
