@@ -27,12 +27,14 @@ class GetTags:
         self.log.info(f"Retrieved {len(records)} packages that need to be checked")
 
         for record in records:
-            checkpoint += 1
-            if checkpoint % 1000 == 0:
-                self.log.info(f"Checkpoint: Processed {checkpoint} packages...")
             rel_name, rel_tag_name, rel_commit_hash = None, None, None
             tag_name, tag_commit_hash = None, None
             release_exists, tag_exists = False, False
+            sleep(0.05)
+
+            checkpoint += 1
+            if checkpoint % 1000 == 0:
+                self.log.info(f"Checkpoint: Processed {checkpoint} packages...")
             pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
             urls = [
                 record["valid"],
@@ -105,8 +107,8 @@ class GetTags:
                         rel_commit_hash,
                     )
                     break  # Don't try with the other URLS, go to next package
-
-                sleep(0.05)
+                else:
+                    self.db.insert_tag(pkg)
 
     def search_release(self, data, pkg: PackageId, repo):
         releases: list = data["repository"]["releases"]["nodes"]

@@ -33,7 +33,7 @@ class VerifyHost:
                 success = future.result()
                 checkpoint += 1
                 if checkpoint % 1000 == 0:
-                    self.log.info(f'Checkpoint: Processed {checkpoint} packages...')
+                    self.log.info(f"Checkpoint: Processed {checkpoint} packages...")
 
             self.log.info("All done. Thread Pool shutting down...")
 

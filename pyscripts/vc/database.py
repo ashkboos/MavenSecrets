@@ -172,7 +172,7 @@ class Database:
     def insert_tag(
         self,
         pkg: PackageId,
-        url: str,
+        url=None,
         tag_name=None,
         tag_commit_hash=None,
         release_name=None,
