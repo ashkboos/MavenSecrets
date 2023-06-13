@@ -225,10 +225,10 @@ class Database:
     # TODO make this a batch OP
     def update_validity(self, field: str, pkg: PackageId, url: str):
         query = f"""
-        UPDATE {self.HOST_TABLE} SET {field} = '{url}'
-        WHERE groupid='{pkg.groupid}' AND artifactid='{pkg.artifactid}' AND version='{pkg.version}'
+        UPDATE {self.HOST_TABLE} SET {field} = %s
+        WHERE groupid=%s AND artifactid=%s AND version=%s
         """
-        self.execute(query)
+        self.execute(query, [url, pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
     # TODO make this a batch OP

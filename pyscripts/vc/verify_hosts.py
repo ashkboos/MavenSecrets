@@ -65,7 +65,7 @@ class VerifyHost:
             for convert_func in self.funcs:
                 converted_url, changed = convert_func(url)
                 if not changed:
-                    continue
+                    continue  # regex didn't change the url. Don't try the same URL again
 
                 err = self.try_with(converted_url)
                 if err is None:
