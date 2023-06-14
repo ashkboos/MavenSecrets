@@ -5,15 +5,15 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - db
+      - nielsdb
     volumes:
       - type: bind
         source: $SOURCE_M2 # set this in '.env' in the same directory as docker-compose.yml
         target: /root/.m2
-  db:
+  nielsdb:
     image: "postgres:15.2"
     restart: always
     environment:
       POSTGRES_PASSWORD: SuperSekretPassword
     ports:
-      - "5432:5432"
+      - "5469:5432"
