@@ -29,4 +29,9 @@ public class AllPackageSelector implements PackageSelector {
     public Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws IOException, SQLException {
         return Collections.unmodifiableCollection(db.getArtifactIds(page, pageSize));
     }
+
+    @Override
+    public Collection<? extends ArtifactId> readStraightFromSelectedTable(int page, int pageSize) throws SQLException {
+        return Collections.unmodifiableCollection(db.getArtifactIds(page, pageSize));
+    }
 }
