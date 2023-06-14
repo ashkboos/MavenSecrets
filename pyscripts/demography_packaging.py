@@ -1,3 +1,4 @@
+import ast
 import collections
 import statistics
 
@@ -200,16 +201,21 @@ def print_difference_with_individual_freq(cur):
     print()
 
     total_frequency = 0
+    unique_pairs = set()
     for row in results:
         packagingtypefrompom = row[0]
         packagingtypefromrepo = row[1]
         frequency = row[2]
         total_frequency += frequency
+        unique_pair = (packagingtypefrompom, packagingtypefromrepo)
+        unique_pairs.add(unique_pair)
         print(f'Packaging type from POM: {packagingtypefrompom}, Packaging type from INDEX: {packagingtypefromrepo}, '
               f'Frequency: {frequency}')
     print()
 
     print(f'Total Frequency of differences: {total_frequency}')
+    unique_pair_count = len(unique_pairs)
+    print(f"Number of unique pairs: {unique_pair_count}")
     print('---x----')
     print()
 
@@ -245,6 +251,9 @@ def checksum_analysis(cur):
     # Frequency of each checksum
     print_frequency_of_checksums(cur)
 
+    # Number of checksum types for each package
+    print_frequency_number_of_checksum(cur)
+
     # Frequency of each checksum in every year
     print_frequency_of_checksums_over_years(cur)
 
@@ -270,6 +279,42 @@ def print_frequency_of_checksums(cur):
     print(f'Total count:{total_count}')
     print('---x----')
     print()
+
+
+def print_frequency_number_of_checksum(cursor):
+    query = "SELECT allchecksumfromrepo FROM packages WHERE packages.allpackagingtypefromrepo != '[]'"
+    cursor.execute(query)
+
+    # Fetch all rows from the result
+    rows = cursor.fetchall()
+
+    # Create a dictionary to store the count of packages for each number of checksum types
+    package_count = {}
+
+    # Words to exclude from checksum types
+    exclude_words = [".xml", ".jar", ".pom", ".asc"]
+
+    # Iterate through each row and count the distinct number of types
+    for row in rows:
+        input_string = row[0]  # Retrieve the input string from the database
+
+        if input_string is None:
+            continue
+
+        # Evaluate the input string as a literal list
+        checksum_list = input_string[1:-1].split(", ")
+
+        # Exclude the specified words from the checksum types
+        filtered_checksum_list = [checksum_type for checksum_type in checksum_list if
+                                  checksum_type not in exclude_words]
+
+        # Calculate the count of distinct checksum types
+        num_types = len(set(filtered_checksum_list))
+        package_count[num_types] = package_count.get(num_types, 0) + 1
+
+    # Display the count of packages for each number of checksum types
+    for num_types, count in package_count.items():
+        print(f"Number of checksum types: {num_types} | Number of packages: {count}")
 
 
 def print_frequency_of_checksums_over_years(cur):
