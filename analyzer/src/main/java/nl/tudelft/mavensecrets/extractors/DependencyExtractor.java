@@ -45,7 +45,7 @@ public class DependencyExtractor implements Extractor {
             }
         }
         String id = pkg.id().group() + ":" + pkg.id().artifact() + ":" + pkgType + ":" + pkg.id().version();
-        int trans = resolve(id);
+        int trans = timeoutResolve(id);
 //        int trans = resolves(pkg.id().group(), pkg.id().artifact(), pkg.id().version());
         int a = trans - 1;
         if(a == -1) a = 0;
