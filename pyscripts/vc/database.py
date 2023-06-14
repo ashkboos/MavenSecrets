@@ -231,13 +231,12 @@ class Database:
         self.execute(query, [url, pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
-    # TODO make this a batch OP
     def mark_processed(self, pkg: PackageId):
         query = f"""
         UPDATE {self.HOST_TABLE} SET processed = true
-        WHERE groupid='{pkg.groupid}' AND artifactid='{pkg.artifactid}' AND version='{pkg.version}'
+        WHERE groupid=%s AND artifactid=%s AND version=%s
         """
-        self.execute(query)
+        self.execute(query, [pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
     def get_hosts_with_tags(self):

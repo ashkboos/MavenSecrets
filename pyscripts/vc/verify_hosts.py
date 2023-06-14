@@ -30,10 +30,10 @@ class VerifyHost:
             ]
             self.log.info("Tasks submitted...")
             for future in as_completed(futures):
-                success = future.result()
                 checkpoint += 1
-                if checkpoint % 1000 == 0:
-                    self.log.info(f"Checkpoint: Processed {checkpoint} packages...")
+                if checkpoint % 10 == 0:
+                    self.log.critical(f"Checkpoint: Processed {checkpoint} packages...")
+                success = future.result()
 
             self.log.info("All done. Thread Pool shutting down...")
 

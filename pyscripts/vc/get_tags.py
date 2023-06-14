@@ -1,6 +1,6 @@
 import logging
 from time import sleep
-import requests
+import requests_cache
 from datetime import datetime
 from typing import Dict
 import difflib
@@ -15,6 +15,7 @@ class GetTags:
     def __init__(self, db: Database, config: Config):
         self.log = logging.getLogger(__name__)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
+        self.cache = requests_cache.CachedSession('tags_cache', backend='sqlite', allowable_methods=["GET","POST"])
         self.db = db
         self.config = config
         self.rate_lim_remain = 5000
@@ -208,13 +209,13 @@ class GetTags:
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         }
-        res = requests.post(
+        res = self.cache.post(
             "https://api.github.com/graphql", json=payload, headers=headers
         )
         self.update_rate_lim(res)
         return res
 
-    def update_rate_lim(self, res: requests.Response):
+    def update_rate_lim(self, res: requests_cache.Response):
         data = res.json()["data"]
         try:
             self.rate_lim_remain = data["rateLimit"]["remaining"]
