@@ -31,7 +31,7 @@ class GetTags:
             rel_name, rel_tag_name, rel_commit_hash = None, None, None
             tag_name, tag_commit_hash = None, None
             release_exists, tag_exists = False, False
-            sleep(0.05)
+            sleep(0.01)
 
             checkpoint += 1
             if checkpoint % 1000 == 0:
