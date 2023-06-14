@@ -45,7 +45,7 @@ public class DependencyExtractor implements Extractor {
             }
         }
         String id = pkg.id().group() + ":" + pkg.id().artifact() + ":" + pkgType + ":" + pkg.id().version();
-        int trans = timeoutResolve(id);
+        int trans = resolve(id);
 //        int trans = resolves(pkg.id().group(), pkg.id().artifact(), pkg.id().version());
         int a = trans - 1;
         if(a == -1) a = 0;
@@ -56,23 +56,23 @@ public class DependencyExtractor implements Extractor {
     }
 
 
-    private static int timeoutResolve(String row) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() -> {
-            // Perform your method call here
-            return resolve(row);
-        }, executor);
-
-        try {
-            int result = future.get(600, TimeUnit.SECONDS); // Timeout set to 600 seconds
-            return result;
-        } catch (TimeoutException | InterruptedException | ExecutionException e) {
-            return -1;
-        } finally {
-            executor.shutdown(); // Shutdown the executor
-        }
-    }
+//    private static int timeoutResolve(String row) {
+//        ExecutorService executor = Executors.newSingleThreadExecutor();
+//
+//        CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() -> {
+//            // Perform your method call here
+//            return resolve(row);
+//        }, executor);
+//
+//        try {
+//            int result = future.get(600, TimeUnit.SECONDS); // Timeout set to 600 seconds
+//            return result;
+//        } catch (TimeoutException | InterruptedException | ExecutionException e) {
+//            return -1;
+//        } finally {
+//            executor.shutdown(); // Shutdown the executor
+//        }
+//    }
 
 
     private static int resolve(
