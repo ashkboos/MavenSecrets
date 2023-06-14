@@ -3,13 +3,13 @@ package nl.tudelft.mavensecrets.selection;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 
 import nl.tudelft.mavensecrets.ArtifactId;
 
 /**
  * A supplier of packages to analyze.
  */
-@FunctionalInterface
 public interface PackageSelector {
 
     /**
@@ -21,4 +21,6 @@ public interface PackageSelector {
      * @throws SQLException If a database error occurs.
      */
     Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws IOException, SQLException;
+
+    Collection<? extends ArtifactId> readStraightFromSelectedTable(int page, int pageSize) throws SQLException;
 }

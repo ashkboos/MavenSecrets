@@ -76,7 +76,7 @@ public class App {
 
         try (var runner = builder.build(db)) {
             Collection<? extends ArtifactId> artifacts;
-            for (int i = 0; (artifacts = selector.getArtifacts(i, PAGE_SIZE)).size() > 0; i++) {
+            for (int i = 0; (artifacts = selector.readStraightFromSelectedTable(i, PAGE_SIZE)).size() > 0; i++) {
                 runner.run(maven, artifacts, config.getThreads());
             }
         } catch (IOException | SQLException exception) {

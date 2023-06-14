@@ -41,6 +41,11 @@ public class StratifiedSampleSelector implements PackageSelector {
         return Collections.unmodifiableCollection(db.getSelectedPkgs(page, pageSize));
     }
 
+    @Override
+    public Collection<? extends ArtifactId> readStraightFromSelectedTable(int page, int pageSize) throws SQLException {
+        return Collections.unmodifiableCollection(db.getSelectedPkgs(page, pageSize));
+    }
+
     /**
      * Generate the dataset.
      * Behaviour of repeated method calls is undefined.
