@@ -24,6 +24,7 @@ class Database:
             "dev_conn_url": ("url_dev_conn", "host_dev_conn"),
             "scm_conn_url": ("url_scm_conn", "host_scm_conn"),
         }
+        self.BUILDS_TABLE = "builds"
 
     def get_urls(self, fieldname: str):
         self.execute(
@@ -251,11 +252,74 @@ class Database:
         JOIN packages p on t.groupid = p.groupid
             AND t.artifactid = p.artifactid
             AND t.version = p.version
+        WHERE output_timestamp_prop IS NOT NULL
         ORDER BY t.version
         """
         # TODO remove the ORDER BY!!!!
         self.execute(query)
         return self.cur.fetchall()
+
+    def create_builds_table(self):
+        self.execute(
+            f"""
+        CREATE TABLE IF NOT EXISTS {self.BUILDS_TABLE}
+        (
+            groupid       TEXT NOT NULL,
+            artifactid    TEXT NOT NULL,
+            version       TEXT NOT NULL,
+            jdk           TEXT NOT NULL,
+            newline       TEXT NOT NULL,
+            tool          TEXT NOT NULL,
+            buildspec_found BOOLEAN,
+            build_success BOOLEAN,
+            stdout        TEXT,
+            stderr        TEXT,
+            ok_files      TEXT[],
+            ko_files      TEXT[],
+            command       TEXT,
+            PRIMARY KEY (version, artifactid, groupid, tool, newline, jdk)
+        );
+        """
+        )
+        self.conn.commit()
+
+    def insert_build(
+        self,
+        pkg: PackageId,
+        jdk,
+        newline,
+        tool,
+        buildspec_found,
+        build_success,
+        stdout=None,
+        stderr=None,
+        ok_files=None,
+        ko_files=None,
+        command=None,
+    ):
+        query = f"""
+        INSERT INTO {self.BUILDS_TABLE} (groupid, artifactid, version, jdk, newline, tool, 
+        buildspec_found, build_success, stdout, stderr, ok_files, ko_files, command)
+        VALUES (%s{12*",%s"}); 
+        """
+        self.execute(
+            query,
+            [
+                pkg.groupid,
+                pkg.artifactid,
+                pkg.version,
+                jdk,
+                newline,
+                tool,
+                buildspec_found,
+                build_success,
+                stdout,
+                stderr,
+                ok_files,
+                ko_files,
+                command,
+            ],
+        )
 
     def execute(self, query: str, vars: list = None):
         if vars is None:

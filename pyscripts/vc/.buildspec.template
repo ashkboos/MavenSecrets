@@ -19,7 +19,8 @@ newline={{ newline }}
 command="mvn -Papache-release clean package -DskipTests -Dmaven.javadoc.skip -Dgpg.skip"
 
 # Location of the buildinfo file generated during rebuild to record output fingerprints
-buildinfo=target/${artifactId}-${version}.buildinfo
+# buildinfo=target/${artifactId}-${version}.buildinfo
+buildinfo=target/*.buildinfo
 
 # if the release is finally not reproducible, link to an issue tracker entry if one was created
 #diffoscope=${artifactId}-${version}.diffoscope
