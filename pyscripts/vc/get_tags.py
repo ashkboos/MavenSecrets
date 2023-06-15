@@ -22,6 +22,7 @@ class GetTags:
         self.config = config
         self.rate_lim_remain = 5000
         self.rate_lim_reset = datetime.utcnow()
+        self.update_rate_lim()
 
     def find_github_release(self):
         self.db.create_tags_table()
@@ -139,7 +140,7 @@ class GetTags:
 
     def find_best_match(self, releases: list, pkg: PackageId):
         """
-        returns the best release match given that version is a substring of the release name
+        Returns the best release match given that version is a substring of the release name.
         """
         mapping = dict(
             [(rel["name"], rel) for rel in releases if pkg.version in rel["name"]]
@@ -217,7 +218,25 @@ class GetTags:
         self.update_rate_lim(res)
         return res
 
-    def update_rate_lim(self, res: requests_cache.Response):
+    def update_rate_lim(self, res: requests_cache.Response = None):
+        if res is None:
+            query = """
+            query { 
+              rateLimit {
+                resetAt
+                remaining
+              }
+            }
+            """
+            payload = {"query": query}
+            headers = {
+                "Authorization": f"Bearer {self.config.GITHUB_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            res = self.cache.post(
+                "https://api.github.com/graphql", json=payload, headers=headers
+            )
+
         data = res.json()["data"]
         try:
             self.rate_lim_remain = data["rateLimit"]["remaining"]
@@ -228,7 +247,7 @@ class GetTags:
             self.log.exception(f"Rate lim response missing!\nData:{data}")
 
     def check_rate_lim(self):
-        if self.rate_lim_remain <= 5:
+        while self.rate_lim_remain <= 5:
             timenow = datetime.utcnow()
             sleep_time = (self.rate_lim_reset - timenow).total_seconds()
             self.log.info(
@@ -238,6 +257,7 @@ class GetTags:
                 sleep(sleep_time + 30)  # +30s to account for possible time desync
             else:
                 sleep(60)
+            self.update_rate_lim()
 
 
 # exceptions
