@@ -15,7 +15,9 @@ class GetTags:
     def __init__(self, db: Database, config: Config):
         self.log = logging.getLogger(__name__)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
-        self.cache = requests_cache.CachedSession('tags_cache', backend='sqlite', allowable_methods=["GET","POST"])
+        self.cache = requests_cache.CachedSession(
+            "tags_cache", backend="sqlite", allowable_methods=["GET", "POST"]
+        )
         self.db = db
         self.config = config
         self.rate_lim_remain = 5000
@@ -232,7 +234,10 @@ class GetTags:
             self.log.info(
                 f"Waiting for rate limit...\nSleeping for {sleep_time} secs.\nCurrent time: {timenow}\nReset at: {self.rate_lim_reset}"
             )
-            sleep(sleep_time + 30)  # +30s to account for possible time desync
+            if sleep_time > 0:
+                sleep(sleep_time + 30)  # +30s to account for possible time desync
+            else:
+                sleep(60)
 
 
 # exceptions
