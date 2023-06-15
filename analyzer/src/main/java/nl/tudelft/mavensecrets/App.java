@@ -48,11 +48,12 @@ public class App {
 
         long startTime = System.currentTimeMillis();
 
-        // Databse
+        // Database
         Database db;
         try {
             db = openDatabase(config.getDatabaseConfig());
             db.createUnresolvedTable();
+            db.createNewExtensionTable();
         } catch (SQLException exception) {
             LOGGER.error("Could not open database", exception);
             return;
