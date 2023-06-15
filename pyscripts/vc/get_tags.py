@@ -234,8 +234,7 @@ class GetTags:
                 "Content-Type": "application/json",
             }
             res = self.cache.post(
-                "https://api.github.com/graphql", json=payload, headers=headers
-            )
+                "https://api.github.com/graphql", json=payload, headers=headers, expire_after=requests_cache.DO_NOT_CACHE)
 
         data = res.json()["data"]
         try:
