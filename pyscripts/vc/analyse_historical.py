@@ -1,5 +1,6 @@
 import logging
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import pandas as pd
 import numpy as np
 
@@ -45,11 +46,19 @@ class HistoricalAnalyzer:
             )
             df = pd.concat([df, others])
             df = df[~df.isin(below)].dropna()
+        
+        df = df.sort_values(by=['year','market_share'], ascending=[True,False])
+        # print(df)
 
         pivot_df = df.pivot(index="year", columns="host", values="market_share")
         print(pivot_df)
-        pivot_df.plot(kind="area", stacked=True, colormap=cmap)
-        # TODO save to file instead of showing
+        ax = pivot_df.plot.bar(stacked=True, colormap=cmap, width=0.95)
+        ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
+        ax.yaxis.set_major_locator(mtick.MultipleLocator(base=0.1))
+        # # TODO save to file instead of showing
+        # with open(f'data_{field}.csv', 'w') as f:
+        #     pivot_df.to_csv(f)
+
         plt.show()
 
     def gen_test_data(self):
