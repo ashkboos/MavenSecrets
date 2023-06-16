@@ -1,4 +1,5 @@
 from builtins import ValueError
+import glob
 import logging
 import subprocess
 import os
@@ -32,12 +33,10 @@ class BuildPackages:
             buildspecs = self.buildspec_exists(pkg)
             if len(buildspecs) > 0:
                 self.log.debug(f"Buildspec found in {buildspecs[0]}!")
-                build_result = self.build_from_existing(pkg, buildspecs[0])
+                self.build_from_existing(pkg, buildspecs[0])
             else:
-                continue
                 try:
-                    # TODO deal with changing params
-                    build_result = self.build_from_scratch(pkg, record)
+                    self.build_from_scratch(pkg, record)
                 except ValueError as e:
                     self.log.debug(e)
                     continue
@@ -52,30 +51,24 @@ class BuildPackages:
 
         try:
             build_spec = self.parse_buildspec(buildspec_path)
-        except ValueError as e:
+        except ValueError:
             self.log.error("Could not parse buildspec!")
-        build_result = self.build(buildspec_path)
+        build_result = self.build(buildspec_path, pkg)
         self.db.insert_build(build_spec, build_result, from_existing=True)
 
+    # TODO deal with changing params
     def build_from_scratch(self, pkg: PackageId, record: DictRow):
-        urls = [
-            record["valid"],
-            record["valid_home"],
-            record["valid_scm_conn"],
-            record["valid_dev_conn"],
-        ]
+        url = record["url"]
         tags = [record["tag_name"], record["release_tag_name"]]
-        # TODO parse the major version
+        # TODO parse the major version from manifest_2 field
         # jdks = [record["java_version_manifest_3"], record["java_version_manifest_2"]]
         jdks = [self.convert_manifest_3(record["java_version_manifest_3"])]
 
         notNone = lambda x: x is not None
-        urls = list(filter(notNone, urls))
         tags = list(filter(notNone, tags))
         jdks = list(filter(notNone, jdks))
 
-        if len(urls) > 0 and len(tags) > 0 and len(jdks) > 0:
-            url = urls[0]
+        if len(tags) > 0 and len(jdks) > 0:
             # TODO maybe try both tags if they are not the same
             tag = tags[0]
             jdk = jdks[0]
@@ -83,9 +76,11 @@ class BuildPackages:
             raise ValueError(f"Missing some build params.")
         for newline in ["lf", "crlf"]:
             buildspec_path = self.create_buildspec(pkg, url, tag, "mvn", jdk, newline)
-            self.build(buildspec_path)
+            buildspec = self.parse_buildspec(buildspec_path)
+            build_result = self.build(buildspec_path, pkg)
+            self.db.insert_build(buildspec, build_result, False)
 
-    def build(self, buildspec_path):
+    def build(self, buildspec_path, pkg: PackageId):
         # process = subprocess.run(["./rebuild.sh", buildspec_path])
         process = subprocess.run(
             ["./rebuild.sh", buildspec_path],
@@ -98,10 +93,39 @@ class BuildPackages:
         self.log.debug("-------STDERR-------")
         self.log.debug(process.stderr.decode())
         self.log.debug("-------ENDSTDERR-------")
-        # TODO
-        return Build_Result(
-            None, process.stdout.decode(), process.stderr.decode(), [], []
-        )
+
+        dir_path = os.path.dirname(buildspec_path)
+        search_pattern = os.path.join(dir_path, "*.buildcompare")
+        files = glob.glob(search_pattern)
+        if len(files) == 0:
+            return Build_Result(
+                False, process.stdout.decode(), process.stderr.decode(), None, None
+            )
+        self.log.debug(f"{len(files)} .buildcompare files found:\n{files}")
+        try:
+            with open(files[0], "r") as file:
+                result = {}
+                for line in file:
+                    try:
+                        key, value = line.strip().split("=", 1)
+                    except ValueError:
+                        continue
+                    if key in ["ok", "ko"]:
+                        continue
+                    if key in ["okFiles", "koFiles"]:
+                        result[key] = value.strip('"').split(" ")
+                    else:
+                        result[key] = value.strip('"')
+                okFiles, koFiles = result.get("okFiles"), result.get("koFiles")
+            return Build_Result(
+                True, process.stdout.decode(), process.stderr.decode(), okFiles, koFiles
+            )
+
+        except (FileNotFoundError, KeyError):
+            self.log.debug("File not found or malformed. Build (probably) failed")
+            return Build_Result(
+                False, process.stdout.decode(), process.stderr.decode(), None, None
+            )
 
     # TODO if version doesn't exist but other versions exist, use those as templates
     # TODO investigate what happens if git clone with ssh requires fingerprint to continue

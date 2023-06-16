@@ -245,19 +245,16 @@ class Database:
     def get_hosts_with_tags(self):
         query = f"""
         SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
-               valid, valid_home, valid_dev_conn, valid_scm_conn, java_version_manifest_2,
+               t.url, java_version_manifest_2,
                java_version_manifest_3, java_version_class_major, output_timestamp_prop
-        FROM tags AS t
-        JOIN hosts h on t.groupid = h.groupid
-            AND t.artifactid = h.artifactid
-            AND t.version = h.version
-        JOIN packages p on t.groupid = p.groupid
+        FROM {self.TAGS_TABLE} AS t
+        JOIN {self.PKG_TABLE} p on t.groupid = p.groupid
             AND t.artifactid = p.artifactid
             AND t.version = p.version
         WHERE output_timestamp_prop IS NOT NULL
-        ORDER BY t.version
+        AND 
+        t.url IS NOT NULL
         """
-        # TODO remove the ORDER BY!!!!
         self.execute(query)
         return self.cur.fetchall()
 
@@ -272,14 +269,14 @@ class Database:
             jdk           TEXT NOT NULL,
             newline       TEXT NOT NULL,
             tool          TEXT NOT NULL,
-            buildspec_found BOOLEAN,
+            from_existing BOOLEAN,
             build_success BOOLEAN,
             stdout        TEXT,
             stderr        TEXT,
             ok_files      TEXT[],
             ko_files      TEXT[],
             command       TEXT,
-            PRIMARY KEY (version, artifactid, groupid, tool, newline, jdk)
+            PRIMARY KEY (version, artifactid, groupid, tool, newline, jdk, from_existing)
         );
         """
         )
@@ -288,8 +285,8 @@ class Database:
     def insert_build(self, bs: Build_Spec, br: Build_Result, from_existing: bool):
         query = f"""
         INSERT INTO {self.BUILDS_TABLE} (groupid, artifactid, version, jdk, newline, tool, 
-        buildspec_found, build_success, stdout, stderr, ok_files, ko_files, command)
-        VALUES (%s{12*",%s"}); 
+        from_existing, build_success, stdout, stderr, ok_files, ko_files, command)
+        VALUES (%s{12*",%s"}) ON CONFLICT DO NOTHING; 
         """
         self.execute(
             query,
