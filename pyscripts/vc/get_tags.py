@@ -6,8 +6,8 @@ from typing import Dict
 import difflib
 
 from database import Database
-from packageId import PackageId
-from config import Config
+from common.packageId import PackageId
+from common.config import Config
 from utils import parse_plus
 
 
@@ -234,7 +234,11 @@ class GetTags:
                 "Content-Type": "application/json",
             }
             res = self.cache.post(
-                "https://api.github.com/graphql", json=payload, headers=headers, expire_after=requests_cache.DO_NOT_CACHE)
+                "https://api.github.com/graphql",
+                json=payload,
+                headers=headers,
+                expire_after=requests_cache.DO_NOT_CACHE,
+            )
 
         data = res.json()["data"]
         try:

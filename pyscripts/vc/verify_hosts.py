@@ -5,8 +5,8 @@ from time import sleep
 from typing import Dict
 
 from database import Database
-from packageId import PackageId
-from config import Config
+from common.packageId import PackageId
+from common.config import Config
 from utils import *
 
 

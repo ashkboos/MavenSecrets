@@ -1,6 +1,6 @@
 import logging
 
-from config import Config
+from common.config import Config
 from database import Database
 from extract_hosts import Extractor
 from analyse_historical import HistoricalAnalyzer

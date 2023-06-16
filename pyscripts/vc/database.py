@@ -2,7 +2,9 @@ import logging
 import psycopg2
 from psycopg2.extras import DictCursor, execute_batch
 
-from packageId import PackageId
+from common.packageId import PackageId
+from common.build_result import Build_Result
+from common.build_spec import Build_Spec
 
 
 class Database:
@@ -283,20 +285,7 @@ class Database:
         )
         self.conn.commit()
 
-    def insert_build(
-        self,
-        pkg: PackageId,
-        jdk,
-        newline,
-        tool,
-        buildspec_found,
-        build_success,
-        stdout=None,
-        stderr=None,
-        ok_files=None,
-        ko_files=None,
-        command=None,
-    ):
+    def insert_build(self, bs: Build_Spec, br: Build_Result, from_existing: bool):
         query = f"""
         INSERT INTO {self.BUILDS_TABLE} (groupid, artifactid, version, jdk, newline, tool, 
         buildspec_found, build_success, stdout, stderr, ok_files, ko_files, command)
@@ -305,21 +294,22 @@ class Database:
         self.execute(
             query,
             [
-                pkg.groupid,
-                pkg.artifactid,
-                pkg.version,
-                jdk,
-                newline,
-                tool,
-                buildspec_found,
-                build_success,
-                stdout,
-                stderr,
-                ok_files,
-                ko_files,
-                command,
+                bs.groupid,
+                bs.artifactid,
+                bs.version,
+                bs.jdk,
+                bs.newline,
+                bs.tool,
+                from_existing,
+                br.build_success,
+                br.stdout,
+                br.stderr,
+                br.ok_files,
+                br.ko_files,
+                bs.command,
             ],
         )
+        self.conn.commit()
 
     def execute(self, query: str, vars: list = None):
         if vars is None:

@@ -2,12 +2,15 @@ from builtins import ValueError
 import logging
 import subprocess
 import os
+import shutil
 from jinja2 import Template
 from psycopg2.extras import DictRow
 
 from database import Database
-from packageId import PackageId
-from config import Config
+from common.packageId import PackageId
+from common.config import Config
+from common.build_result import Build_Result
+from common.build_spec import Build_Spec
 
 
 class BuildPackages:
@@ -28,61 +31,31 @@ class BuildPackages:
             pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
             buildspecs = self.buildspec_exists(pkg)
             if len(buildspecs) > 0:
-                self.build_from_existing(pkg, buildspecs[0])
+                self.log.debug(f"Buildspec found in {buildspecs[0]}!")
+                build_result = self.build_from_existing(pkg, buildspecs[0])
             else:
                 continue
                 try:
-                    self.build_from_scratch(pkg, record)
+                    # TODO deal with changing params
+                    build_result = self.build_from_scratch(pkg, record)
                 except ValueError as e:
-                    # self.log.debug(e)
-                    pass
+                    self.log.debug(e)
+                    continue
 
-    def build_from_existing(self, pkg: PackageId, buildspec_path):
-        self.log.debug(f"{pkg.groupid}:{pkg.artifactid}:{pkg.version}")
-        self.log.debug(f"Buildspec found in {buildspec_path}!")
-        # TODO build with buildspec and store differently in table
+    def build_from_existing(self, pkg: PackageId, src_buildspec):
+        # Copy buildspec to research/ folder
+        dest = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        buildspec_path = os.path.join(dest, f"{pkg.artifactid}-{pkg.version}.buildspec")
+        shutil.copyfile(src_buildspec, buildspec_path)
+
         try:
-            build_params = self.parse_buildspec(buildspec_path)
+            build_spec = self.parse_buildspec(buildspec_path)
         except ValueError as e:
             self.log.error("Could not parse buildspec!")
-
-    def clone_rep_central(self):
-        clone_dir = "./temp/builder"
-        url = "https://github.com/jvm-repo-rebuild/reproducible-central.git"
-        process = subprocess.run(["git", "clone", url, clone_dir])
-        if process.returncode != 0:
-            self.log.error("Problem encountered")
-
-    def create_buildspec(
-        self, pkg: PackageId, git_repo, git_tag, tool, jdk, newline
-    ) -> str:
-        values = {
-            "groupId": pkg.groupid,
-            "artifactId": pkg.artifactid,
-            "version": pkg.version,
-            "gitRepo": git_repo,
-            "gitTag": git_tag,
-            "tool": tool,
-            "jdk": jdk,
-            "newline": newline,
-        }
-
-        with open(
-            os.path.join(os.getcwd(), "..", "..", ".buildspec.template"), "r"
-        ) as file:
-            content = file.read()
-        template = Template(content)
-        rendered = template.render(values)
-
-        path = (
-            f"research/{values['groupId']}-{values['artifactId']}-{values['version']}/"
-        )
-        if not os.path.exists(path):
-            os.makedirs(path)
-        filepath = os.path.join(path, ".buildspec")
-        with open(filepath, "w") as file:
-            file.write(rendered)
-        return filepath
+        build_result = self.build(buildspec_path)
+        self.db.insert_build(build_spec, build_result, from_existing=True)
 
     def build_from_scratch(self, pkg: PackageId, record: DictRow):
         urls = [
@@ -107,14 +80,13 @@ class BuildPackages:
             tag = tags[0]
             jdk = jdks[0]
         else:
-            raise ValueError(
-                f"Missing some build params. Only received\nURLS:{urls},\nTags:{tags},\nJDKs:{jdks}"
-            )
+            raise ValueError(f"Missing some build params.")
         for newline in ["lf", "crlf"]:
             buildspec_path = self.create_buildspec(pkg, url, tag, "mvn", jdk, newline)
             self.build(buildspec_path)
 
     def build(self, buildspec_path):
+        # process = subprocess.run(["./rebuild.sh", buildspec_path])
         process = subprocess.run(
             ["./rebuild.sh", buildspec_path],
             stdout=subprocess.PIPE,
@@ -126,15 +98,10 @@ class BuildPackages:
         self.log.debug("-------STDERR-------")
         self.log.debug(process.stderr.decode())
         self.log.debug("-------ENDSTDERR-------")
-        return process
-
-    def convert_manifest_3(self, version: str):
-        mapping = {"1.7": "7", "1.8": "8"}
-        if version is None:
-            return None
-        return mapping.get(
-            version, version
-        )  # if not found, just return original version
+        # TODO
+        return Build_Result(
+            None, process.stdout.decode(), process.stderr.decode(), [], []
+        )
 
     # TODO if version doesn't exist but other versions exist, use those as templates
     # TODO investigate what happens if git clone with ssh requires fingerprint to continue
@@ -176,10 +143,38 @@ class BuildPackages:
             self.log.debug(path)
         if os.path.exists(path):
             paths.append(path)
-
         return paths
 
-    def parse_buildspec(self, path):
+    def create_buildspec(
+        self, pkg: PackageId, git_repo, git_tag, tool, jdk, newline
+    ) -> str:
+        values = {
+            "groupId": pkg.groupid,
+            "artifactId": pkg.artifactid,
+            "version": pkg.version,
+            "gitRepo": git_repo,
+            "gitTag": git_tag,
+            "tool": tool,
+            "jdk": jdk,
+            "newline": newline,
+        }
+
+        with open(
+            os.path.join(os.getcwd(), "..", "..", ".buildspec.template"), "r"
+        ) as file:
+            content = file.read()
+        template = Template(content)
+        rendered = template.render(values)
+
+        path = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        filepath = os.path.join(path, f"{pkg.artifactid}-{pkg.version}.buildspec")
+        with open(filepath, "w") as file:
+            file.write(rendered)
+        return filepath
+
+    def parse_buildspec(self, path) -> Build_Spec:
         # Source the bash file and echo the variables
         command = f'source {path}; echo "$groupId"; echo "$artifactId"; echo "$version"; echo "$tool"; echo "$jdk"; echo "$newline"; echo "$command"'
 
@@ -200,19 +195,25 @@ class BuildPackages:
         self.log.debug(f"jdk = {jdk}")
         self.log.debug(f"newline = {newline}")
         self.log.debug(f"command = {command}")
-        return {
-            "groupid": groupId,
-            "artifactid": artifactId,
-            "version": version,
-            "tool": tool,
-            "jdk": jdk,
-            "newline": newline,
-            "command": command,
-        }
-
+        return Build_Spec(groupId, artifactId, version, tool, jdk, newline, command)
 
     def compare(self):
         pass
+
+    def clone_rep_central(self):
+        clone_dir = "./temp/builder"
+        url = "https://github.com/jvm-repo-rebuild/reproducible-central.git"
+        process = subprocess.run(["git", "clone", url, clone_dir])
+        if process.returncode != 0:
+            self.log.error("Problem encountered")
+
+    def convert_manifest_3(self, version: str):
+        mapping = {"1.7": "7", "1.8": "8"}
+        if version is None:
+            return None
+        return mapping.get(
+            version, version
+        )  # if not found, just return original version
 
 
 # Examples

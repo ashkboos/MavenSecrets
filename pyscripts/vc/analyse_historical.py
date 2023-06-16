@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from database import Database
-from config import Config
+from common.config import Config
 
 
 class HistoricalAnalyzer:

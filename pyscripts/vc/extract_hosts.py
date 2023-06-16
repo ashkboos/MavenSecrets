@@ -3,8 +3,8 @@ import logging
 import re
 
 from database import Database
-from config import Config
-from packageId import PackageId
+from common.config import Config
+from common.packageId import PackageId
 
 
 # Scenarios
