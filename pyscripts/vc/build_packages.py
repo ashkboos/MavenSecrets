@@ -23,8 +23,8 @@ class BuildPackages:
     # TODO check returncode and .buildinfo manually when package fails,
     def build_and_compare(self):
         os.chdir("./temp/builder")
-        records = self.db.get_hosts_with_tags()
         self.db.create_builds_table()
+        records = self.db.get_hosts_with_tags()
         total = len(records)
         self.log.info(f"FOUND {total} with tag and outputTimestamp")
         for i, record in enumerate(records):
