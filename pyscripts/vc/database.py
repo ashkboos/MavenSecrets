@@ -254,6 +254,13 @@ class Database:
         WHERE output_timestamp_prop IS NOT NULL
         AND 
         t.url IS NOT NULL
+        AND NOT EXISTS(
+            SELECT 1
+            FROM {self.BUILDS_TABLE} b
+            WHERE b.groupid = t.groupid
+              AND b.artifactid = t.artifactid
+              AND b.version = t.version
+        )
         """
         self.execute(query)
         return self.cur.fetchall()
