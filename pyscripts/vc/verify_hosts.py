@@ -15,7 +15,7 @@ class VerifyHost:
         self.db = db
         self.config = config
         self.timeout = 15
-        self.funcs = [lambda x: (x, True), git_to_https, remove_tree_path]
+        self.funcs = [lambda x: (x, True), git_or_ssh_to_https, git_to_https, remove_tree_path, add_https_if_missing]
         self.log = logging.getLogger(__name__)
 
     def verify_hosts(self):

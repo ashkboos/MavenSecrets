@@ -4,11 +4,25 @@ from giturlparse import parse
 
 # https://maven.apache.org/scm/scm-url-format.html
 # https://maven.apache.org/scm/git.html
-def git_to_https(url: str) -> tuple:
+def git_or_ssh_to_https(url: str) -> tuple:
     pattern = r"(git://|git@)([^:]*):(.*)"
     replacement = r"https://\2/\3"
     n_url = re.sub(pattern, replacement, url)
     return (n_url, url != n_url)
+
+
+def git_to_https(url: str) -> str:
+    n_url = re.sub(r"^git://", "https://", url)
+    return (n_url, url != n_url)
+
+
+def add_https_if_missing(url: str) -> str:
+    pattern = re.compile(r"^(https?|git|ssh)://|^git@|^ssh@")
+    if not pattern.match(url):
+        url = "https://" + url
+        return (url, True)
+    else:
+        return (url, False)
 
 
 # TODO look into what happens with repositories like username/tree/tree/master
@@ -33,6 +47,7 @@ def convert_link_to_github(url: str) -> str:
         pattern = r"https?://[\w-]+\.apache\.org/repos/asf/(\w+)"
         replacement = r"https://github.com/apache/\1"
         return re.sub(pattern, replacement, url)
+
 
 # Replaces http with https, removes trailing slashes
 # and adds .git to git@ urls to make it work with parsing lib
