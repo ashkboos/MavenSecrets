@@ -44,6 +44,7 @@ import nl.tudelft.mavensecrets.visualization.buildaspects.DataEntry.JavaVersionD
 public class Main {
 
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    private static final File CWD = new File(".");
     private static final Pattern UTF_PATTERN = Pattern.compile("^([uU][tT][fF])(\\d+.*)$");
 
     static {
@@ -110,6 +111,7 @@ public class Main {
              * java_version_class_minor (binary)
              * java_version_class_map (binary)
              */
+
             String chonker = "SELECT packages.groupid, packages.artifactid, packages.version, DATE_PART('year', lastmodified) AS year, has_artifact, use_maven_compiler_plugin, maven_compiler_plugin_version, compiler_args, compiler_id, compiler_encoding, compiler_version_source, compiler_version_target, use_java_modules, java_version_manifest_1, java_version_manifest_2, java_version_manifest_3, java_version_manifest_multirelease, java_version_class_major, java_version_class_minor, java_version_class_map FROM packages INNER JOIN package_list ON packages.groupid = package_list.groupid AND packages.artifactid = package_list.artifactid AND packages.version = package_list.version";
             data = wrapper.queryPlural(chonker, rs -> {
                 String groupid = rs.getString(1);
@@ -177,11 +179,15 @@ public class Main {
                 .count();
         LOGGER.info("Packages using Java modules (< Java 9): {} ({}%)", modulesOldJava, Util.ratio(modulesOldJava, archiveSize));
 
-        LOGGER.info("Version distribution:");
-        plotDistribution(data, DataEntry::hasArtifact, entry -> {
+        File f;
+
+        f = new File(CWD, "archive-version.csv");
+        LOGGER.info("Saving version distribution to file {}", f.getAbsolutePath());
+        dumpDistribution(data, DataEntry::hasArtifact, entry -> {
             JavaVersion version = entry.versionData().versionClassCommon();
             return version == null ? null : version.withoutMinorVersion();
-        }, new File(".", "archive-version.csv"));
+        }, f);
+
         int[] years = data.stream()
                 .map(DataEntry::year)
                 .distinct()
@@ -189,11 +195,12 @@ public class Main {
                 .toArray();
         Arrays.sort(years);
         for (int year : years) {
-            LOGGER.info("Version distribution (releases in {}):", year);
-            plotDistribution(data, entry -> entry.hasArtifact() && entry.year() == year, entry -> {
+            f = new File(CWD, "archive-version-" + year + ".csv");
+            LOGGER.info("Saving version distribution (releases in {}) to file {}", year, f.getAbsolutePath());
+            dumpDistribution(data, entry -> entry.hasArtifact() && entry.year() == year, entry -> {
                 JavaVersion version = entry.versionData().versionClassCommon();
                 return version == null ? null : version.withoutMinorVersion();
-            }, new File(".", "archive-version-" + year + ".csv"));
+            }, f);
         }
 
         long multiVersion = data.stream()
@@ -251,8 +258,10 @@ public class Main {
         long noCompilerPlugin = data.size() - compilerPlugin; 
         LOGGER.info("POMs without Maven compiler plugin: {} ({}%)", noCompilerPlugin, Util.ratio(noCompilerPlugin, data.size()));
 
-        LOGGER.info("Maven compiler plugin - encoding distribution:");
-        plotDistribution(data, entry -> entry.compilerData().present(), entry -> {
+        
+        f = new File(CWD, "source-encoding.csv");
+        LOGGER.info("Saving Maven compiler plugin encoding distribution to file {}", f.getAbsolutePath());
+        dumpDistribution(data, entry -> entry.compilerData().present(), entry -> {
             String encoding = entry.compilerData().encoding();
             if (encoding == null) {
                 return null;
@@ -262,16 +271,19 @@ public class Main {
                 encoding = matcher.group(1) + '-' + matcher.group(2);
             }
             return encoding.toUpperCase();
-        }, new File(".", "source-encoding.csv"));
+        }, f);
 
-        LOGGER.info("Maven compiler plugin - compiler distribution:");
-        plotDistribution(data, entry -> entry.compilerData().present(), entry -> entry.compilerData().id(), new File(".", "compiler-id.csv"));
+        f = new File(CWD, "compiler-id.csv");
+        LOGGER.info("Saving Maven compiler plugin compiler distribution to file {}", f.getAbsolutePath());
+        dumpDistribution(data, entry -> entry.compilerData().present(), entry -> entry.compilerData().id(), f);
 
-        LOGGER.info("Maven compiler plugin - source version distribution:");
-        plotDistribution(data, entry -> entry.compilerData().present(), entry -> entry.compilerData().source(), new File(".", "source-version.csv"));
+        f = new File(CWD, "source-version.csv");
+        LOGGER.info("Saving Maven compiler plugin source version distribution to file {}", f.getAbsolutePath());
+        dumpDistribution(data, entry -> entry.compilerData().present(), entry -> entry.compilerData().source(), f);
 
-        LOGGER.info("Maven compiler plugin - target version distribution:");
-        plotDistribution(data, entry -> entry.compilerData().present(), entry -> entry.compilerData().target(), new File(".", "target-version.csv"));
+        f = new File(CWD, "target-version.csv");
+        LOGGER.info("Saving Maven compiler plugin target version distribution to file {}", f.getAbsolutePath());
+        dumpDistribution(data, entry -> entry.compilerData().present(), entry -> entry.compilerData().target(), f);
 
         long onlySourceVersion = data.stream()
                 .map(DataEntry::compilerData)
@@ -312,13 +324,14 @@ public class Main {
                 .filter(ccd -> ccd.target() != null)
                 .map(ccd -> ccd.source().equals(ccd.target()))
                 .count();
-        LOGGER.info("Maven compiler plugin - packages with source and target version mismatch: {} ({}% of packages with both source and terget set, {}%)", sourceTargetMismatch, Util.ratio(sourceTargetMismatch, sourceTargetSet), Util.ratio(sourceTargetMismatch, compilerPlugin));
+        LOGGER.info("Maven compiler plugin - packages with source and target version mismatch: {} ({}% of packages with both source and target set, {}%)", sourceTargetMismatch, Util.ratio(sourceTargetMismatch, sourceTargetSet), Util.ratio(sourceTargetMismatch, compilerPlugin));
 
-        LOGGER.info("Maven compiler plugin - command line argument distribution:");
-        plotDistributionMultiValue(data, entry -> entry.compilerData().present(), entry -> {
+        f = new File(CWD, "command-line-args.csv");
+        LOGGER.info("Saving Maven compiler plugin command line argument distribution to file {}", f.getAbsolutePath());
+        dumpDistributionMultiValue(data, entry -> entry.compilerData().present(), entry -> {
             String[] array = entry.compilerData().args();
             return array == null ? Collections.emptySet() : Arrays.asList(cleanCompilerArgs(entry.id(), array));
-        }, new File(".", "command-line-args.csv"));
+        }, f);
     }
 
     @NotNull
@@ -531,16 +544,16 @@ public class Main {
                 .orElse(null);
     }
 
-    private static <T extends Comparable<T>> void plotDistribution(@NotNull Collection<? extends DataEntry> data, @NotNull Predicate<? super DataEntry> predicate, @NotNull Function<? super DataEntry, ? extends T> classifier, @Nullable File file) {
+    private static <T extends Comparable<T>> void dumpDistribution(@NotNull Collection<? extends DataEntry> data, @NotNull Predicate<? super DataEntry> predicate, @NotNull Function<? super DataEntry, ? extends T> classifier, @Nullable File file) {
         // Preconditions
         Objects.requireNonNull(data);
         Objects.requireNonNull(predicate);
         Objects.requireNonNull(classifier);
 
-        plotDistributionMultiValue(data, predicate, classifier.andThen(Collections::singleton), file);
+        dumpDistributionMultiValue(data, predicate, classifier.andThen(Collections::singleton), file);
     }
 
-    private static <T extends Comparable<T>> void plotDistributionMultiValue(@NotNull Collection<? extends DataEntry> data, @NotNull Predicate<? super DataEntry> predicate, @NotNull Function<? super DataEntry, ? extends Collection<? extends T>> classifier, @Nullable File file) {
+    private static <T extends Comparable<T>> void dumpDistributionMultiValue(@NotNull Collection<? extends DataEntry> data, @NotNull Predicate<? super DataEntry> predicate, @NotNull Function<? super DataEntry, ? extends Collection<? extends T>> classifier, @NotNull File file) {
         // Preconditions
         Objects.requireNonNull(data);
         Objects.requireNonNull(predicate);
@@ -562,15 +575,6 @@ public class Main {
                 .filter(predicate)
                 .count();
 
-        for (Entry<T, Integer> entry : list) {
-            LOGGER.info(" - {}: {} ({}%)", entry.getKey(), entry.getValue(), Util.ratio(entry.getValue(), size));
-        }
-
-        if (file == null) {
-            return;
-        }
-
-        LOGGER.info("Saving table to {}", file.getAbsolutePath());
         try (OutputStream out = new FileOutputStream(file); CSVPrinter printer = new CSVPrinter(new OutputStreamWriter(out, StandardCharsets.UTF_8), CSVFormat.EXCEL)) {
             for (Entry<T, Integer> entry : list) {
                 printer.print(entry.getKey());
