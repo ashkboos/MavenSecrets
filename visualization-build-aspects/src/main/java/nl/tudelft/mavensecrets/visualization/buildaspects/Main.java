@@ -163,6 +163,8 @@ public class Main {
             return;
         }
 
+        File f;
+
         long modules = data.parallelStream()
                 .map(DataEntry::moduleData)
                 .filter(JavaModuleData::hasModules)
@@ -177,9 +179,12 @@ public class Main {
                 .map(DataEntry::moduleData)
                 .filter(JavaModuleData::hasModules)
                 .count();
-        LOGGER.info("Packages using Java modules (< Java 9): {} ({}%)", modulesOldJava, Util.ratio(modulesOldJava, archiveSize));
-
-        File f;
+        f = new File(CWD, "java-modules-in-old-versions.csv");
+        LOGGER.info("Packages using Java modules (< Java 9): {} ({}%) (saved to file {})", modulesOldJava, Util.ratio(modulesOldJava, archiveSize), f.getAbsolutePath());
+        dumpEntries(data, entry -> {
+            JavaVersion version = entry.versionData().versionClassCommon();
+            return version != null && version.compareTo(JavaVersion.JAVA_9) == -1 && entry.moduleData().hasModules();
+        }, f);
 
         f = new File(CWD, "archive-version.csv");
         LOGGER.info("Saving version distribution to file {}", f.getAbsolutePath());
@@ -226,12 +231,17 @@ public class Main {
                 .filter(JavaVersionData::isMultiRelease)
                 .filter(jvd -> jvd.versionClassMap() == null)
                 .count();
-        LOGGER.info("Multi-Release archives without multiple versions: {} ({}%)", multiReleaseNoMultiVersion, Util.ratio(multiReleaseNoMultiVersion, multiRelease));
+        f = new File(CWD, "multi-release-archives-without-multiple-versions.csv");
+        LOGGER.info("Multi-Release archives without multiple versions: {} ({}%) (saved to file {})", multiReleaseNoMultiVersion, Util.ratio(multiReleaseNoMultiVersion, multiRelease), f.getAbsolutePath());
+        dumpEntries(data, entry -> {
+            JavaVersionData jvd = entry.versionData();
+            return jvd.isMultiRelease() && jvd.versionClassMap() == null;
+        }, f);
 
         Map<String, Integer> cmpMap = data.stream()
                 .filter(DataEntry::hasArtifact)
                 .map(entry -> {
-                    JavaVersion mf = mergeManifestJavaVersion(entry);
+                    JavaVersion mf = mergeManifestJavaVersion(entry, false);
                     JavaVersion clazz = entry.versionData().versionClassCommon();
 
                     return mf == null || clazz == null ? null : Map.entry(mf, clazz.withoutMinorVersion());
@@ -250,6 +260,19 @@ public class Main {
         list.forEach(entry -> {
             LOGGER.info(" - {}: {} ({}%)", entry.getKey(), entry.getValue(), Util.ratio(entry.getValue(), jdkvAndCvPresent));
         });
+        f = new File(CWD, "jdk-older-than-class-version.csv");
+        LOGGER.info("Saving artifacts with JDK version < class version to file {}", f.getAbsolutePath());
+        dumpEntries(data, entry -> {
+            if (!entry.hasArtifact()) {
+                return false;
+            }
+            JavaVersion mf = mergeManifestJavaVersion(entry, true);
+            JavaVersion clazz = entry.versionData().versionClassCommon();
+            if (mf == null || clazz == null) {
+                return false;
+            }
+            return mf.compareTo(clazz.withoutMinorVersion()) < 0;
+        }, f);
 
         long compilerPlugin = data.stream()
                 .map(DataEntry::compilerData)
@@ -257,7 +280,6 @@ public class Main {
                 .count();
         long noCompilerPlugin = data.size() - compilerPlugin; 
         LOGGER.info("POMs without Maven compiler plugin: {} ({}%)", noCompilerPlugin, Util.ratio(noCompilerPlugin, data.size()));
-
         
         f = new File(CWD, "source-encoding.csv");
         LOGGER.info("Saving Maven compiler plugin encoding distribution to file {}", f.getAbsolutePath());
@@ -322,9 +344,22 @@ public class Main {
                 .filter(CompilerConfigData::present)
                 .filter(ccd -> ccd.source() != null)
                 .filter(ccd -> ccd.target() != null)
-                .map(ccd -> ccd.source().equals(ccd.target()))
+                .filter(ccd -> !ccd.source().equals(ccd.target()))
                 .count();
-        LOGGER.info("Maven compiler plugin - packages with source and target version mismatch: {} ({}% of packages with both source and target set, {}%)", sourceTargetMismatch, Util.ratio(sourceTargetMismatch, sourceTargetSet), Util.ratio(sourceTargetMismatch, compilerPlugin));
+        f = new File(CWD, "compiler-source-target-mismatch.csv");
+        LOGGER.info("Maven compiler plugin - packages with source and target version mismatch: {} ({}% of packages with both source and target set, {}%) (saved to file {})", sourceTargetMismatch, Util.ratio(sourceTargetMismatch, sourceTargetSet), Util.ratio(sourceTargetMismatch, compilerPlugin), f.getAbsolutePath());
+        dumpEntries(data, entry -> {
+            CompilerConfigData ccd = entry.compilerData();
+            if (!ccd.present()) {
+                return false;
+            }
+            JavaVersion src = ccd.source();
+            JavaVersion tgt = ccd.target();
+            if (src == null || tgt == null) {
+                return false;
+            }
+            return !src.equals(tgt);
+        }, f);
 
         f = new File(CWD, "command-line-args.csv");
         LOGGER.info("Saving Maven compiler plugin command line argument distribution to file {}", f.getAbsolutePath());
@@ -459,7 +494,7 @@ public class Main {
                         return string.substring(0, Math.min(i, j));
                     }
                 })
-                .filter(string -> string.startsWith("-"))
+                .filter(string -> string.startsWith("-") || string.equals("@"))
                 .toArray(String[]::new);
     }
 
@@ -518,7 +553,7 @@ public class Main {
     }
 
     @Nullable
-    private static JavaVersion mergeManifestJavaVersion(@NotNull DataEntry entry) {
+    private static JavaVersion mergeManifestJavaVersion(@NotNull DataEntry entry, boolean silent) {
         // Preconditions
         Objects.requireNonNull(entry);
 
@@ -527,7 +562,7 @@ public class Main {
         JavaVersion v2 = jvd.versionBuildJdk();
         JavaVersion v3 = jvd.versionBuildJdkSpec();
 
-        boolean[] naggable = {true}; // Jank
+        boolean[] naggable = {!silent}; // Jank
         return Arrays.stream(new JavaVersion[] {v1, v2, v3})
                 .filter(x -> x != null)
                 .map(JavaVersion::withoutMinorVersion)
@@ -544,11 +579,12 @@ public class Main {
                 .orElse(null);
     }
 
-    private static <T extends Comparable<T>> void dumpDistribution(@NotNull Collection<? extends DataEntry> data, @NotNull Predicate<? super DataEntry> predicate, @NotNull Function<? super DataEntry, ? extends T> classifier, @Nullable File file) {
+    private static <T extends Comparable<T>> void dumpDistribution(@NotNull Collection<? extends DataEntry> data, @NotNull Predicate<? super DataEntry> predicate, @NotNull Function<? super DataEntry, ? extends T> classifier, @NotNull File file) {
         // Preconditions
         Objects.requireNonNull(data);
         Objects.requireNonNull(predicate);
         Objects.requireNonNull(classifier);
+        Objects.requireNonNull(file);
 
         dumpDistributionMultiValue(data, predicate, classifier.andThen(Collections::singleton), file);
     }
@@ -558,13 +594,15 @@ public class Main {
         Objects.requireNonNull(data);
         Objects.requireNonNull(predicate);
         Objects.requireNonNull(classifier);
+        Objects.requireNonNull(file);
 
         // This entire method is inefficient
 
         // Workaround because Collectors#groupingBy(...) does not allow null keys
         Map<T, Integer> map = Util.nullSafeGroupByAndCount(data.parallelStream()
                 .filter(predicate)
-                .flatMap(classifier.andThen(Collection::stream))
+                .map(classifier)
+                .flatMap(Collection::stream)
                 , Function.identity());
 
         List<Entry<T, Integer>> list = new ArrayList<>(map.entrySet());
@@ -580,6 +618,30 @@ public class Main {
                 printer.print(entry.getKey());
                 printer.print(entry.getValue());
                 printer.print(Util.ratio(entry.getValue(), size));
+                printer.println();
+            }
+        } catch (IOException exception) {
+            LOGGER.error("Could not write to file {}", file.getAbsolutePath(), exception);
+        }
+    }
+
+    private static void dumpEntries(@NotNull Collection<? extends DataEntry> data, @NotNull Predicate<? super DataEntry> predicate, @NotNull File file) {
+        // Preconditions
+        Objects.requireNonNull(data);
+        Objects.requireNonNull(predicate);
+        Objects.requireNonNull(file);
+
+        
+        List<Id> list = data.parallelStream()
+                .filter(predicate)
+                .map(DataEntry::id)
+                .toList();
+
+        try (OutputStream out = new FileOutputStream(file); CSVPrinter printer = new CSVPrinter(new OutputStreamWriter(out, StandardCharsets.UTF_8), CSVFormat.EXCEL)) {
+            for (Id id : list) {
+                printer.print(id.groupId());
+                printer.print(id.artifactId());
+                printer.print(id.version());
                 printer.println();
             }
         } catch (IOException exception) {
