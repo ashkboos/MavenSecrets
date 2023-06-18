@@ -8,5 +8,5 @@ The application picking packages to analyze and extracting data, see [README](an
 ## PyScripts
 Scripts to process the raw data from running the analyzer, and produce meaningful results, see [README](pyscripts/README.md).
 
-##
+## Java Build Aspects
 A standalone application to process build aspect related data, see [README](visualization-build-aspects/README.md).
