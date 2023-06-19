@@ -50,4 +50,9 @@ buildNumber.properties
 .vscode/
 .idea/
 .settings/
+
+__pycache__/
 /config.yml
+
+pyscripts/vc/temp/
+pyscripts/vc/config.yaml

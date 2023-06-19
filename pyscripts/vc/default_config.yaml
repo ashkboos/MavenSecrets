@@ -1,0 +1,26 @@
+log_level: INFO
+
+run_config: 
+  - extractor: true
+  - verifier: true
+  - analyser: true
+  - tag_finder: true
+  - builder: true
+
+database:
+  hostname: localhost
+  port: 5432
+  username: postgres
+  password: SuperSekretPassword
+
+github_api_key: ~
+
+# Log-levels
+# CRITICAL = 50
+# FATAL = CRITICAL
+# ERROR = 40
+# WARNING = 30
+# WARN = WARNING
+# INFO = 20
+# DEBUG = 10
+# NOTSET = 0
