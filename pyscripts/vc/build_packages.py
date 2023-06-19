@@ -1,6 +1,7 @@
 from builtins import ValueError
 import glob
 import logging
+import re
 import subprocess
 import os
 import shutil
@@ -39,7 +40,10 @@ class BuildPackages:
                     self.build_from_scratch(pkg, record)
                 except ValueError as e:
                     self.log.debug(e)
-                    continue
+            # remove folder once all builds for the package are complete
+            folder = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
+            if os.path.isdir(folder):
+                shutil.rmtree(folder)
 
     def build_from_existing(self, pkg: PackageId, src_buildspec):
         # Copy buildspec to research/ folder
@@ -221,8 +225,24 @@ class BuildPackages:
         self.log.debug(f"command = {command}")
         return Build_Spec(groupId, artifactId, version, tool, jdk, newline, command)
 
-    def compare(self):
-        pass
+    def parse_java_version(self, version) -> str:
+        # result = re.search(r"^(\d+)(\.\d+)?(\.\d+)?(_\d+)?( \(.+\))?$", version)
+        # if result == None:
+        #     return version
+        # major_arg1 = result.group(1)
+        # major_arg2 = result.group(2)
+        # major_arg = (
+        #     (major_arg1 + major_arg2)
+        #     if major_arg2 != None and major_arg2 != ".0"
+        #     else major_arg1
+        # )
+        # print(major_arg)
+        result = re.search(r"(?:(1\.\d)|(\d{2}|\d{1}(?![\d\.])))", version)
+        if result is None:
+            self.log.debug(f"Can't parse java version: {version}")
+            return version  # return it unchanged
+        major_arg = result.group()
+        return major_arg
 
     def clone_rep_central(self):
         clone_dir = "./temp/builder"
