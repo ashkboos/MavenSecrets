@@ -56,11 +56,17 @@ public class DependencyExtractor implements Extractor {
     }
 
 
+    /**
+     * Method which calls the resolve method with a timeout of 120 seconds because certain artifacts
+     * loop indefinitely with shrinkwrap.
+     * @param row - the id of the artifact to resolve
+     * @return the number of transitive dependencies
+     */
     private static int timeoutResolve(String row) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() -> {
-            // Perform your method call here
+            // Call the normal resolve method here
             return resolve(row);
         }, executor);
 
@@ -68,6 +74,7 @@ public class DependencyExtractor implements Extractor {
             int result = future.get(120, TimeUnit.SECONDS); // Timeout set to 120 seconds
             return result;
         } catch (TimeoutException | InterruptedException | ExecutionException e) {
+            //return -1 if it times out
             return -1;
         } finally {
             executor.shutdown(); // Shutdown the executor
@@ -85,6 +92,7 @@ public class DependencyExtractor implements Extractor {
         } catch (Exception e) {
             System.out.println("Exception occurred while resolving " + row + ", " + e);
             System.out.println(e);
+            //always returns 0
             return result.size();
         }
         return result.size();

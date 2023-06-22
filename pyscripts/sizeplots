@@ -15,7 +15,7 @@ def plot_size_distribution(size):
 
 
 def plot_correlation_graph(size, files):
-    p = sns.regplot(x=size, y=files, scatter_kws={'s': 5}, line_kws={"color": "orange"}, order=1)
+    p = sns.scatterplot(x=size, y=files)
     plt.xlabel("Size (KB)")
     plt.ylabel("Number of files")
     plt.show()
