@@ -17,10 +17,13 @@ The scripts create 4 new tables in the Postgres DB, namely: hosts, tags, builds,
 Make sure the Database is running and you have imported the data from the .sql file.
 I recommend running the python scripts in a Conda environment. Install all dependencies using pip and/or conda.
 Create a config.yaml file by copying default_config.yaml. You can choose which scripts to run there. You will also need to provide a Github API key for fetching the tag/release information. Then to run it, type the following commands:
-```
+``` bash
 cd pyscripts/vc
 python main.py
 ```
 
 ## Dependencies
 See requirements.txt for Python dependencies. These can be installed using pip install -r requirements.txt . If psycopg2 fails, try installing psycopg2-binary or install it with conda. You also need to install the dos2unix utility with your package manager or conda for the build scripts to convert newlines.
+
+## Replicate Results
+See [SQL.md](SQL.md) for all the SQL queries used to generate statistics used in the paper. Some results were inserted into this [Google Sheets](https://docs.google.com/spreadsheets/d/1BfpkVXI55WMyxpyaix2v22GQLsfE2suHSs5PH9JEYW4/edit?usp=sharing) spreadsheet and charts were created there.
