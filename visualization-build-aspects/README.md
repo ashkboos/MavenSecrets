@@ -1,6 +1,6 @@
 # Java Build Aspects
 A data dumper for some Java build aspects.
-Important numbers are logged, tables are both logged and dumped in `csv` files.
+Important numbers are logged, tables and various ids are dumped in `csv` files.
 
 ## Prerequisites
 Run the analyzer with at least the following extractors:
