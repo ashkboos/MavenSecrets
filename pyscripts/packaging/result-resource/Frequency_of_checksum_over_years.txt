@@ -1,0 +1,61 @@
+FREQUENCY OF EACH CHECKSUM IN EACH YEAR
+
+Year: 2011
+Checksum: .md5, Frequency: 23744
+Checksum: .sha1, Frequency: 23744
+Checksum: .sha256, Frequency: 2
+Checksum: .sha512, Frequency: 2
+Year: 2012
+Checksum: .md5, Frequency: 13501
+Checksum: .sha1, Frequency: 13501
+Year: 2013
+Checksum: .md5, Frequency: 15096
+Checksum: .sha1, Frequency: 15096
+Year: 2014
+Checksum: .md5, Frequency: 19400
+Checksum: .sha1, Frequency: 19400
+Year: 2015
+Checksum: .md5, Frequency: 27825
+Checksum: .sha1, Frequency: 27825
+Checksum: .sha256, Frequency: 170
+Checksum: .sha512, Frequency: 170
+Year: 2016
+Checksum: .md5, Frequency: 34631
+Checksum: .sha1, Frequency: 34631
+Checksum: .sha256, Frequency: 450
+Checksum: .sha512, Frequency: 450
+Year: 2017
+Checksum: .md5, Frequency: 39415
+Checksum: .sha1, Frequency: 39415
+Checksum: .sha256, Frequency: 708
+Checksum: .sha512, Frequency: 708
+Year: 2018
+Checksum: .sha1, Frequency: 43774
+Checksum: .md5, Frequency: 43772
+Checksum: .sha256, Frequency: 540
+Checksum: .sha512, Frequency: 540
+Year: 2019
+Checksum: .sha1, Frequency: 52366
+Checksum: .md5, Frequency: 52320
+Checksum: .sha256, Frequency: 599
+Checksum: .sha512, Frequency: 599
+Year: 2020
+Checksum: .md5, Frequency: 50649
+Checksum: .sha1, Frequency: 50649
+Checksum: .sha256, Frequency: 1274
+Checksum: .sha512, Frequency: 1274
+Year: 2021
+Checksum: .md5, Frequency: 57702
+Checksum: .sha1, Frequency: 57608
+Checksum: .sha512, Frequency: 2375
+Checksum: .sha256, Frequency: 2343
+Year: 2022
+Checksum: .sha1, Frequency: 59116
+Checksum: .md5, Frequency: 59097
+Checksum: .sha512, Frequency: 504
+Checksum: .sha256, Frequency: 473
+Year: 2023
+Checksum: .md5, Frequency: 35423
+Checksum: .sha1, Frequency: 35419
+Checksum: .sha512, Frequency: 113
+Checksum: .sha256, Frequency: 88
