@@ -3,7 +3,7 @@ import statistics
 
 import psycopg2
 
-from pyscripts.database import Database
+from pyscripts.packaging.database import Database
 
 
 def main():
@@ -64,7 +64,7 @@ def print_packaging_from_pom(cur):
 
     unique_packaging_type_count = len(distinct_packaging_types)
 
-    with open('Packaging_Type_from_POM.txt', 'w') as file:
+    with open('../Packaging_Type_from_POM.txt', 'w') as file:
 
         file.write('PACKAGING TYPE FROM POM\n')
         file.write('\n')
