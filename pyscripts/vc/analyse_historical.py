@@ -51,15 +51,16 @@ class HistoricalAnalyzer:
         # print(df)
 
         pivot_df = df.pivot(index="year", columns="host", values="market_share")
+        pivot_df = pivot_df.replace(np.nan, 0)
         print(pivot_df)
         ax = pivot_df.plot.bar(stacked=True, colormap=cmap, width=0.95)
         ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
         ax.yaxis.set_major_locator(mtick.MultipleLocator(base=0.1))
-        # # TODO save to file instead of showing
-        # with open(f'data_{field}.csv', 'w') as f:
-        #     pivot_df.to_csv(f)
+        # TODO save to file instead of showing
+        with open(f'data_{field}.csv', 'w') as f:
+            pivot_df.to_csv(f)
 
-        plt.show()
+        # plt.show()
 
     def gen_test_data(self):
         hosts = [
