@@ -1,1 +1,0 @@
-Number of packages where the packaging type in the index is not same as packaging type(s) on repo: 18645

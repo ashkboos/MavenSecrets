@@ -1,4 +1,0 @@
-Number of checksum types: 2 | Number of packages: 465595
-Number of checksum types: 4 | Number of packages: 6647
-Number of checksum types: 1 | Number of packages: 547
-Number of checksum types: 3 | Number of packages: 78

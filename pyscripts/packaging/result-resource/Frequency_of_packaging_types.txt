@@ -1,8 +1,0 @@
-FREQUENCY OF PACKAGES WITH DIFFERENT PACKAGING TYPES
-
-Frequency of packages with 1 packaging types: 457239
-Frequency of packages with 2 packaging types: 14106
-Frequency of packages with 3 packaging types: 1319
-Frequency of packages with 0 packaging types: 343
-Frequency of packages with 4 packaging types: 34
-Frequency of packages with 5 packaging types: 2
