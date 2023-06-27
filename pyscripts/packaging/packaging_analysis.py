@@ -11,17 +11,19 @@ def main():
     conn = db.connect()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
+    print_frequency_pom_packaging_different_repo(cur)
+
     # Packaging type analysis
-    packaging_analysis(cur)
+    #packaging_analysis(cur)
 
     # Checksum analysis
-    checksum_analysis(cur)
+    #checksum_analysis(cur)
 
     # Qualifier analysis
-    qualifier_analysis(cur)
+    #qualifier_analysis(cur)
 
     # Executable analysis
-    executable_analysis(cur)
+    #executable_analysis(cur)
 
     # Close the cursor and connection
     cur.close()
@@ -229,6 +231,35 @@ def print_frequency_index_packaging_different_repo(cur):
 
         file.write(
             f'Number of packages where the packaging type in the index '
+            f'is not same as packaging type(s) on repo: {count}')
+
+
+def print_frequency_pom_packaging_different_repo(cur):
+    # Execute a query to fetch the values from the 'allpackagingtype' and 'packagingtypefromrepo' columns
+    cur.execute("SELECT allpackagingtypefromrepo, packagingtypefrompom FROM packages")
+
+    count = 0
+
+    # Iterate over the rows and check if the values are the same
+    for row in cur.fetchall():
+        allpackagingtype = row['allpackagingtypefromrepo']
+        packagingtypefrompom = row['packagingtypefrompom']
+
+        if allpackagingtype is not None:
+            # Remove the square brackets and split the 'allpackagingtype' string into a list
+            allpackagingtype_list = allpackagingtype.strip('[]').split(',')
+
+            # Remove any leading or trailing whitespaces from each value in the 'allpackagingtype_list'
+            allpackagingtype_list = [val.strip() for val in allpackagingtype_list]
+
+            # Check if 'packagingtypefrompom' does not match all the values in 'allpackagingtype_list'
+            if set(allpackagingtype_list) != {packagingtypefrompom}:
+                count += 1
+
+    with open('Difference_packaging_type_pom_repo.txt', 'w') as file:
+
+        file.write(
+            f'Number of packages where the packaging type in the pom '
             f'is not same as packaging type(s) on repo: {count}')
 
 
