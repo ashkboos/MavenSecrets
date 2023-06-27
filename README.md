@@ -11,3 +11,6 @@ Scripts to process the raw data from running the analyzer, and produce meaningfu
 
 ## Java Build Aspects
 A standalone application to process build aspect related data, see [README](visualization-build-aspects/README.md).
+
+## Space Extractor
+Due to dependency conflicts the space extractor has to be run a different way than the rest of the application see [README](analyzer/src/main/README.md)
