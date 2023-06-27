@@ -1,4 +1,4 @@
-from database import *
+Change from database import *
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns

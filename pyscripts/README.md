@@ -21,7 +21,7 @@ used instead.
 
 
 
-## [Sizeplots](vc/sizeplots.py)
+## [Sizeplots](sizeplots.py)
 To obtain the desired graphs for the size and dependency extractor, run this file. 
 Make sure to change the Database variables to their corresponding values (name, port, username, password)
 and change the SQL statement to match your table name (default is packages).
