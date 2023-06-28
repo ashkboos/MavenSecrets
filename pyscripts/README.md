@@ -82,10 +82,11 @@ LIMIT 20;
 
 ## Artifacts used for manual analysis:
 The following artifacts were used for conducting manual analysis of outliers in 
-space requirements. These files are larger than 600MB and have less than 200 files.
+space requirements. These files are very large and have less than 200 files.
 - (com.facebook.presto,testdata-tpch-1g,1)
 - (com.nvidia,xgboost4j_3.0,1.2.0-0.1.0)
 - (com.xtdb,xtdb-bench,1.23.0)
+- (com.clearnlp,clearnlp-general-en-dep,1.1)
 - (fi.seco,lexicalanalysis-resources-fi,1.5.13)
 - (fi.seco,lexicalanalysis-resources-fi-complete,1.5.14)
 - (fi.seco,lexicalanalysis,1.5.0)
