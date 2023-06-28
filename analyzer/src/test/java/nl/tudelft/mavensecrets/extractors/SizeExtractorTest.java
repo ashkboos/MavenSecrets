@@ -79,7 +79,7 @@ public class SizeExtractorTest {
             long size = 0;
             Enumeration<JarEntry> files = pkg.jar().entries();
             while (files.hasMoreElements()) {
-                size += files.nextElement().getSize();
+                size += files.nextElement().getCompressedSize();
             }
             Assertions.assertArrayEquals(new Object[] {size, (pkg.jar().size() - countDirectories(pkg.jar()))}, results);
         }

@@ -1,10 +1,9 @@
-import ast
 import collections
 import statistics
 
 import psycopg2
 
-from pyscripts.database import Database
+from pyscripts.packaging.database import Database
 
 
 def main():
@@ -12,17 +11,19 @@ def main():
     conn = db.connect()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
+    print_frequency_pom_packaging_different_repo(cur)
+
     # Packaging type analysis
-    packaging_analysis(cur)
+    #packaging_analysis(cur)
 
     # Checksum analysis
-    checksum_analysis(cur)
+    #checksum_analysis(cur)
 
     # Qualifier analysis
-    qualifier_analysis(cur)
+    #qualifier_analysis(cur)
 
     # Executable analysis
-    executable_analysis(cur)
+    #executable_analysis(cur)
 
     # Close the cursor and connection
     cur.close()
@@ -65,19 +66,19 @@ def print_packaging_from_pom(cur):
 
     unique_packaging_type_count = len(distinct_packaging_types)
 
-    print('PACKAGING TYPE FROM POM')
-    print()
+    with open('../Packaging_Type_from_POM.txt', 'w') as file:
 
-    total_count = 0
-    for packaging_type, count in packaging_type_counts.items():
-        total_count = total_count + count
-        print(f'Packaging type: {packaging_type}, Count: {count}')
-    print()
+        file.write('PACKAGING TYPE FROM POM\n')
+        file.write('\n')
 
-    print(f'Total number of unique packaging types in pom: {unique_packaging_type_count}')
-    print(f'Total number of packaging types in pom: {total_count}')
-    print('---x----')
-    print()
+        total_count = 0
+        for packaging_type, count in packaging_type_counts.items():
+            total_count = total_count + count
+            file.write(f'Packaging type: {packaging_type}, Count: {count}\n')
+        file.write('\n')
+
+        file.write(f'Total number of unique packaging types in pom: {unique_packaging_type_count}\n')
+        file.write(f'Total number of packaging types in pom: {total_count}\n')
 
 
 def print_frequency_from_repo(cur):
@@ -89,20 +90,19 @@ def print_frequency_from_repo(cur):
 
     unique_words_count = len(sorted_frequencies)
 
-    print('PACKAGING TYPE FROM THE REPO')
-    print()
+    with open('Packaging_Type_from_REPO.txt', 'w') as file:
+        file.write('PACKAGING TYPE FROM THE REPO\n')
+        file.write('\n')
 
-    total_count = 0
-    # Print the word frequencies
-    for word, frequency in sorted_frequencies:
-        total_count = total_count + frequency
-        print(f'Packaging type: {word} - Frequency: {frequency}')
-    print()
+        total_count = 0
+        # Print the word frequencies
+        for word, frequency in sorted_frequencies:
+            total_count = total_count + frequency
+            file.write(f'Packaging type: {word} - Frequency: {frequency}\n')
+        file.write('\n')
 
-    print(f'Number of unique packaging types from the repo: {unique_words_count}')
-    print(f'Total number: {total_count}')
-    print('---x----')
-    print()
+        file.write(f'Number of unique packaging types from the repo: {unique_words_count}\n')
+        file.write(f'Total number: {total_count}\n')
 
 
 def print_frequency_from_index(cur):
@@ -122,19 +122,19 @@ def print_frequency_from_index(cur):
 
     unique_packaging_type_count = len(distinct_packaging_types)
 
-    print('PACKAGING TYPE FROM INDEX')
-    print()
+    with open('Packaging_Type_from_Index.txt', 'w') as file:
 
-    total_count = 0
-    for packaging_type, count in packaging_type_counts.items():
-        total_count = total_count + count
-        print(f'Packaging type: {packaging_type}, Count: {count}')
-    print()
+        file.write('PACKAGING TYPE FROM INDEX\n')
+        file.write('\n')
 
-    print(f'Total number of unique packaging types in index: {unique_packaging_type_count}')
-    print(f'Total number of packaging types in index: {total_count}')
-    print('---x----')
-    print()
+        total_count = 0
+        for packaging_type, count in packaging_type_counts.items():
+            total_count = total_count + count
+            file.write(f'Packaging type: {packaging_type}, Count: {count}\n')
+        file.write('\n')
+
+        file.write(f'Total number of unique packaging types in index: {unique_packaging_type_count}\n')
+        file.write(f'Total number of packaging types in index: {total_count}\n')
 
 
 def print_frequency_of_packages_with_frequency_packaging_types(cur):
@@ -143,8 +143,6 @@ def print_frequency_of_packages_with_frequency_packaging_types(cur):
 
     # Create a dictionary to store the frequency of packaging types for each row
     row_frequency = collections.defaultdict(int)
-
-    packaging_types_gt_4 = {}
 
     # Iterate over the rows and count the distinct packaging types for each row
     for row in cur.fetchall():
@@ -165,27 +163,14 @@ def print_frequency_of_packages_with_frequency_packaging_types(cur):
             num_packaging_types = len(filtered_packaging_types)
             row_frequency[num_packaging_types] += 1
 
-            # Check if the number of packaging types is more than 4
-            if num_packaging_types > 3:
-                packaging_types_gt_4[num_packaging_types] = filtered_packaging_types
+    with open('Frequency_of_packaging_types.txt', 'w') as file:
 
-    print('FREQUENCY OF PACKAGES WITH DIFFERENT PACKAGING TYPES')
-    print()
+        file.write('FREQUENCY OF PACKAGES WITH DIFFERENT PACKAGING TYPES\n')
+        file.write('\n')
 
-    # Print the frequency of rows with each distinct count of packaging types
-    for num_packaging_types, frequency in row_frequency.items():
-        print(f'Frequency of packages with {num_packaging_types} packaging types: {frequency}')
-
-    # Print the packaging types when num_packaging_types > 4
-    if len(packaging_types_gt_4) > 0:
-        print('PACKAGING TYPES WHEN NUM_PACKAGING_TYPES > 4:')
-        for num_packaging_types, packaging_types in packaging_types_gt_4.items():
-            print(f'Number of Packaging Types: {num_packaging_types}')
-            print(f'Packaging Types: {", ".join(packaging_types)}')
-            print('---')
-        print()
-    print('---x----')
-    print()
+        # Print the frequency of rows with each distinct count of packaging types
+        for num_packaging_types, frequency in row_frequency.items():
+            file.write(f'Frequency of packages with {num_packaging_types} packaging types: {frequency}\n')
 
 
 def print_difference_with_individual_freq(cur):
@@ -197,27 +182,27 @@ def print_difference_with_individual_freq(cur):
 
     results = cur.fetchall()
 
-    print('DIFFERENCE IN PACKAGING TYPE IN POM AND INDEX')
-    print()
+    with open('Difference_in_packaging_type_POM_Index.txt', 'w') as file:
+        file.write('DIFFERENCE IN PACKAGING TYPE IN POM AND INDEX\n')
+        file.write('\n')
 
-    total_frequency = 0
-    unique_pairs = set()
-    for row in results:
-        packagingtypefrompom = row[0]
-        packagingtypefromrepo = row[1]
-        frequency = row[2]
-        total_frequency += frequency
-        unique_pair = (packagingtypefrompom, packagingtypefromrepo)
-        unique_pairs.add(unique_pair)
-        print(f'Packaging type from POM: {packagingtypefrompom}, Packaging type from INDEX: {packagingtypefromrepo}, '
-              f'Frequency: {frequency}')
-    print()
+        total_frequency = 0
+        unique_pairs = set()
+        for row in results:
+            packagingtypefrompom = row[0]
+            packagingtypefromrepo = row[1]
+            frequency = row[2]
+            total_frequency += frequency
+            unique_pair = (packagingtypefrompom, packagingtypefromrepo)
+            unique_pairs.add(unique_pair)
+            file.write(
+                f'Packaging type from POM: {packagingtypefrompom}, Packaging type from INDEX: {packagingtypefromrepo}, '
+                f'Frequency: {frequency}\n')
+        file.write('\n')
 
-    print(f'Total Frequency of differences: {total_frequency}')
-    unique_pair_count = len(unique_pairs)
-    print(f"Number of unique pairs: {unique_pair_count}")
-    print('---x----')
-    print()
+        file.write(f'Total Frequency of differences: {total_frequency}\n')
+        unique_pair_count = len(unique_pairs)
+        file.write(f"Number of unique pairs: {unique_pair_count}\n")
 
 
 def print_frequency_index_packaging_different_repo(cur):
@@ -242,9 +227,40 @@ def print_frequency_index_packaging_different_repo(cur):
             if set(allpackagingtype_list) != {packagingtypefromindex}:
                 count += 1
 
-    print(f'Number of packages where the packaging type in the index is not same as packaging type(s) on repo: {count}')
-    print('----x----')
-    print()
+    with open('Difference_packaging_type_index_repo.txt', 'w') as file:
+
+        file.write(
+            f'Number of packages where the packaging type in the index '
+            f'is not same as packaging type(s) on repo: {count}')
+
+
+def print_frequency_pom_packaging_different_repo(cur):
+    # Execute a query to fetch the values from the 'allpackagingtype' and 'packagingtypefromrepo' columns
+    cur.execute("SELECT allpackagingtypefromrepo, packagingtypefrompom FROM packages")
+
+    count = 0
+
+    # Iterate over the rows and check if the values are the same
+    for row in cur.fetchall():
+        allpackagingtype = row['allpackagingtypefromrepo']
+        packagingtypefrompom = row['packagingtypefrompom']
+
+        if allpackagingtype is not None:
+            # Remove the square brackets and split the 'allpackagingtype' string into a list
+            allpackagingtype_list = allpackagingtype.strip('[]').split(',')
+
+            # Remove any leading or trailing whitespaces from each value in the 'allpackagingtype_list'
+            allpackagingtype_list = [val.strip() for val in allpackagingtype_list]
+
+            # Check if 'packagingtypefrompom' does not match all the values in 'allpackagingtype_list'
+            if set(allpackagingtype_list) != {packagingtypefrompom}:
+                count += 1
+
+    with open('Difference_packaging_type_pom_repo.txt', 'w') as file:
+
+        file.write(
+            f'Number of packages where the packaging type in the pom '
+            f'is not same as packaging type(s) on repo: {count}')
 
 
 def checksum_analysis(cur):
@@ -267,18 +283,17 @@ def print_frequency_of_checksums(cur):
 
     sorted_frequencies = frequency_of_each_word_checksum(all_checksums_list)
 
-    print('CHECKSUM')
-    print()
+    with open('Frequency_of_each_checksum.txt', 'w') as file:
+        file.write('CHECKSUM\n')
+        file.write('\n')
 
-    # Print the word frequencies
-    total_count = 0
-    for word, frequency in sorted_frequencies:
-        total_count = total_count + frequency
-        print(f'Checksum: {word} - Frequency: {frequency}')
+        # Print the word frequencies
+        total_count = 0
+        for word, frequency in sorted_frequencies:
+            total_count = total_count + frequency
+            file.write(f'Checksum: {word} - Frequency: {frequency}\n')
 
-    print(f'Total count:{total_count}')
-    print('---x----')
-    print()
+        file.write(f'Total count:{total_count}\n')
 
 
 def print_frequency_number_of_checksum(cursor):
@@ -312,9 +327,10 @@ def print_frequency_number_of_checksum(cursor):
         num_types = len(set(filtered_checksum_list))
         package_count[num_types] = package_count.get(num_types, 0) + 1
 
-    # Display the count of packages for each number of checksum types
-    for num_types, count in package_count.items():
-        print(f"Number of checksum types: {num_types} | Number of packages: {count}")
+    with open('Number_of_packages_with_each_checksum.txt', 'w') as file:
+        # Display the count of packages for each number of checksum types
+        for num_types, count in package_count.items():
+            file.write(f'Number of checksum types: {num_types} | Number of packages: {count}\n')
 
 
 def print_frequency_of_checksums_over_years(cur):
@@ -343,19 +359,17 @@ def print_frequency_of_checksums_over_years(cur):
                     # Increment the frequency count for the checksum in the corresponding year
                     frequency[year][checksum.strip()] += 1
 
-    print('FREQUENCY OF EACH CHECKSUM IN EACH YEAR')
-    print()
+    with open('Frequency_of_checksum_over_years.txt', 'w') as file:
 
-    # Print the frequency of each checksum in each year
-    for year, checksums in frequency.items():
-        print(f'Year: {year}')
-        sorted_checksums = sorted(checksums.items(), key=lambda x: x[1], reverse=True)
-        for checksum, count in sorted_checksums:
-            print(f'Checksum: {checksum}, Frequency: {count}')
-        print()
+        file.write('FREQUENCY OF EACH CHECKSUM IN EACH YEAR\n')
+        file.write('\n')
 
-    print('---x----')
-    print()
+        # Print the frequency of each checksum in each year
+        for year, checksums in frequency.items():
+            file.write(f'Year: {year}\n')
+            sorted_checksums = sorted(checksums.items(), key=lambda x: x[1], reverse=True)
+            for checksum, count in sorted_checksums:
+                file.write(f'Checksum: {checksum}, Frequency: {count}\n')
 
 
 def qualifier_analysis(cur):
@@ -369,24 +383,23 @@ def qualifier_analysis(cur):
 
     unique_words_count = len(sorted_frequencies)
 
-    print('QUALIFIER')
-    print()
+    with open('Frequency_of_each_qualifier.txt', 'w') as file:
+        file.write('QUALIFIER\n')
+        file.write('\n')
 
-    # Print the word frequencies
-    total_count = 0
-    frequencies = []
-    for word, frequency in sorted_frequencies:
-        total_count = total_count + frequency
-        frequencies.append(frequency)
-        print(f'Qualifier: {word} - Frequency: {frequency}')
-    print()
+        # Print the word frequencies
+        total_count = 0
+        frequencies = []
+        for word, frequency in sorted_frequencies:
+            total_count = total_count + frequency
+            frequencies.append(frequency)
+            file.write(f'Qualifier: {word} - Frequency: {frequency}\n')
+        file.write('\n')
 
-    print(f'Number of unique qualifiers: {unique_words_count}')
-    print(f'Total count:{total_count}')
-    median_frequency = statistics.median(frequencies)
-    print(f'Median of qualifiers: {median_frequency}')
-    print('---x----')
-    print()
+        file.write(f'Number of unique qualifiers: {unique_words_count}\n')
+        file.write(f'Total count:{total_count}\n')
+        median_frequency = statistics.median(frequencies)
+        file.write(f'Median of qualifiers: {median_frequency}\n')
 
 
 def executable_analysis(cur):
@@ -400,20 +413,19 @@ def executable_analysis(cur):
 
     unique_words_count = len(sorted_frequencies)
 
-    print('TYPE OF FILE')
-    print()
+    with open('Frequency_of_each_file_type.txt', 'w') as file:
+        file.write('TYPE OF FILE\n')
+        file.write('\n')
 
-    # Print the word frequencies
-    total_count = 0
-    for word, frequency in sorted_frequencies:
-        total_count = total_count + frequency
-        print(f'File type: {word} - Frequency: {frequency}')
-    print()
+        # Print the word frequencies
+        total_count = 0
+        for word, frequency in sorted_frequencies:
+            total_count = total_count + frequency
+            file.write(f'File type: {word} - Frequency: {frequency}\n')
+        file.write('\n')
 
-    print(f'Number of unique file types: {unique_words_count}')
-    print(f'Total count:{total_count}')
-    print('---x----')
-    print()
+        file.write(f'Number of unique file types: {unique_words_count}\n')
+        file.write(f'Total count:{total_count}\n')
 
 
 def frequency_of_each_word(word_list):
