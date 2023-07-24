@@ -246,7 +246,7 @@ class BuildPackages:
 
     def clone_rep_central(self):
         clone_dir = "./temp/builder"
-        url = "https://github.com/jvm-repo-rebuild/reproducible-central.git"
+        url = "https://github.com/Vel1khan/reproducible-central.git"
         process = subprocess.run(["git", "clone", url, clone_dir])
         if process.returncode != 0:
             self.log.error("Problem encountered")
