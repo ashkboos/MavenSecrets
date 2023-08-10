@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,6 +25,9 @@ import nl.tudelft.mavensecrets.Package;
 public class LineEndingExtractor implements Extractor {
 
     private static final Logger LOGGER = LogManager.getLogger(LineEndingExtractor.class);
+    private static final LineEndingCounter COUNTER_UNIX = new RegexLineEndingCounter(Pattern.compile("(?<!\r)\n"));
+    private static final LineEndingCounter COUNTER_WINDOWS = new RegexLineEndingCounter(Pattern.compile("\r\n"));
+    private static final LineEndingCounter COUNTER_MACINTOSH = new RegexLineEndingCounter(Pattern.compile("\r(?!\n)"));
 
     private final Field[] fields = new Field[0];
 
@@ -100,5 +105,28 @@ public class LineEndingExtractor implements Extractor {
     @FunctionalInterface
     private static interface LineEndingCounter {
         long countOccurrences(String string);
+    }
+
+    private static class RegexLineEndingCounter implements LineEndingCounter {
+
+        private final Pattern pattern;
+
+        public RegexLineEndingCounter(Pattern pattern) {
+            this.pattern = Objects.requireNonNull(pattern);
+        }
+
+        @Override
+        public long countOccurrences(String string) {
+            // Preconditions
+            Objects.requireNonNull(string);
+
+            Matcher matcher = pattern.matcher(string);
+
+            long count = 0;
+            while (matcher.find()) {
+                count++;
+            }
+            return count;
+        }
     }
 }
