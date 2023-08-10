@@ -22,6 +22,9 @@ import nl.tudelft.mavensecrets.Field;
 import nl.tudelft.mavensecrets.Maven;
 import nl.tudelft.mavensecrets.Package;
 
+/**
+ * An {@link Extractor} looking at line endings.
+ */
 public class LineEndingExtractor implements Extractor {
 
     private static final Logger LOGGER = LogManager.getLogger(LineEndingExtractor.class);
@@ -94,6 +97,13 @@ public class LineEndingExtractor implements Extractor {
         return results;
     }
 
+    /**
+     * Check if the archive entry with the given path should have its line endings counted.
+     *
+     * @param path Target path.
+     * @return If the entry should be processed by this extractor.
+     * @throws NullPointerException If <code>path</code> is <code>null</code>.
+     */
     private boolean shouldProcess(String path) {
         // Preconditions
         Objects.requireNonNull(path);
@@ -102,15 +112,35 @@ public class LineEndingExtractor implements Extractor {
         return true;
     }
 
+    /**
+     * A line ending counter, counting how often a line ending occurs.
+     */
     @FunctionalInterface
     private static interface LineEndingCounter {
+
+        /**
+         * Count the number of line endings in a given string.
+         *
+         * @param string Input string.
+         * @return The number of occurrences.
+         * @throws NullPointerException If <code>string</code> is <code>null</code>.
+         */
         long countOccurrences(String string);
     }
 
+    /**
+     * A {@link LineEndingCounter} that matches line endings on a regular expression.
+     */
     private static class RegexLineEndingCounter implements LineEndingCounter {
 
         private final Pattern pattern;
 
+        /**
+         * Create a line ending counter for a given {@link Pattern}.
+         *
+         * @param pattern The pattern.
+         * @throws NullPointerException If <code>pattern</code> is <code>null</code>.
+         */
         public RegexLineEndingCounter(Pattern pattern) {
             this.pattern = Objects.requireNonNull(pattern);
         }
