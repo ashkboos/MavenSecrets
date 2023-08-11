@@ -35,7 +35,6 @@ public class LineEndingExtractor implements Extractor {
     private final Field[] fields = new Field[] {
             new Field("line_ending_lf", "BOOLEAN"),
             new Field("line_ending_crlf", "BOOLEAN"),
-            new Field("line_ending_inconsistent", "BOOLEAN"),
             new Field("line_ending_inconsistent_in_file", "BOOLEAN")
     };
 
@@ -109,11 +108,9 @@ public class LineEndingExtractor implements Extractor {
             }
             else if (lf != 0 && crlf != 0) {
                 LOGGER.trace("Found entry with different line endings: {} ({})", entry.getRealName(), pkg.id());
-                results[3] = true;
+                results[2] = true;
             }
         }
-
-        results[2] = ((boolean) results[0]) && ((boolean) results[1]);
 
         LOGGER.trace("Found LF line endings: {}", results[0]);
         LOGGER.trace("Found CRLF line endings: {}", results[1]);
