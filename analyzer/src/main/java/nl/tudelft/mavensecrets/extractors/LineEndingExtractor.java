@@ -24,6 +24,8 @@ import nl.tudelft.mavensecrets.Package;
 
 /**
  * An {@link Extractor} looking at line endings.
+ * Specifically, it looks at all files matching {@link #shouldProcess(String)}.
+ * These files are searched for the presence of <code>LF</code> and <code>CRLF</code> style line endings.
  */
 public class LineEndingExtractor implements Extractor {
 
