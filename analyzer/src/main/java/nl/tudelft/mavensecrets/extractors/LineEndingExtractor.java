@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.jar.JarEntry;
@@ -30,9 +30,14 @@ public class LineEndingExtractor implements Extractor {
     private static final Logger LOGGER = LogManager.getLogger(LineEndingExtractor.class);
     private static final LineEndingCounter COUNTER_UNIX = new RegexLineEndingCounter(Pattern.compile("(?<!\r)\n"));
     private static final LineEndingCounter COUNTER_WINDOWS = new RegexLineEndingCounter(Pattern.compile("\r\n"));
-    private static final LineEndingCounter COUNTER_MACINTOSH = new RegexLineEndingCounter(Pattern.compile("\r(?!\n)"));
+    //private static final LineEndingCounter COUNTER_MACINTOSH = new RegexLineEndingCounter(Pattern.compile("\r(?!\n)"));
 
-    private final Field[] fields = new Field[0];
+    private final Field[] fields = new Field[] {
+            new Field("line_ending_lf", "BOOLEAN"),
+            new Field("line_ending_crlf", "BOOLEAN"),
+            new Field("line_ending_inconsistent", "BOOLEAN"),
+            new Field("line_ending_inconsistent_in_file", "BOOLEAN")
+    };
 
     @Override
     public Field[] fields() {
@@ -65,6 +70,14 @@ public class LineEndingExtractor implements Extractor {
 
         LOGGER.trace("Found {} file(s) to inspect ({})", entries.size(), pkg.id());
 
+        // No files
+        if (entries.isEmpty()) {
+            return results;
+        }
+
+        // Default values
+        Arrays.fill(results, false);
+
         // Create a buffer here so we do not have to allocate space in every iteration
         char[] buf = new char[1 << 10];
 
@@ -84,15 +97,23 @@ public class LineEndingExtractor implements Extractor {
                 continue;
             }
 
-            // TODO: Implementation
-            List<LineEndingCounter> counters = Collections.emptyList();
+            long lf = COUNTER_UNIX.countOccurrences(string);
+            long crlf = COUNTER_WINDOWS.countOccurrences(string);
 
-            for (LineEndingCounter counter : counters) {
-                @SuppressWarnings("unused") long occurrences = counter.countOccurrences(string);
+            // This is a bit unfortunate
+            results[0] = ((boolean) results[0]) || lf != 0;
+            results[1] = ((boolean) results[1]) || crlf != 0;
 
-                // TODO: Handle results
+            if (lf == 0 && crlf == 0) {
+                LOGGER.trace("Found entry without line endings: {} ({})", entry.getRealName(), pkg.id());
+            }
+            else if (lf != 0 && crlf != 0) {
+                LOGGER.trace("Found entry with different line endings: {} ({})", entry.getRealName(), pkg.id());
+                results[3] = true;
             }
         }
+
+        results[2] = ((boolean) results[0]) && ((boolean) results[1]);
 
         return results;
     }
