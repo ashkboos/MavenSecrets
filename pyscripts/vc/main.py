@@ -45,7 +45,7 @@ def main():
     if "tag_finder" in config.RUN_LIST:
         log.info("Running Tag Finder...")
         tag_finder = GetTags(db, config)
-        tag_finder.find_github_release()
+        tag_finder.find_tags()
 
     if "builder" in config.RUN_LIST:
         log.info("Running Builder...")
