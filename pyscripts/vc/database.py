@@ -38,6 +38,81 @@ class Database:
         )
         return self.cur.fetchall()
 
+    # FOR DEBUGGING
+    def get_all_tags(self):
+        self.execute(
+            f"""
+            SELECT * FROM tagsold;
+            """
+        )
+        return self.cur.fetchall()
+
+    # FOR DEBUGGING
+    def get_all_matching_tags(self):
+        self.execute(
+            f"""
+SELECT tag_name
+FROM (SELECT *,
+    SPLIT_PART(artifactid, '-', 1) AS p1,
+    SPLIT_PART(artifactid, '-', 2) AS p2,
+    SPLIT_PART(artifactid, '-', 3) AS p3,
+    SPLIT_PART(artifactid, '-', 4) AS p4,
+    SPLIT_PART(artifactid, '-', 5) AS p5
+    FROM tags) subquery
+WHERE LOWER(tag_name) IN (
+    LOWER(version),
+    LOWER(artifactid || '-' || version),
+    LOWER('version-' || version),
+    LOWER('v' || version),
+    LOWER('v.' || version),
+    LOWER('release-' || version),
+    LOWER('release-v' || version),
+    LOWER('release_' || version),
+    LOWER('release_v' || version),
+    LOWER('release/' || version),
+    LOWER('release/v' || version),
+    LOWER('releases/' || version),
+    LOWER('rel-' || version),
+    LOWER('rel_' || version),
+    LOWER('rel_v' || version),
+    LOWER('rel/' || version),
+    LOWER('rel/v' || version),
+    LOWER('r' || version),
+    LOWER('r.' || version),
+    LOWER('project-' || version),
+    LOWER(version || '-release'),
+    LOWER(version || '.release'),
+    LOWER('v' || version || '.release'),
+    LOWER(version || '.final'),
+    LOWER(version || '-final'),
+    LOWER( 'v' || version || '-final'),
+    LOWER('tag-' || version),
+    LOWER('tag' || version),
+    -- Complex
+    LOWER(p1 || '-' || version),
+    LOWER(p1 || '-v' || version),
+    LOWER(p2 || '-' || version),
+    LOWER(p2 || '-v' || version),
+    LOWER(p3 || '-' || version),
+    LOWER(p3 || '-v' || version),
+    LOWER(p4 || '-' || version),
+    LOWER(p4 || '-v' || version),
+    LOWER(p5 || '-' || version),
+    LOWER(p5 || '-v' || version),
+    LOWER(p1 || '-' || p2 || '-' || version),
+    LOWER(p1 || '-' || p2 || '-v' || version),
+    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || version),
+    LOWER(p1 || '-' || p2 || '-' || p3 || '-v' || version),
+    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || version),
+    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-v' || version),
+    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-' || version),
+    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-v' || version)
+    );
+
+"""
+        )
+        return self.cur.fetchall()
+
     def get_valid_github_urls(self):
         """
         Gets all packages that have a valid github url and are not already in tags table.
