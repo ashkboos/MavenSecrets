@@ -277,8 +277,21 @@ class GetTags:
             "tag" + version,
             artifact_parts[0] + "-" + version,
             artifact_parts[0] + "-v" + version,
-            # TODO Add all of the cases!!!
         ]
+        for i in range(5):
+            if len(artifact_parts) > i:
+                possible_tags.extend(
+                    [
+                        artifact_parts[i] + "-" + version,
+                        artifact_parts[i] + "-v" + version,
+                    ]
+                )
+        for i in range(5):
+            if len(artifact_parts) > i:
+                tag_str = "-".join(artifact_parts[: i + 1])
+                possible_tags.append(tag_str + "-" + version)
+                possible_tags.append(tag_str + "-v" + version)
+
         possible_tags = [tag.lower() for tag in possible_tags]
         filtered = list(filter(lambda tag: tag["name"].lower() in possible_tags, tags))
         if len(filtered) > 1:
