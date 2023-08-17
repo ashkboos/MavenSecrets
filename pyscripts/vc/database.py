@@ -321,11 +321,15 @@ WHERE LOWER(tag_name) IN (
         query = f"""
         SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
                t.url, java_version_manifest_2,
-               java_version_manifest_3, java_version_class_major, output_timestamp_prop
+               java_version_manifest_3, compiler_version_source, output_timestamp_prop,
+               lastmodified
         FROM {self.TAGS_TABLE} AS t
         JOIN {self.PKG_TABLE} p on t.groupid = p.groupid
             AND t.artifactid = p.artifactid
             AND t.version = p.version
+        JOIN {self.PKG_LIST_TABLE} pl on t.groupid = pl.groupid
+            AND t.artifactid = pl.artifactid
+            AND t.version = pl.version
         WHERE output_timestamp_prop IS NOT NULL
         AND 
         t.url IS NOT NULL
