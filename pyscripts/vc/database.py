@@ -322,7 +322,7 @@ WHERE LOWER(tag_name) IN (
         SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
                t.url, java_version_manifest_2,
                java_version_manifest_3, compiler_version_source, output_timestamp_prop,
-               lastmodified
+               lastmodified, line_ending_lf, line_ending_crlf, line_ending_inconsistent_in_file
         FROM {self.TAGS_TABLE} AS t
         JOIN {self.PKG_TABLE} p on t.groupid = p.groupid
             AND t.artifactid = p.artifactid
@@ -374,7 +374,7 @@ WHERE LOWER(tag_name) IN (
         from_existing, build_success, stdout, stderr, ok_files, ko_files, command)
         VALUES (%s{12*",%s"}) ON CONFLICT DO NOTHING; 
         """
-        self.execute(
+        self.cur.execute(
             query,
             [
                 bs.groupid,

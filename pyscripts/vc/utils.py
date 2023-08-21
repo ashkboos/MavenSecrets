@@ -1,5 +1,6 @@
 import re
 from giturlparse import parse
+from psycopg2.extras import DictRow
 
 
 # https://maven.apache.org/scm/scm-url-format.html
@@ -57,3 +58,18 @@ def parse_plus(url: str):
         return parse(url + ".git")
     https_url = re.sub(r"http:", "https:", url)
     return parse(https_url)
+
+
+def get_field(record: DictRow, field_name: str, mandatory: bool = False):
+    """Gets database record value in a given field. Can return None if
+    mandatory = False and value in field is null.
+
+    Throws:
+    ValueError if value in field is null,
+    KeyError if field_name not present in record
+    """
+    val = record[field_name]
+    if mandatory and not val:
+        raise ValueError(f"{field_name} is null")
+    else:
+        return val

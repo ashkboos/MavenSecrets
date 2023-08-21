@@ -51,7 +51,7 @@ def main():
         log.info("Running Builder...")
         builder = BuildPackages(db, config)
         builder.clone_rep_central()
-        builder.build_and_compare()
+        builder.build_all()
 
     # Don't forget to note down the last commit of the cloned Reproducible Central repo
 
