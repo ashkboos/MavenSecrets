@@ -75,7 +75,7 @@ public class CompilerConfigExtractorTest {
         Maven maven = new Maven(resolver);
         try (Package pkg = createPackage(new Model())) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {false, null, null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {false, null, null, null, null, null, null, null}, results);
         }
     }
 
@@ -91,7 +91,7 @@ public class CompilerConfigExtractorTest {
         
         try (Package pkg = createPackage(model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", new byte[] {0, 1, 97, 0, 1, 98, 0, 1, 99}, "javac", "UTF-8", "1.8", "17"}, results);
+            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", new byte[] {0, 1, 97, 0, 1, 98, 0, 1, 99}, "javac", "UTF-8", "1.8", "17", null}, results);
         }
     }
 
@@ -107,7 +107,7 @@ public class CompilerConfigExtractorTest {
         
         try (Package pkg = createPackage(model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, null, null}, results);
         }
     }
 
@@ -139,7 +139,7 @@ public class CompilerConfigExtractorTest {
 
         try (Package pkg = createPackage(child)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, null}, results);
+            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, null, null}, results);
         }
     }
 
@@ -178,7 +178,7 @@ public class CompilerConfigExtractorTest {
 
         try (Package pkg = createPackage(child)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", new byte[] {0, 1, 97, 0, 1, 98, 0, 1, 99}, "javac", "UTF-8", "1.8", "17"}, results);
+            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", new byte[] {0, 1, 97, 0, 1, 98, 0, 1, 99}, "javac", "UTF-8", "1.8", "17", null}, results);
         }
     }
 
@@ -214,7 +214,7 @@ public class CompilerConfigExtractorTest {
 
         try (Package pkg = createPackage(child)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "2"}, results);
+            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "2", null}, results);
         }
     }
 
@@ -242,7 +242,7 @@ public class CompilerConfigExtractorTest {
 
         try (Package pkg = createPackage(model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "1"}, results);
+            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "1", null}, results);
         }
     }
 
@@ -278,7 +278,7 @@ public class CompilerConfigExtractorTest {
 
         try (Package pkg = createPackage(child)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "2"}, results);
+            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "2", null}, results);
         }
     }
 
@@ -306,7 +306,7 @@ public class CompilerConfigExtractorTest {
 
         try (Package pkg = createPackage(model)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "1"}, results);
+            Assertions.assertArrayEquals(new Object[] {true, "3.11.0", null, null, null, null, "1", null}, results);
         }
     }
 
@@ -339,7 +339,7 @@ public class CompilerConfigExtractorTest {
 
         try (Package pkg = createPackage(child)) {
             Object[] results = extractor.extract(maven, pkg, pkgName, db);
-            Assertions.assertArrayEquals(new Object[] {false, null, null, null, null, null, "2"}, results);
+            Assertions.assertArrayEquals(new Object[] {false, null, null, null, null, null, "2", null}, results);
         }
     }
 
