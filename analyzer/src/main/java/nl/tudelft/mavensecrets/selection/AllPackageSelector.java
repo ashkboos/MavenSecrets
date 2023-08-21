@@ -1,6 +1,5 @@
 package nl.tudelft.mavensecrets.selection;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,7 +25,7 @@ public class AllPackageSelector implements PackageSelector {
     }
 
     @Override
-    public Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws IOException, SQLException {
+    public Collection<? extends ArtifactId> getArtifacts(int page, int pageSize) throws SQLException {
         return Collections.unmodifiableCollection(db.getArtifactIds(page, pageSize));
     }
 }
