@@ -54,7 +54,8 @@ public class CompilerConfigExtractor implements Extractor {
             new Field("compiler_id", "VARCHAR"),
             new Field("compiler_encoding", "VARCHAR"),
             new Field("compiler_version_source", "VARCHAR"),
-            new Field("compiler_version_target", "VARCHAR")
+            new Field("compiler_version_target", "VARCHAR"),
+            new Field("compiler_version_release", "VARCHAR")
     };
 
     @Override
@@ -122,7 +123,7 @@ public class CompilerConfigExtractor implements Extractor {
             pcfg = mergeConfig(iterator.next(), pcfg);
         }
         MavenCompilerConfig config = mergeConfig(pcfg.pluginManagement(), pcfg.plugin());
-        config = new MavenCompilerConfig(config.present(), config.version(), config.args(), config.id(), config.encoding(), config.source() == null ? pcfg.mavenCompilerSourceProperty() : config.source(), config.target() == null ? pcfg.mavenCompilerTargetProperty() : config.target());
+        config = new MavenCompilerConfig(config.present(), config.version(), config.args(), config.id(), config.encoding(), config.source() == null ? pcfg.mavenCompilerSourceProperty() : config.source(), config.target() == null ? pcfg.mavenCompilerTargetProperty() : config.target(), config.release() == null ? pcfg.mavenCompilerReleaseProperty() : config.release());
 
         LOGGER.trace("Found compiler configuration {} ({})", config, id);
         return config.toArray();
@@ -170,8 +171,9 @@ public class CompilerConfigExtractor implements Extractor {
                 .orElseGet(MavenCompilerConfig::new);
         String source = model.getProperties().getProperty("maven.compiler.source");
         String target = model.getProperties().getProperty("maven.compiler.target");
+        String release = model.getProperties().getProperty("maven.compiler.release");
 
-        return new ProjectMavenCompilerConfig(plugin, pluginManagement, source, target);
+        return new ProjectMavenCompilerConfig(plugin, pluginManagement, source, target, release);
     }
 
     /**
@@ -228,8 +230,12 @@ public class CompilerConfigExtractor implements Extractor {
                             .map(dom -> dom.getChild("target"))
                             .map(Xpp3Dom::getValue)
                             .orElse(null);
+                    String release = optional
+                            .map(dom -> dom.getChild("release"))
+                            .map(Xpp3Dom::getValue)
+                            .orElse(null);
 
-                    return new MavenCompilerConfig(true, plugin.getVersion(), cargs, cid, encoding, source, target);
+                    return new MavenCompilerConfig(true, plugin.getVersion(), cargs, cid, encoding, source, target, release);
                 })
                 .orElseGet(MavenCompilerConfig::new);
     }
@@ -249,7 +255,8 @@ public class CompilerConfigExtractor implements Extractor {
         MavenCompilerConfig pluginManagement = mergeConfig(parent.pluginManagement(), child.pluginManagement());
         String mavenCompilerSource = child.mavenCompilerSourceProperty() == null ? parent.mavenCompilerSourceProperty() : child.mavenCompilerSourceProperty();
         String mavenCompilerTarget = child.mavenCompilerTargetProperty() == null ? parent.mavenCompilerTargetProperty() : child.mavenCompilerTargetProperty();
-        return new ProjectMavenCompilerConfig(plugin, pluginManagement, mavenCompilerSource, mavenCompilerTarget);
+        String mavenCompilerRelease = child.mavenCompilerReleaseProperty() == null ? parent.mavenCompilerReleaseProperty() : child.mavenCompilerReleaseProperty();
+        return new ProjectMavenCompilerConfig(plugin, pluginManagement, mavenCompilerSource, mavenCompilerTarget, mavenCompilerRelease);
     }
 
     /**
@@ -277,8 +284,9 @@ public class CompilerConfigExtractor implements Extractor {
         String encoding = getMergedField(parent, child, MavenCompilerConfig::encoding);
         String source = getMergedField(parent, child, MavenCompilerConfig::source);
         String target = getMergedField(parent, child, MavenCompilerConfig::target);
+        String release = getMergedField(parent, child, MavenCompilerConfig::release);
 
-        return new MavenCompilerConfig(true, version, args, id, encoding, source, target);
+        return new MavenCompilerConfig(true, version, args, id, encoding, source, target, release);
     }
 
     /**
@@ -303,13 +311,13 @@ public class CompilerConfigExtractor implements Extractor {
     /**
      * A Maven compiler plugin configuration record.
      */
-    private static record MavenCompilerConfig(boolean present, String version, byte[] args, String id, String encoding, String source, String target) {
+    private static record MavenCompilerConfig(boolean present, String version, byte[] args, String id, String encoding, String source, String target, String release) {
 
         /**
          * Create an empty configuration.
          */
         public MavenCompilerConfig() {
-            this(false, null, null, null, null, null, null);
+            this(false, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -323,7 +331,7 @@ public class CompilerConfigExtractor implements Extractor {
          * @return The array.
          */
         public Object[] toArray() {
-            return new Object[] {present, version, args, id, encoding, source, target};
+            return new Object[] {present, version, args, id, encoding, source, target, release};
         }
 
         /*
@@ -340,6 +348,7 @@ public class CompilerConfigExtractor implements Extractor {
             result = result * 17 + Objects.hash(encoding);
             result = result * 17 + Objects.hash(source);
             result = result * 17 + Objects.hash(target);
+            result = result * 17 + Objects.hash(release);
             return result;
         }
 
@@ -352,7 +361,8 @@ public class CompilerConfigExtractor implements Extractor {
                         && Objects.equals(id, other.id())
                         && Objects.equals(encoding, other.encoding())
                         && Objects.equals(source, other.source())
-                        && Objects.equals(target, other.target());
+                        && Objects.equals(target, other.target())
+                        && Objects.equals(release, other.release());
             }
             return false;
         }
@@ -375,6 +385,8 @@ public class CompilerConfigExtractor implements Extractor {
                     .append(source)
                     .append(", target=")
                     .append(target)
+                    .append(", release=")
+                    .append(release)
                     .append(']')
                     .toString();
         }
@@ -383,7 +395,7 @@ public class CompilerConfigExtractor implements Extractor {
     /**
      * A POM compiler configuration record.
      */
-    private static record ProjectMavenCompilerConfig(MavenCompilerConfig plugin, MavenCompilerConfig pluginManagement, String mavenCompilerSourceProperty, String mavenCompilerTargetProperty) {
+    private static record ProjectMavenCompilerConfig(MavenCompilerConfig plugin, MavenCompilerConfig pluginManagement, String mavenCompilerSourceProperty, String mavenCompilerTargetProperty, String mavenCompilerReleaseProperty) {
         // Nothing
     }
 }

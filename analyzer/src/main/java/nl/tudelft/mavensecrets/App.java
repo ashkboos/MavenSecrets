@@ -21,6 +21,7 @@ import nl.tudelft.mavensecrets.config.Config;
 import nl.tudelft.mavensecrets.config.YamlConfig;
 import nl.tudelft.mavensecrets.resolver.DefaultResolver;
 import nl.tudelft.mavensecrets.selection.PackageSelector;
+import nl.tudelft.mavensecrets.selection.AlreadySelectedSelector;
 import nl.tudelft.mavensecrets.selection.StratifiedSampleSelector;
 
 public class App {
@@ -67,7 +68,8 @@ public class App {
             return;
         }
 
-        PackageSelector selector = new StratifiedSampleSelector(db, config.getSeed(), config.getSamplePercent());
+//        PackageSelector selector = new StratifiedSampleSelector(db, config.getSeed(), config.getSamplePercent());
+        PackageSelector selector = new AlreadySelectedSelector(db);
         LOGGER.info("Package selector: {}", selector);
 
         var resolver = new DefaultResolver(config.getLocalRepository());
