@@ -1,5 +1,7 @@
 from builtins import ValueError
+import pandas as pd
 import glob
+from itertools import takewhile, dropwhile
 import logging
 import re
 import subprocess
@@ -13,6 +15,7 @@ from common.packageId import PackageId
 from common.config import Config
 from common.build_result import Build_Result
 from common.build_spec import Build_Spec
+from utils import get_field
 
 
 class BuildPackages:
@@ -22,7 +25,12 @@ class BuildPackages:
         self.config = config
 
     # TODO check returncode and .buildinfo manually when package fails,
-    def build_and_compare(self):
+    def build_all(self):
+        """Fetches all packages that have not been built yet and have the
+        correct build parameter data, then builds them one by one, manually
+        generating a buildspec if it hasn't already been created by Reproducible
+        Central.
+        """
         os.chdir("./temp/builder")
         self.db.create_builds_table()
         records = self.db.get_hosts_with_tags()
@@ -46,7 +54,10 @@ class BuildPackages:
                 shutil.rmtree(folder)
 
     def build_from_existing(self, pkg: PackageId, src_buildspec):
-        # Copy buildspec to research/ folder
+        """Given a package and the path to its pre-existing buildspec from Reproducible
+        Central, builds it and saves the build result along with the parsed build params
+        to the db.
+        """
         dest = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
         if not os.path.exists(dest):
             os.makedirs(dest)
@@ -57,46 +68,81 @@ class BuildPackages:
             build_spec = self.parse_buildspec(buildspec_path)
         except ValueError:
             self.log.error("Could not parse buildspec!")
-        build_result = self.build(buildspec_path, pkg)
+        build_result = self.build(buildspec_path)
         self.db.insert_build(build_spec, build_result, from_existing=True)
 
-    # TODO deal with changing params
     def build_from_scratch(self, pkg: PackageId, record: DictRow):
-        url = record["url"]
-        tags = [record["tag_name"], record["release_tag_name"]]
-        # TODO parse the major version from manifest_2 field
-        # jdks = [record["java_version_manifest_3"], record["java_version_manifest_2"]]
-        jdks = [self.convert_manifest_3(record["java_version_manifest_3"])]
+        """Given a package and its associated data, generates (multiple)
+        buildspecs and builds them, inserting the Build_Result into
+        the database.
 
-        notNone = lambda x: x is not None
-        tags = list(filter(notNone, tags))
-        jdks = list(filter(notNone, jdks))
+        Throws:
+        ValueError if mandatory fields are missing,
+        KeyError if record does not contain requested fields.
+        """
+        url, tag = get_field(record, "url", mandatory=True), get_field(
+            record, "tag_name", mandatory=True
+        )
+        pub_date = get_field(record, "lastmodified", mandatory=True)
+        nline_inconsistent = get_field(record, "line_ending_inconsistent_in_file")
+        nline_lf, nline_crlf = get_field(record, "line_ending_lf"), get_field(
+            record, "line_ending_crlf"
+        )
+        build_jdk_spec = self.convert_jdk_version(
+            get_field(record, "java_version_manifest_3")
+        )
+        build_jdk = self.convert_jdk_version(
+            self.parse_build_jdk(get_field(record, "java_version_manifest_2"))
+        )
+        source_jdk_ver = self.convert_jdk_version(
+            get_field(record, "compiler_version_source")
+        )
 
-        if len(tags) > 0 and len(jdks) > 0:
-            # TODO maybe try both tags if they are not the same
-            tag = tags[0]
-            jdk = jdks[0]
+        jdks = []
+        if build_jdk_spec:
+            jdks.append(build_jdk_spec)
+        elif build_jdk:
+            jdks.append(build_jdk)
         else:
-            raise ValueError(f"Missing some build params.")
-        for newline in ["lf", "crlf"]:
-            buildspec_path = self.create_buildspec(pkg, url, tag, "mvn", jdk, newline)
-            buildspec = self.parse_buildspec(buildspec_path)
-            build_result = self.build(buildspec_path, pkg)
-            self.db.insert_build(buildspec, build_result, False)
+            # build with every LTS version available at package release
+            jdks.extend(
+                self.choose_jdk_versions(source_jdk_ver, pub_date, lts_only=True)
+            )
+            self.log.info(
+                f"No compiler JDK version found. Building with versions: {jdks}"
+            )
 
-    def build(self, buildspec_path, pkg: PackageId):
+        if nline_lf and not nline_crlf and not nline_inconsistent:
+            newlines = ["lf"]
+            self.log.debug("Newlines detected from pom.properties. Building with lf.")
+        elif not nline_lf and nline_crlf and not nline_inconsistent:
+            newlines = ["crlf"]
+            self.log.debug("Newlines detected from pom.properties. Building with crlf.")
+        else:
+            self.log.debug("Newlines NOT detected. Building with lf & crlf.")
+            newlines = ["lf", "crlf"]
+
+        for jdk in jdks:
+            for newline in newlines:
+                buildspec_path = self.create_buildspec(
+                    pkg, url, tag, "mvn", jdk, newline
+                )
+                buildspec = self.parse_buildspec(buildspec_path)
+                build_result = self.build(buildspec_path)
+                self.db.insert_build(buildspec, build_result, False)
+
+    def build(self, buildspec_path):
+        """Given the path to a buildspec, runs the Reproducible Central rebuild.sh
+        script in a subprocess, waiting for completion. Then it locates the .buildcompare
+        file produced by the script to get the (non-)reproducible files and
+        returns a Build_Result object.
+        """
         # process = subprocess.run(["./rebuild.sh", buildspec_path])
         process = subprocess.run(
             ["./rebuild.sh", buildspec_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        self.log.debug("-------STDOUT-------")
-        self.log.debug(process.stdout.decode())
-        self.log.debug("-------ENDSTDOUT-------")
-        self.log.debug("-------STDERR-------")
-        self.log.debug(process.stderr.decode())
-        self.log.debug("-------ENDSTDERR-------")
 
         dir_path = os.path.dirname(buildspec_path)
         search_pattern = os.path.join(dir_path, "*.buildcompare")
@@ -134,13 +180,14 @@ class BuildPackages:
     # TODO if version doesn't exist but other versions exist, use those as templates
     # TODO investigate what happens if git clone with ssh requires fingerprint to continue
     def buildspec_exists(self, pkg: PackageId) -> list:
-        # could be in com.github.hazendaz.7zip
-        # but also in com.github.hazendaz.7zip.7zip
-        # due to incosistency in repo
+        """Given a package, checks whether a buildspec has already been created by the Reproducible
+        Central project and returns a list of all paths found.
+        """
         paths = []
 
         base_path = "content/"
-        # path with artifactid
+        # buildspec could be in com.github.hazendaz.7zip but also in
+        # com.github.hazendaz.7zip.7zip due to incosistency in repo path with artifactid
         relative_path = (
             pkg.groupid.replace(".", "/")
             + "/"
@@ -176,6 +223,9 @@ class BuildPackages:
     def create_buildspec(
         self, pkg: PackageId, git_repo, git_tag, tool, jdk, newline
     ) -> str:
+        """Given build parameters, creates a buildspec using .buildspec.template
+        saving it in "research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
+        """
         values = {
             "groupId": pkg.groupid,
             "artifactId": pkg.artifactid,
@@ -186,7 +236,6 @@ class BuildPackages:
             "jdk": jdk,
             "newline": newline,
         }
-
         with open(
             os.path.join(os.getcwd(), "..", "..", ".buildspec.template"), "r"
         ) as file:
@@ -203,10 +252,13 @@ class BuildPackages:
         return filepath
 
     def parse_buildspec(self, path) -> Build_Spec:
+        """Parses the buildspec by sourcing the bash variables from the buildspec
+        Throws: ValueError
+        Returns: Build_Spec object
+        """
         # Source the bash file and echo the variables
         command = f'source {path}; echo "$groupId"; echo "$artifactId"; echo "$version"; echo "$tool"; echo "$jdk"; echo "$newline"; echo "$command"'
 
-        # Execute the command in bash
         process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE)
         output, _ = process.communicate()
 
@@ -216,33 +268,95 @@ class BuildPackages:
         # Assign the values to Python variables, can throw ValueError
         groupId, artifactId, version, tool, jdk, newline, command = var_values
 
-        self.log.debug(f"groupId = {groupId}")
-        self.log.debug(f"artifactId = {artifactId}")
-        self.log.debug(f"version = {version}")
-        self.log.debug(f"tool = {tool}")
-        self.log.debug(f"jdk = {jdk}")
-        self.log.debug(f"newline = {newline}")
-        self.log.debug(f"command = {command}")
+        self.log.info(f"groupId = {groupId}")
+        self.log.info(f"artifactId = {artifactId}")
+        self.log.info(f"version = {version}")
+        self.log.info(f"tool = {tool}")
+        self.log.info(f"jdk = {jdk}")
+        self.log.info(f"newline = {newline}")
+        self.log.info(f"command = {command}")
         return Build_Spec(groupId, artifactId, version, tool, jdk, newline, command)
 
-    def parse_java_version(self, version) -> str:
-        # result = re.search(r"^(\d+)(\.\d+)?(\.\d+)?(_\d+)?( \(.+\))?$", version)
-        # if result == None:
-        #     return version
-        # major_arg1 = result.group(1)
-        # major_arg2 = result.group(2)
-        # major_arg = (
-        #     (major_arg1 + major_arg2)
-        #     if major_arg2 != None and major_arg2 != ".0"
-        #     else major_arg1
-        # )
-        # print(major_arg)
-        result = re.search(r"(?:(1\.\d)|(\d{2}|\d{1}(?![\d\.])))", version)
+    def choose_jdk_versions(
+        self, jdk_src_ver: str, pub_date: str, lts_only: bool
+    ) -> list:
+        """Given the source jdk version and the package's publish date, returns
+        all jdk versions available at that date. Only LTS versions are returned if
+        lts_only = true.
+        """
+        pub_date = pd.to_datetime(pub_date)
+        data = {
+            "0": "1996-01-23",
+            "1": "1997-02-02",
+            "2": "1998-12-04",
+            "3": "2000-05-08",
+            "4": "2002-02-13",
+            "5": "2004-09-29",
+            "6": "2006-12-11",
+            "7": "2011-07-28",
+            "8": "2014-03-18",
+            "9": "2017-09-21",
+            "10": "2018-03-20",
+            "11": "2018-09-25",
+            "12": "2019-03-19",
+            "13": "2019-09-17",
+            "14": "2020-03-17",
+            "15": "2020-09-16",
+            "16": "2021-03-16",
+            "17": "2021-09-14",
+            "18": "2022-03-22",
+            "19": "2022-09-20",
+            "20": "2023-03-21",
+            "21": "2023-09-19",
+        }
+        jdk_rel_dates = {k: pd.to_datetime(v) for k, v in data.items()}
+
+        all_vers_after = dict(
+            dropwhile(lambda kv: kv[0] != jdk_src_ver, jdk_rel_dates.items())
+        )
+        vers_at_publish = dict(
+            takewhile(lambda kv: kv[1] < pub_date, all_vers_after.items())
+        )
+        if lts_only:
+            return [
+                ver
+                for ver in vers_at_publish
+                if ver in [jdk_src_ver, "8", "11", "17", "21"]
+            ]
+        else:
+            return [ver for ver in vers_at_publish]
+
+    def convert_jdk_version(self, version: str):
+        """Converts 1.X style JDK version to the X version
+        i.e. 1.8 returns 8
+        """
+        if version is None:
+            return None
+        else:
+            return re.sub(r"1\.([0-9]|1[0-9]|20|21)", r"\1", version)
+
+    def parse_build_jdk(self, version) -> str:
+        """Parses the major JDK version from the highly specific format
+        returned by the java.version system property.
+        """
+        if not version:
+            return None
+
+        result = re.search(
+            r"(?:(1\.\d)|[2-9](?=\.\d)|(\d{2}|\d{1}(?![\d\.])))", version
+        )
         if result is None:
-            self.log.debug(f"Can't parse java version: {version}")
-            return version  # return it unchanged
-        major_arg = result.group()
-        return major_arg
+            self.log.debug(f"COULDN'T PARSE {version}")
+            return None
+
+        major_ver = result.group()
+        try:
+            if float(major_ver) > 21:
+                self.log.debug(f"WRONG PARSING OF {version}")
+                return None
+        except ValueError:
+            return None
+        return major_ver
 
     def clone_rep_central(self):
         clone_dir = "./temp/builder"
@@ -250,40 +364,3 @@ class BuildPackages:
         process = subprocess.run(["git", "clone", url, clone_dir])
         if process.returncode != 0:
             self.log.error("Problem encountered")
-
-    def convert_manifest_3(self, version: str):
-        mapping = {"1.7": "7", "1.8": "8"}
-        if version is None:
-            return None
-        return mapping.get(
-            version, version
-        )  # if not found, just return original version
-
-
-# Examples
-
-# values = {
-#     "groupId": "com.github.hazendaz.7zip",
-#     "artifactId": "7zip",
-#     "version": "23.00",
-#     "gitRepo": "https://github.com/hazendaz/7-zip.git",
-#     "gitTag": "7zip-23.00",
-#     "tool": "mvn-3.9.2",
-#     "jdk": "17",
-#     "newline": "crlf",
-# }
-
-# values = {
-#     "groupId": "io.cucumber",
-#     "artifactId": "gherkin",
-#     "version": "26.2.0",
-#     "gitRepo": "https://github.com/cucumber/gherkin.git",
-#     "gitTag": "v26.2.0",
-#     "tool": "mvn-3.9.2",
-#     "jdk": "11",
-#     "newline": "lf",
-# }
-
-# WARNING] The requested profile "apache-release" could not be activated because it does not exist.
-# dos2unix: target/matsuo-util-common-0.1.3.buildinfo: No such file or directory
-# dos2unix: Skipping target/matsuo-util-common-0.1.3.buildinfo, not a regular file.
