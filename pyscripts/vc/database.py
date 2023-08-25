@@ -362,7 +362,7 @@ WHERE LOWER(tag_name) IN (
             ok_files      TEXT[],
             ko_files      TEXT[],
             command       TEXT,
-            PRIMARY KEY (version, artifactid, groupid, tool, newline, jdk, from_existing)
+            PRIMARY KEY (version, artifactid, groupid, tool, newline, jdk, from_existing, command)
         );
         """
         )

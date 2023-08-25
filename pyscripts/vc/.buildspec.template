@@ -1,4 +1,4 @@
-# Central Repository coordinates for the Reference release (for multi-module, pick an artitrary module)
+# Central Repository coordinates for the Reference release (for multi-module, pick an arbitrary module)
 groupId={{ groupId }}
 artifactId={{ artifactId }}
 version={{ version }}
@@ -16,7 +16,9 @@ newline={{ newline }}
 # crlf for Windows, lf for Unix
 
 # Rebuild command
-command="mvn -Papache-release clean package -DskipTests -Dmaven.javadoc.skip -Dgpg.skip"
+# command="mvn clean package -DskipTests -Dmaven.javadoc.skip -Dgpg.skip"
+command="mvn clean package -pl :${artifactId} -am -DskipTests -Dmaven.javadoc.skip -Dgpg.skip"
+
 
 # Location of the buildinfo file generated during rebuild to record output fingerprints
 # buildinfo=target/${artifactId}-${version}.buildinfo
