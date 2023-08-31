@@ -317,7 +317,7 @@ WHERE LOWER(tag_name) IN (
         self.execute(query, [pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
-    def get_hosts_with_tags(self):
+    def get_pkgs_with_tags(self):
         query = f"""
         SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
                t.url, java_version_manifest_2,
@@ -339,7 +339,7 @@ WHERE LOWER(tag_name) IN (
             WHERE b.groupid = t.groupid
               AND b.artifactid = t.artifactid
               AND b.version = t.version
-        )
+        ) ORDER BY RANDOM()
         """
         self.execute(query)
         return self.cur.fetchall()
@@ -368,6 +368,7 @@ WHERE LOWER(tag_name) IN (
         )
         self.conn.commit()
 
+    # TODO add RETURNING statement to get back the build_id
     def insert_build(self, bs: Build_Spec, br: Build_Result, from_existing: bool):
         query = f"""
         INSERT INTO {self.BUILDS_TABLE} (groupid, artifactid, version, jdk, newline, tool, 

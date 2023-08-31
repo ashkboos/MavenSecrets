@@ -15,7 +15,7 @@ from common.packageId import PackageId
 from common.config import Config
 from common.build_result import Build_Result
 from common.build_spec import Build_Spec
-from utils import get_field
+from utils import get_field, compare_jars
 
 
 class BuildPackages:
@@ -33,7 +33,7 @@ class BuildPackages:
         """
         os.chdir("./temp/builder")
         self.db.create_builds_table()
-        records = self.db.get_hosts_with_tags()
+        records = self.db.get_pkgs_with_tags()
         total = len(records)
         self.log.info(f"FOUND {total} with tag and outputTimestamp")
         for i, record in enumerate(records):
@@ -49,9 +49,9 @@ class BuildPackages:
                 self.log.debug(e)
 
             # remove folder once all builds for the package are complete
-            folder = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
-            if os.path.isdir(folder):
-                shutil.rmtree(folder)
+            # folder = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
+            # if os.path.isdir(folder):
+            #     shutil.rmtree(folder)
 
     def build_from_existing(self, pkg: PackageId, src_buildspec):
         """Given a package and the path to its pre-existing buildspec from Reproducible
@@ -70,6 +70,7 @@ class BuildPackages:
             self.log.error("Could not parse buildspec!")
         build_result = self.build(buildspec_path)
         self.db.insert_build(build_spec, build_result, from_existing=True)
+        self.compare(pkg, build_result)
 
     def build_from_scratch(self, pkg: PackageId, record: DictRow):
         """Given a package and its associated data, generates (multiple)
@@ -130,6 +131,7 @@ class BuildPackages:
                 buildspec = self.parse_buildspec(buildspec_path)
                 build_result = self.build(buildspec_path)
                 self.db.insert_build(buildspec, build_result, False)
+                self.compare(pkg, build_result)
 
     def build(self, buildspec_path):
         """Given the path to a buildspec, runs the Reproducible Central rebuild.sh
@@ -137,7 +139,7 @@ class BuildPackages:
         file produced by the script to get the (non-)reproducible files and
         returns a Build_Result object.
         """
-        # process = subprocess.run(["./rebuild.sh", buildspec_path])
+        # process = subprocess.run(["./rebuild.sh", buildspec_path]) # interactive mode
         process = subprocess.run(
             ["./rebuild.sh", buildspec_path],
             stdout=subprocess.PIPE,
@@ -177,8 +179,6 @@ class BuildPackages:
                 False, process.stdout.decode(), process.stderr.decode(), None, None
             )
 
-    # TODO if version doesn't exist but other versions exist, use those as templates
-    # TODO investigate what happens if git clone with ssh requires fingerprint to continue
     def buildspec_exists(self, pkg: PackageId) -> list:
         """Given a package, checks whether a buildspec has already been created by the Reproducible
         Central project and returns a list of all paths found.
@@ -276,6 +276,35 @@ class BuildPackages:
         self.log.info(f"newline = {newline}")
         self.log.info(f"command = {command}")
         return Build_Spec(groupId, artifactId, version, tool, jdk, newline, command)
+
+    def compare(self, pkg: PackageId, build_result: Build_Result):
+        base_path = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/buildcache/{pkg.artifactid}/target/"
+        if not build_result.build_success:
+            self.log.debug("Build fail. Cannot compare JARs!")
+            return
+        non_repr_jars = [
+            fname
+            for fname in build_result.ko_files
+            if os.path.splitext(fname)[1] == ".jar"
+        ]
+        if not non_repr_jars:
+            self.log.debug("No non-reproducible JARs.")
+            return
+        for jar in non_repr_jars:
+            artifact = os.path.join(base_path, jar)
+            reference = os.path.join(base_path, '/reference/', jar)
+            try:
+                diff_md5, not_in_reference, not_in_artifact = compare_jars(artifact, reference)
+                self.log.debug(diff_md5)
+                self.log.debug(not_in_reference)
+                self.log.debug(not_in_artifact)
+            except FileNotFoundError:
+                self.log.exception("Couldn't find one of the files. See stacktrace...")
+
+            # for each .jar in
+            # research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/buildcache/{pkg.artifactid}/target/,
+            # compare to the corresponding .jar in reference/ contained within the same dir.
+            # Compare each file, storing their name, containing archive and whether it is reproducible in the db.
 
     def choose_jdk_versions(
         self, jdk_src_ver: str, pub_date: str, lts_only: bool

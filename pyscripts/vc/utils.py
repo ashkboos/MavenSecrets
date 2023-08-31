@@ -1,6 +1,7 @@
 import re
 from giturlparse import parse
 from psycopg2.extras import DictRow
+import zipfile, hashlib
 
 
 # https://maven.apache.org/scm/scm-url-format.html
@@ -73,3 +74,44 @@ def get_field(record: DictRow, field_name: str, mandatory: bool = False):
         raise ValueError(f"{field_name} is null")
     else:
         return val
+
+
+def calculate_md5(file_content):
+    md5 = hashlib.md5()
+    md5.update(file_content)
+    return md5.hexdigest()
+
+
+def get_jar_content_hashes(jar_path):
+    content_hashes: dict[str, str] = {}
+    with zipfile.ZipFile(jar_path, "r") as jar:
+        for file_info in jar.infolist():
+            if file_info.filename.endswith("/"):  # Skip directories
+                continue
+            with jar.open(file_info.filename) as file:
+                content = file.read()
+                md5_hash = calculate_md5(content)
+                content_hashes[file_info.filename] = md5_hash
+    print(jar_path)
+    print(content_hashes)
+    return content_hashes
+
+
+def compare_jars(artifact_path, reference_path):
+    artifact_hashes = get_jar_content_hashes(artifact_path)
+    reference_hashes = get_jar_content_hashes(reference_path)
+
+    diff_md5 = []
+    not_in_reference, not_in_artifact = [], []
+
+    for file, md5_hash in artifact_hashes.items():
+        if file not in reference_hashes:
+            not_in_reference.append(file)
+
+    for file, md5_hash in reference_hashes.items():
+        if file not in artifact_hashes:
+            not_in_artifact.append(file)
+        elif md5_hash != reference_hashes[file]:
+            diff_md5.append(file)
+
+    return diff_md5, not_in_reference, not_in_artifact
