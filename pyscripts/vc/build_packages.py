@@ -28,8 +28,8 @@ class BuildPackages:
     def build_all(self):
         """Fetches all packages that have not been built yet and have the
         correct build parameter data, then builds them one by one, manually
-        generating a buildspec if it hasn't already been created by Reproducible
-        Central.
+        generating a buildspec. If the buildspec already exists on Reproducible
+        Central, also build using that.
         """
         os.chdir("./temp/builder")
         self.db.create_builds_table()
@@ -43,11 +43,11 @@ class BuildPackages:
             if len(buildspecs) > 0:
                 self.log.debug(f"Buildspec found in {buildspecs[0]}!")
                 self.build_from_existing(pkg, buildspecs[0])
-            else:
-                try:
-                    self.build_from_scratch(pkg, record)
-                except ValueError as e:
-                    self.log.debug(e)
+            try:
+                self.build_from_scratch(pkg, record)
+            except ValueError as e:
+                self.log.debug(e)
+
             # remove folder once all builds for the package are complete
             folder = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
             if os.path.isdir(folder):
