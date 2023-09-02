@@ -1,7 +1,7 @@
 import os
 
-from common.packageId import PackageId
 from build_packages import BuildPackages
+from common.packageId import PackageId
 
 
 def main():
@@ -19,6 +19,7 @@ def main():
         "mvn",
         "11",
         "lf",
+        "mvn clean package"
     )
     result = builder.build(path)
     print(result.stdout)

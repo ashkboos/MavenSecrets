@@ -1,11 +1,11 @@
 import logging
 
+from analyse_historical import HistoricalAnalyzer
+from build_packages import BuildPackages
 from common.config import Config
 from database import Database
 from extract_hosts import Extractor
-from analyse_historical import HistoricalAnalyzer
 from get_tags import GetTags
-from build_packages import BuildPackages
 from verify_hosts import VerifyHost
 
 

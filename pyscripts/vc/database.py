@@ -1,10 +1,10 @@
 import logging
-import psycopg2
-from psycopg2.extras import DictCursor, execute_batch
 
-from common.packageId import PackageId
+import psycopg2
 from common.build_result import Build_Result
 from common.build_spec import Build_Spec
+from common.packageId import PackageId
+from psycopg2.extras import DictCursor, execute_batch
 
 
 class Database:
@@ -27,9 +27,10 @@ class Database:
             "scm_conn_url": ("url_scm_conn", "host_scm_conn"),
         }
         self.BUILDS_TABLE = "builds"
+        self.JAR_REPR_TABLE = "jar_reproducibility"
 
     def get_urls(self, fieldname: str):
-        self.execute(
+        self.logged_execute(
             f"""
             SELECT groupid, artifactid, version, {fieldname}
             FROM {self.PKG_TABLE}
@@ -40,7 +41,7 @@ class Database:
 
     # FOR DEBUGGING
     def get_all_tags(self):
-        self.execute(
+        self.logged_execute(
             f"""
             SELECT * FROM tagsold;
             """
@@ -49,7 +50,7 @@ class Database:
 
     # FOR DEBUGGING
     def get_all_matching_tags(self):
-        self.execute(
+        self.logged_execute(
             f"""
 SELECT tag_name
 FROM (SELECT *,
@@ -118,7 +119,7 @@ WHERE LOWER(tag_name) IN (
         Gets all packages that have a valid github url and are not already in tags table.
         This does not exclude packages that have failed before.
         """
-        self.execute(
+        self.logged_execute(
             f"""
             SELECT groupid, artifactid, version, valid, valid_home, valid_scm_conn, valid_dev_conn
             FROM {self.HOST_TABLE} AS h
@@ -145,7 +146,7 @@ WHERE LOWER(tag_name) IN (
         return self.cur.fetchall()
 
     def get_distinct_urls(self, fieldname: str):
-        self.execute(
+        self.logged_execute(
             f"""
             SELECT DISTINCT ON (groupid, artifactid)
                 groupid, artifactid, version, {fieldname}
@@ -156,11 +157,11 @@ WHERE LOWER(tag_name) IN (
         return self.cur.fetchall()
 
     def get_all(self):
-        self.execute(f"SELECT * FROM {self.HOST_TABLE} ORDER BY url ASC")
+        self.logged_execute(f"SELECT * FROM {self.HOST_TABLE} ORDER BY url ASC")
         return self.cur.fetchall()
 
     def get_all_unprocessed(self):
-        self.execute(
+        self.logged_execute(
             f"SELECT * FROM {self.HOST_TABLE} WHERE processed = false ORDER BY url ASC"
         )
         return self.cur.fetchall()
@@ -203,7 +204,7 @@ WHERE LOWER(tag_name) IN (
             PRIMARY KEY(groupid,artifactid,version)
         )
         """
-        self.execute(query)
+        self.logged_execute(query)
         self.conn.commit()
 
     def collate_hosts_yearly(self, field: str):
@@ -224,11 +225,11 @@ WHERE LOWER(tag_name) IN (
         GROUP BY year, {field}
         ORDER BY year, count DESC;
         """
-        self.execute(query)
+        self.logged_execute(query)
         return self.cur.fetchall()
 
     def create_tags_table(self):
-        self.execute(
+        self.logged_execute(
             f"""
         CREATE TABLE IF NOT EXISTS {self.TAGS_TABLE}(
             groupid      TEXT NOT NULL,
@@ -262,7 +263,7 @@ WHERE LOWER(tag_name) IN (
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ON CONFLICT DO NOTHING;
         """
-        self.execute(
+        self.logged_execute(
             query,
             [
                 pkg.groupid,
@@ -288,7 +289,7 @@ WHERE LOWER(tag_name) IN (
             error VARCHAR
         )
         """
-        self.execute(query)
+        self.logged_execute(query)
         self.conn.commit()
 
     def insert_error(self, pkg: PackageId, url: str, err: str):
@@ -297,7 +298,7 @@ WHERE LOWER(tag_name) IN (
         (groupid, artifactid, version, url, error)
         VALUES (%s,%s,%s,%s,%s)
         """
-        self.execute(query, [pkg.groupid, pkg.artifactid, pkg.version, url, err])
+        self.logged_execute(query, [pkg.groupid, pkg.artifactid, pkg.version, url, err])
         self.conn.commit()
 
     # TODO make this a batch OP
@@ -306,7 +307,7 @@ WHERE LOWER(tag_name) IN (
         UPDATE {self.HOST_TABLE} SET {field} = %s
         WHERE groupid=%s AND artifactid=%s AND version=%s
         """
-        self.execute(query, [url, pkg.groupid, pkg.artifactid, pkg.version])
+        self.logged_execute(query, [url, pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
     def mark_processed(self, pkg: PackageId):
@@ -314,7 +315,7 @@ WHERE LOWER(tag_name) IN (
         UPDATE {self.HOST_TABLE} SET processed = true
         WHERE groupid=%s AND artifactid=%s AND version=%s
         """
-        self.execute(query, [pkg.groupid, pkg.artifactid, pkg.version])
+        self.logged_execute(query, [pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
     def get_pkgs_with_tags(self):
@@ -341,30 +342,30 @@ WHERE LOWER(tag_name) IN (
               AND b.version = t.version
         ) ORDER BY RANDOM()
         """
-        self.execute(query)
+        self.logged_execute(query)
         return self.cur.fetchall()
 
     def create_builds_table(self):
-        self.execute(
+        self.logged_execute(
             f"""
-        CREATE TABLE IF NOT EXISTS {self.BUILDS_TABLE}
-        (
-            groupid       TEXT NOT NULL,
-            artifactid    TEXT NOT NULL,
-            version       TEXT NOT NULL,
-            jdk           TEXT NOT NULL,
-            newline       TEXT NOT NULL,
-            tool          TEXT NOT NULL,
-            from_existing BOOLEAN,
-            build_success BOOLEAN,
-            stdout        TEXT,
-            stderr        TEXT,
-            ok_files      TEXT[],
-            ko_files      TEXT[],
-            command       TEXT,
-            PRIMARY KEY (version, artifactid, groupid, tool, newline, jdk, from_existing, command)
-        );
-        """
+            create table if not exists {self.BUILDS_TABLE}
+            (
+                build_id serial primary key,
+                groupid       text    not null,
+                artifactid    text    not null,
+                version       text    not null,
+                jdk           text    not null,
+                newline       text    not null,
+                tool          text    not null,
+                from_existing boolean not null,
+                build_success boolean,
+                stdout        text,
+                stderr        text,
+                ok_files      text[],
+                ko_files      text[],
+                command       text    not null
+            )
+            """
         )
         self.conn.commit()
 
@@ -373,7 +374,9 @@ WHERE LOWER(tag_name) IN (
         query = f"""
         INSERT INTO {self.BUILDS_TABLE} (groupid, artifactid, version, jdk, newline, tool, 
         from_existing, build_success, stdout, stderr, ok_files, ko_files, command)
-        VALUES (%s{12*",%s"}) ON CONFLICT DO NOTHING; 
+        VALUES (%s{12*",%s"}) 
+        ON CONFLICT DO NOTHING 
+        RETURNING build_id; 
         """
         self.cur.execute(
             query,
@@ -393,14 +396,58 @@ WHERE LOWER(tag_name) IN (
                 bs.command,
             ],
         )
+        build_id: str = self.cur.fetchone()[0]
+        self.conn.commit()
+        return build_id
+
+    def get_build_params_by_id(self, build_id):
+        self.logged_execute(
+            f"""
+            SELECT b.groupid, b.artifactid, b.version, jdk, newline, tool, command, tag_name, url
+            FROM {self.BUILDS_TABLE} b
+            JOIN {self.TAGS_TABLE} t 
+            ON b.groupid = t.groupid and b.artifactid = t.artifactid and b.version = t.version
+            WHERE build_id=%s;
+            """,
+            [build_id],
+        )
+        return self.cur.fetchone()
+
+    def create_jar_repr_table(self):
+        self.logged_execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.JAR_REPR_TABLE}(
+                build_id INTEGER,
+                archive TEXT,
+                hash_mismatches TEXT[],
+                missing_files TEXT[],
+                extra_files TEXT[],
+                FOREIGN KEY (build_id) REFERENCES builds (build_id)
+                    MATCH SIMPLE ON UPDATE CASCADE ON DELETE CASCADE
+            );
+            """
+        )
         self.conn.commit()
 
-    def execute(self, query: str, vars: list = None):
-        if vars is None:
+    def insert_jar_repr(
+        self, build_id, archive, hash_mismatches, missing_files, extra_files
+    ):
+        self.logged_execute(
+            f"""
+            INSERT INTO {self.JAR_REPR_TABLE}
+            (build_id, archive, hash_mismatches, missing_files, extra_files) 
+            VALUES (%s,%s,%s,%s,%s);
+            """,
+            [build_id, archive, hash_mismatches, missing_files, extra_files],
+        )
+        self.conn.commit()
+
+    def logged_execute(self, query: str, vals: list = None):
+        if vals is None:
             self.log.debug(f"Executing query: {query}")
         else:
-            self.log.debug(f"Executing query: {query} with values {vars}")
-        self.cur.execute(query, vars)
+            self.log.debug(f"Executing query: {query} with values {vals}")
+        self.cur.execute(query, vals)
 
     def close(self):
         self.cur.close()

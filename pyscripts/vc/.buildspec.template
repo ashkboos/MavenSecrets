@@ -17,8 +17,8 @@ newline={{ newline }}
 
 # Rebuild command
 # command="mvn clean package -DskipTests -Dmaven.javadoc.skip -Dgpg.skip"
-command="mvn clean package -pl :${artifactId} -am -DskipTests -Dmaven.javadoc.skip -Dgpg.skip"
-
+# command="mvn clean package -pl :${artifactId} -am -DskipTests -Dmaven.javadoc.skip -Dgpg.skip"
+command="{{ command }}"
 
 # Location of the buildinfo file generated during rebuild to record output fingerprints
 # buildinfo=target/${artifactId}-${version}.buildinfo

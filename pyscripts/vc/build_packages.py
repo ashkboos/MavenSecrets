@@ -1,21 +1,21 @@
-from builtins import ValueError
-import pandas as pd
 import glob
-from itertools import takewhile, dropwhile
 import logging
-import re
-import subprocess
 import os
+import re
 import shutil
-from jinja2 import Template
-from psycopg2.extras import DictRow
+import subprocess
+from builtins import ValueError
+from itertools import dropwhile, takewhile
 
-from database import Database
-from common.packageId import PackageId
-from common.config import Config
+import pandas as pd
 from common.build_result import Build_Result
 from common.build_spec import Build_Spec
-from utils import get_field, compare_jars
+from common.config import Config
+from common.packageId import PackageId
+from database import Database
+from jinja2 import Template
+from psycopg2.extras import DictRow
+from utils import compare_jars, extract_path_buildinfo, get_field
 
 
 class BuildPackages:
@@ -33,6 +33,7 @@ class BuildPackages:
         """
         os.chdir("./temp/builder")
         self.db.create_builds_table()
+        self.db.create_jar_repr_table()
         records = self.db.get_pkgs_with_tags()
         total = len(records)
         self.log.info(f"FOUND {total} with tag and outputTimestamp")
@@ -68,9 +69,10 @@ class BuildPackages:
             build_spec = self.parse_buildspec(buildspec_path)
         except ValueError:
             self.log.error("Could not parse buildspec!")
+            return
         build_result = self.build(buildspec_path)
-        self.db.insert_build(build_spec, build_result, from_existing=True)
-        self.compare(pkg, build_result)
+        build_id = self.db.insert_build(build_spec, build_result, from_existing=True)
+        self.compare(pkg, build_id, build_result)
 
     def build_from_scratch(self, pkg: PackageId, record: DictRow):
         """Given a package and its associated data, generates (multiple)
@@ -126,12 +128,12 @@ class BuildPackages:
         for jdk in jdks:
             for newline in newlines:
                 buildspec_path = self.create_buildspec(
-                    pkg, url, tag, "mvn", jdk, newline
+                    pkg, url, tag, "mvn", jdk, newline, self.config.BUILD_CMD
                 )
                 buildspec = self.parse_buildspec(buildspec_path)
                 build_result = self.build(buildspec_path)
-                self.db.insert_build(buildspec, build_result, False)
-                self.compare(pkg, build_result)
+                build_id = self.db.insert_build(buildspec, build_result, False)
+                self.compare(pkg, build_id, build_result)
 
     def build(self, buildspec_path):
         """Given the path to a buildspec, runs the Reproducible Central rebuild.sh
@@ -168,9 +170,13 @@ class BuildPackages:
                         result[key] = value.strip('"').split(" ")
                     else:
                         result[key] = value.strip('"')
-                okFiles, koFiles = result.get("okFiles"), result.get("koFiles")
+                ok_files, ko_files = result.get("okFiles"), result.get("koFiles")
             return Build_Result(
-                True, process.stdout.decode(), process.stderr.decode(), okFiles, koFiles
+                True,
+                process.stdout.decode(),
+                process.stderr.decode(),
+                ok_files,
+                ko_files,
             )
 
         except (FileNotFoundError, KeyError):
@@ -221,7 +227,7 @@ class BuildPackages:
         return paths
 
     def create_buildspec(
-        self, pkg: PackageId, git_repo, git_tag, tool, jdk, newline
+        self, pkg: PackageId, git_repo, git_tag, tool, jdk, newline, command: str
     ) -> str:
         """Given build parameters, creates a buildspec using .buildspec.template
         saving it in "research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
@@ -235,6 +241,9 @@ class BuildPackages:
             "tool": tool,
             "jdk": jdk,
             "newline": newline,
+            "command": command.format(artifactId=pkg.artifactid)
+            if "{artifactId}" in command
+            else command,
         }
         with open(
             os.path.join(os.getcwd(), "..", "..", ".buildspec.template"), "r"
@@ -277,8 +286,10 @@ class BuildPackages:
         self.log.info(f"command = {command}")
         return Build_Spec(groupId, artifactId, version, tool, jdk, newline, command)
 
-    def compare(self, pkg: PackageId, build_result: Build_Result):
-        base_path = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/buildcache/{pkg.artifactid}/target/"
+    def compare(self, pkg: PackageId, build_id: str, build_result: Build_Result):
+        # base_path = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/buildcache/{pkg.artifactid}/target/"
+        base_path = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
+
         if not build_result.build_success:
             self.log.debug("Build fail. Cannot compare JARs!")
             return
@@ -290,14 +301,30 @@ class BuildPackages:
         if not non_repr_jars:
             self.log.debug("No non-reproducible JARs.")
             return
+
+        search_pattern = os.path.join(base_path, "*.buildcompare")
+        files = glob.glob(search_pattern)
+        if len(files) == 0:
+            # TODO LOG ERROR to DB
+            self.log.error(".buildcompare not found, Cannot compare!")
+            return
+        buildinfo = files[0]
+
         for jar in non_repr_jars:
-            artifact = os.path.join(base_path, jar)
-            reference = os.path.join(base_path, '/reference/', jar)
+            reference_path, actual_path = extract_path_buildinfo(pkg, jar, buildinfo)
+            if reference_path is None or actual_path is None:
+                self.log.error("Reference or Actual artifact path not found!")
+                return
             try:
-                diff_md5, not_in_reference, not_in_artifact = compare_jars(artifact, reference)
-                self.log.debug(diff_md5)
-                self.log.debug(not_in_reference)
-                self.log.debug(not_in_artifact)
+                hash_mismatches, extra_files, missing_files = compare_jars(
+                    actual_path, reference_path
+                )
+                self.db.insert_jar_repr(
+                    build_id, jar, hash_mismatches, missing_files, extra_files
+                )
+                self.log.debug(hash_mismatches)
+                self.log.debug(extra_files)
+                self.log.debug(missing_files)
             except FileNotFoundError:
                 self.log.exception("Couldn't find one of the files. See stacktrace...")
 
@@ -306,9 +333,7 @@ class BuildPackages:
             # compare to the corresponding .jar in reference/ contained within the same dir.
             # Compare each file, storing their name, containing archive and whether it is reproducible in the db.
 
-    def choose_jdk_versions(
-        self, jdk_src_ver: str, pub_date: str, lts_only: bool
-    ) -> list:
+    def choose_jdk_versions(self, jdk_src_ver: str, pub_date, lts_only: bool) -> list:
         """Given the source jdk version and the package's publish date, returns
         all jdk versions available at that date. Only LTS versions are returned if
         lts_only = true.

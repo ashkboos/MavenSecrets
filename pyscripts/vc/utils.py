@@ -1,7 +1,11 @@
+import hashlib
+import os
 import re
+import zipfile
+
+from common.packageId import PackageId
 from giturlparse import parse
 from psycopg2.extras import DictRow
-import zipfile, hashlib
 
 
 # https://maven.apache.org/scm/scm-url-format.html
@@ -76,42 +80,59 @@ def get_field(record: DictRow, field_name: str, mandatory: bool = False):
         return val
 
 
-def calculate_md5(file_content):
-    md5 = hashlib.md5()
-    md5.update(file_content)
-    return md5.hexdigest()
+def calculate_sha512(file_content):
+    sha512 = hashlib.sha512()
+    sha512.update(file_content)
+    return sha512.hexdigest()
 
 
-def get_jar_content_hashes(jar_path):
-    content_hashes: dict[str, str] = {}
+def get_jar_file_hashes(jar_path):
+    file_hashes: dict[str, str] = {}
     with zipfile.ZipFile(jar_path, "r") as jar:
         for file_info in jar.infolist():
             if file_info.filename.endswith("/"):  # Skip directories
                 continue
             with jar.open(file_info.filename) as file:
                 content = file.read()
-                md5_hash = calculate_md5(content)
-                content_hashes[file_info.filename] = md5_hash
+                sha512 = calculate_sha512(content)
+                file_hashes[file_info.filename] = sha512
     print(jar_path)
-    print(content_hashes)
-    return content_hashes
+    return file_hashes
 
 
-def compare_jars(artifact_path, reference_path):
-    artifact_hashes = get_jar_content_hashes(artifact_path)
-    reference_hashes = get_jar_content_hashes(reference_path)
+def compare_jars(actual_path, reference_path):
+    actual_hashes = get_jar_file_hashes(actual_path)
+    reference_hashes = get_jar_file_hashes(reference_path)
 
-    diff_md5 = []
-    not_in_reference, not_in_artifact = [], []
+    hash_mismatches = []
+    extra_files, missing_files = [], []
 
-    for file, md5_hash in artifact_hashes.items():
+    for file, sha512 in reference_hashes.items():
+        if file not in actual_hashes:
+            missing_files.append(file)
+        elif sha512 != actual_hashes[file]:
+            hash_mismatches.append(file)
+
+    for file, sha512 in actual_hashes.items():
         if file not in reference_hashes:
-            not_in_reference.append(file)
+            extra_files.append(file)
 
-    for file, md5_hash in reference_hashes.items():
-        if file not in artifact_hashes:
-            not_in_artifact.append(file)
-        elif md5_hash != reference_hashes[file]:
-            diff_md5.append(file)
+    return hash_mismatches, extra_files, missing_files
 
-    return diff_md5, not_in_reference, not_in_artifact
+
+def extract_path_buildinfo(pkg: PackageId, artifact_name, buildinfo):
+    """Get .buildcompare, extract only lines like "# diffoscope {reference_path} {target_path}"
+    For each line, check whether our jar is a substring, if yes extract reference and target paths.
+    """
+    base_path = os.path.join(os.path.dirname(buildinfo), "buildcache", pkg.artifactid)
+    with open(buildinfo, "r") as file:
+        for line in file:
+            if line.startswith("# diffoscope"):
+                if artifact_name in line:
+                    parts = line.strip().split(" ")
+                    reference_path = parts[2]
+                    actual_path = parts[3]
+                    return os.path.join(base_path, reference_path), os.path.join(
+                        base_path, actual_path
+                    )
+    return None, None

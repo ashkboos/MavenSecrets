@@ -16,8 +16,11 @@ class Config:
             if value
         ]
         self.GITHUB_API_KEY = config["github_api_key"]
-        if self.GITHUB_API_KEY is None:
-            self.log.warn("GITHUB API KEY NOT SET!")
+        if "tag_finder" in self.RUN_LIST and self.GITHUB_API_KEY is None:
+            raise ValueError("GITHUB API KEY NOT SET!")
+        self.BUILD_CMD: str = config["build_cmd"]
+        if "builder" in self.RUN_LIST and not self.BUILD_CMD:
+            raise ValueError("Build command not set in config. Builder will FAIL!")
 
     def load_config(self, filename):
         with open(filename) as config_file:
