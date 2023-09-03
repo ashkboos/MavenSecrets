@@ -16,18 +16,18 @@ class Database:
         self.cur: DictCursor = self.conn.cursor(cursor_factory=DictCursor)
 
         self.PKG_TABLE = "packages"
-        self.PKG_LIST_TABLE = "package_list"
+        self.PKG_LIST_TABLE = "selected_packages"
         self.HOST_TABLE = "hosts"
         self.ERR_TABLE = "errors"
         self.TAGS_TABLE = "tags"
+        self.BUILDS_TABLE = "builds"
+        self.JAR_REPR_TABLE = "jar_reproducibility"
         self.HOST_URL_FIELDS = {
             "scm_url": ("url", "host"),
             "homepage_url": ("url_home", "host_home"),
             "dev_conn_url": ("url_dev_conn", "host_dev_conn"),
             "scm_conn_url": ("url_scm_conn", "host_scm_conn"),
         }
-        self.BUILDS_TABLE = "builds"
-        self.JAR_REPR_TABLE = "jar_reproducibility"
 
     def get_urls(self, fieldname: str):
         self.logged_execute(

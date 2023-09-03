@@ -36,7 +36,17 @@ class BuildPackages:
         """
         os.chdir("./temp/builder")
         if self.config.BUILD_LIST:
+            self.log.info(f"{len(self.config.BUILD_LIST)} packages in build list")
             records = self.db.get_pkgs_from_list_with_tags(self.config.BUILD_LIST)
+            missing = [
+                pkg
+                for pkg in self.config.BUILD_LIST
+                if pkg
+                not in [
+                    PackageId(row["groupid"], row["artifactid"], row["version"]) for row in records
+                ]
+            ]
+            self.log.error(f"Missing packages: {missing}")
             self.log.info(f"FOUND {len(records)} packages to build.")
             if len(records) != len(self.config.BUILD_LIST):
                 raise ValueError(
