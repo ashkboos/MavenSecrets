@@ -27,7 +27,6 @@ class BuildPackages:
         self.db.create_jar_repr_table()
         self.db.create_err_table()
 
-    # TODO check returncode and .buildinfo manually when package fails,
     def build_all(self):
         """Fetches all packages that have not been built yet and have the
         correct build parameter data, then builds them one by one, manually
@@ -35,6 +34,26 @@ class BuildPackages:
         Central, also build using that.
         """
         os.chdir("./temp/builder")
+        maven_records = self.fetch_records()
+
+        for i, record in enumerate(maven_records):
+            self.log.info(f"Processing {i+1}/{len(maven_records)}")
+            pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
+            buildspecs = self.buildspec_exists(pkg)
+            if len(buildspecs) > 0:
+                self.log.debug(f"Buildspec found in {buildspecs[0]}!")
+                self.build_from_existing(pkg, buildspecs[0])
+            try:
+                self.build_from_scratch(pkg, record)
+            except ValueError as err:
+                self.log.debug(err)
+
+            # remove folder once all builds for the package are complete
+            # folder = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
+            # if os.path.isdir(folder):
+            #     shutil.rmtree(folder)
+
+    def fetch_records(self, maven_only = True):
         if self.config.BUILD_LIST:
             self.log.info(f"{len(self.config.BUILD_LIST)} packages in build list")
             records = self.db.get_pkgs_from_list_with_tags(self.config.BUILD_LIST)
@@ -57,22 +76,18 @@ class BuildPackages:
             records = self.db.get_pkgs_with_tags()
             self.log.info(f"FOUND {len(records)} packages to build.")
 
-        for i, record in enumerate(records):
-            self.log.info(f"Processing {i+1}/{len(records)}")
-            pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
-            buildspecs = self.buildspec_exists(pkg)
-            if len(buildspecs) > 0:
-                self.log.debug(f"Buildspec found in {buildspecs[0]}!")
-                self.build_from_existing(pkg, buildspecs[0])
-            try:
-                self.build_from_scratch(pkg, record)
-            except ValueError as err:
-                self.log.debug(err)
-
-            # remove folder once all builds for the package are complete
-            # folder = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
-            # if os.path.isdir(folder):
-            #     shutil.rmtree(folder)
+        if maven_only:
+            # filter out records with null line_ending_lf as they don't have pom.properties
+            maven_records = [record for record in records if record["line_ending_lf"] is not None]
+            non_maven = [record for record in records if record not in maven_records]
+            if len(non_maven) > 0:
+                self.log.warning(
+                    f"{len(non_maven)} non-Maven packages have been excluded!"
+                )
+                self.log.warning(f"Non-Maven records: {non_maven}")
+            return maven_records
+        else:
+            return records
 
     def build_from_existing(self, pkg: PackageId, src_buildspec):
         """Given a package and the path to its pre-existing buildspec from Reproducible
@@ -205,8 +220,8 @@ class BuildPackages:
         paths = []
 
         base_path = "content/"
-        # buildspec could be in com.github.hazendaz.7zip but also in
-        # com.github.hazendaz.7zip.7zip due to incosistency in repo path with artifactid
+        # buildspec could be in com/github/hazendaz/7zip but also in
+        # com/github/hazendaz/7zip/7zip due to incosistency in repo path with artifactid
         relative_path = (
             pkg.groupid.replace(".", "/")
             + "/"
