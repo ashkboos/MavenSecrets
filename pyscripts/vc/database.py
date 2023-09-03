@@ -345,6 +345,32 @@ WHERE LOWER(tag_name) IN (
         self.logged_execute(query)
         return self.cur.fetchall()
 
+    def get_pkgs_from_list_with_tags(self, pkg_list: list[PackageId]):
+        """Given a list of PackageIds, fetches necessary info to build the packages
+        from the tags, package and package_list tables. Only fetches packages that
+        have a tag.
+        """
+        query = f"""
+        SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
+               t.url, java_version_manifest_2,
+               java_version_manifest_3, compiler_version_source, output_timestamp_prop,
+               lastmodified, line_ending_lf, line_ending_crlf, line_ending_inconsistent_in_file
+        FROM {self.TAGS_TABLE} AS t
+        JOIN {self.PKG_TABLE} p on t.groupid = p.groupid
+            AND t.artifactid = p.artifactid
+            AND t.version = p.version
+        JOIN {self.PKG_LIST_TABLE} pl on t.groupid = pl.groupid
+            AND t.artifactid = pl.artifactid
+            AND t.version = pl.version
+        WHERE t.url IS NOT NULL
+        AND tag_name IS NOT NULL
+        AND (t.groupid, t.artifactid, t.version) IN %s;
+        """
+        self.cur.execute(
+            query, (tuple((pkg.groupid, pkg.artifactid, pkg.version) for pkg in pkg_list),)
+        )
+        return self.cur.fetchall()
+
     def create_builds_table(self):
         self.logged_execute(
             f"""
@@ -429,10 +455,8 @@ WHERE LOWER(tag_name) IN (
         )
         self.conn.commit()
 
-    def insert_jar_repr(
-        self, build_id, archive, hash_mismatches, missing_files, extra_files
-    ):
-        self.logged_execute(
+    def insert_jar_repr(self, build_id, archive, hash_mismatches, missing_files, extra_files):
+        self.cur.execute(
             f"""
             INSERT INTO {self.JAR_REPR_TABLE}
             (build_id, archive, hash_mismatches, missing_files, extra_files) 

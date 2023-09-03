@@ -1,5 +1,9 @@
-import yaml
+import csv
 import logging
+
+import pandas as pd
+import yaml
+from common.packageId import PackageId
 
 
 class Config:
@@ -10,19 +14,31 @@ class Config:
         self.LOG_LEVEL = config["log_level"]
         self.DB_CONFIG = config["database"]
         self.RUN_LIST = [
-            key
-            for dictionary in config["run_config"]
-            for key, value in dictionary.items()
-            if value
+            key for dictionary in config["run_config"] for key, value in dictionary.items() if value
         ]
         self.GITHUB_API_KEY = config["github_api_key"]
-        if "tag_finder" in self.RUN_LIST and self.GITHUB_API_KEY is None:
-            raise ValueError("GITHUB API KEY NOT SET!")
         self.BUILD_CMD: str = config["build_cmd"]
-        if "builder" in self.RUN_LIST and not self.BUILD_CMD:
-            raise ValueError("Build command not set in config. Builder will FAIL!")
+
+        build_list_path = config["build_list"]
+        self.BUILD_LIST: list[PackageId] = (
+            self.read_build_list(build_list_path) if build_list_path else []
+        )
+        self.check_config()
 
     def load_config(self, filename):
         with open(filename) as config_file:
             config = yaml.safe_load(config_file)
         return config
+
+    def check_config(self):
+        if "tag_finder" in self.RUN_LIST and self.GITHUB_API_KEY is None:
+            raise ValueError("GITHUB API KEY NOT SET!")
+        if "builder" in self.RUN_LIST and not self.BUILD_CMD:
+            raise ValueError("Build command not set in config. Builder will FAIL!")
+
+    def read_build_list(self, file):
+        packages: list[PackageId] = []
+        df = pd.read_csv(file, sep=",", comment="#", index_col=0, skip_blank_lines=True)
+        for row in df.itertuples():
+            packages.append(PackageId(row[0], row[1], row[2]))
+        return packages

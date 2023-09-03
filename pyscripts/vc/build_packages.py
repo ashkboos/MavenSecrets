@@ -23,6 +23,9 @@ class BuildPackages:
         self.log = logging.getLogger(__name__)
         self.db = db
         self.config = config
+        self.db.create_builds_table()
+        self.db.create_jar_repr_table()
+        self.db.create_err_table()
 
     # TODO check returncode and .buildinfo manually when package fails,
     def build_all(self):
@@ -32,13 +35,20 @@ class BuildPackages:
         Central, also build using that.
         """
         os.chdir("./temp/builder")
-        self.db.create_builds_table()
-        self.db.create_jar_repr_table()
-        records = self.db.get_pkgs_with_tags()
-        total = len(records)
-        self.log.info(f"FOUND {total} with tag and outputTimestamp")
+        if self.config.BUILD_LIST:
+            records = self.db.get_pkgs_from_list_with_tags(self.config.BUILD_LIST)
+            self.log.info(f"FOUND {len(records)} packages to build.")
+            if len(records) != len(self.config.BUILD_LIST):
+                raise ValueError(
+                    "Not all packages from build list were found and/or did "
+                    + "not have all necessary build params in DB."
+                )
+        else:
+            records = self.db.get_pkgs_with_tags()
+            self.log.info(f"FOUND {len(records)} packages to build.")
+
         for i, record in enumerate(records):
-            self.log.info(f"Processing {i+1}/{total}")
+            self.log.info(f"Processing {i+1}/{len(records)}")
             pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
             buildspecs = self.buildspec_exists(pkg)
             if len(buildspecs) > 0:
@@ -46,8 +56,8 @@ class BuildPackages:
                 self.build_from_existing(pkg, buildspecs[0])
             try:
                 self.build_from_scratch(pkg, record)
-            except ValueError as e:
-                self.log.debug(e)
+            except ValueError as err:
+                self.log.debug(err)
 
             # remove folder once all builds for the package are complete
             # folder = f"research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/"
@@ -68,7 +78,11 @@ class BuildPackages:
         try:
             build_spec = self.parse_buildspec(buildspec_path)
         except ValueError:
-            self.log.error("Could not parse buildspec!")
+            self.db.insert_error(
+                pkg,
+                None,
+                f"(BUILDER) Could not parse buildspec with path {buildspec_path}",
+            )
             return
         build_result = self.build(buildspec_path)
         build_id = self.db.insert_build(build_spec, build_result, from_existing=True)
@@ -91,15 +105,11 @@ class BuildPackages:
         nline_lf, nline_crlf = get_field(record, "line_ending_lf"), get_field(
             record, "line_ending_crlf"
         )
-        build_jdk_spec = self.convert_jdk_version(
-            get_field(record, "java_version_manifest_3")
-        )
+        build_jdk_spec = self.convert_jdk_version(get_field(record, "java_version_manifest_3"))
         build_jdk = self.convert_jdk_version(
             self.parse_build_jdk(get_field(record, "java_version_manifest_2"))
         )
-        source_jdk_ver = self.convert_jdk_version(
-            get_field(record, "compiler_version_source")
-        )
+        source_jdk_ver = self.convert_jdk_version(get_field(record, "compiler_version_source"))
 
         jdks = []
         if build_jdk_spec:
@@ -108,12 +118,8 @@ class BuildPackages:
             jdks.append(build_jdk)
         else:
             # build with every LTS version available at package release
-            jdks.extend(
-                self.choose_jdk_versions(source_jdk_ver, pub_date, lts_only=True)
-            )
-            self.log.info(
-                f"No compiler JDK version found. Building with versions: {jdks}"
-            )
+            jdks.extend(self.choose_jdk_versions(source_jdk_ver, pub_date, lts_only=True))
+            self.log.info(f"No compiler JDK version found. Building with versions: {jdks}")
 
         if nline_lf and not nline_crlf and not nline_inconsistent:
             newlines = ["lf"]
@@ -146,15 +152,14 @@ class BuildPackages:
             ["./rebuild.sh", buildspec_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            check=False,
         )
 
         dir_path = os.path.dirname(buildspec_path)
         search_pattern = os.path.join(dir_path, "*.buildcompare")
         files = glob.glob(search_pattern)
         if len(files) == 0:
-            return Build_Result(
-                False, process.stdout.decode(), process.stderr.decode(), None, None
-            )
+            return Build_Result(False, process.stdout.decode(), process.stderr.decode(), None, None)
         self.log.debug(f"{len(files)} .buildcompare files found:\n{files}")
         try:
             with open(files[0], "r") as file:
@@ -181,9 +186,7 @@ class BuildPackages:
 
         except (FileNotFoundError, KeyError):
             self.log.debug("File not found or malformed. Build (probably) failed")
-            return Build_Result(
-                False, process.stdout.decode(), process.stderr.decode(), None, None
-            )
+            return Build_Result(False, process.stdout.decode(), process.stderr.decode(), None, None)
 
     def buildspec_exists(self, pkg: PackageId) -> list:
         """Given a package, checks whether a buildspec has already been created by the Reproducible
@@ -212,12 +215,7 @@ class BuildPackages:
 
         # path without artifactid
         relative_path = (
-            pkg.groupid.replace(".", "/")
-            + "/"
-            + pkg.artifactid
-            + "-"
-            + pkg.version
-            + ".buildspec"
+            pkg.groupid.replace(".", "/") + "/" + pkg.artifactid + "-" + pkg.version + ".buildspec"
         )
         path = os.path.join(base_path, relative_path)
         if pkg.artifactid == "7zip":
@@ -245,9 +243,7 @@ class BuildPackages:
             if "{artifactId}" in command
             else command,
         }
-        with open(
-            os.path.join(os.getcwd(), "..", "..", ".buildspec.template"), "r"
-        ) as file:
+        with open(os.path.join(os.getcwd(), "..", "..", ".buildspec.template"), "r") as file:
             content = file.read()
         template = Template(content)
         rendered = template.render(values)
@@ -294,9 +290,7 @@ class BuildPackages:
             self.log.debug("Build fail. Cannot compare JARs!")
             return
         non_repr_jars = [
-            fname
-            for fname in build_result.ko_files
-            if os.path.splitext(fname)[1] == ".jar"
+            fname for fname in build_result.ko_files if os.path.splitext(fname)[1] == ".jar"
         ]
         if not non_repr_jars:
             self.log.debug("No non-reproducible JARs.")
@@ -306,32 +300,28 @@ class BuildPackages:
         files = glob.glob(search_pattern)
         if len(files) == 0:
             # TODO LOG ERROR to DB
-            self.log.error(".buildcompare not found, Cannot compare!")
+            self.db.insert_error(pkg, None, "(COMPARE) .buildcompare not found")
             return
         buildinfo = files[0]
 
         for jar in non_repr_jars:
             reference_path, actual_path = extract_path_buildinfo(pkg, jar, buildinfo)
             if reference_path is None or actual_path is None:
-                self.log.error("Reference or Actual artifact path not found!")
+                self.db.insert_error(
+                    pkg, None, "(COMPARE) Reference or Actual artifact path not found!"
+                )
                 return
             try:
                 hash_mismatches, extra_files, missing_files = compare_jars(
                     actual_path, reference_path
                 )
-                self.db.insert_jar_repr(
-                    build_id, jar, hash_mismatches, missing_files, extra_files
-                )
+                self.db.insert_jar_repr(build_id, jar, hash_mismatches, missing_files, extra_files)
                 self.log.debug(hash_mismatches)
                 self.log.debug(extra_files)
                 self.log.debug(missing_files)
             except FileNotFoundError:
-                self.log.exception("Couldn't find one of the files. See stacktrace...")
-
-            # for each .jar in
-            # research/{pkg.groupid}-{pkg.artifactid}-{pkg.version}/buildcache/{pkg.artifactid}/target/,
-            # compare to the corresponding .jar in reference/ contained within the same dir.
-            # Compare each file, storing their name, containing archive and whether it is reproducible in the db.
+                self.db.insert_error(pkg, None, "(COMPARE) Couldn't find one of the archives!")
+                return
 
     def choose_jdk_versions(self, jdk_src_ver: str, pub_date, lts_only: bool) -> list:
         """Given the source jdk version and the package's publish date, returns
@@ -365,18 +355,10 @@ class BuildPackages:
         }
         jdk_rel_dates = {k: pd.to_datetime(v) for k, v in data.items()}
 
-        all_vers_after = dict(
-            dropwhile(lambda kv: kv[0] != jdk_src_ver, jdk_rel_dates.items())
-        )
-        vers_at_publish = dict(
-            takewhile(lambda kv: kv[1] < pub_date, all_vers_after.items())
-        )
+        all_vers_after = dict(dropwhile(lambda kv: kv[0] != jdk_src_ver, jdk_rel_dates.items()))
+        vers_at_publish = dict(takewhile(lambda kv: kv[1] < pub_date, all_vers_after.items()))
         if lts_only:
-            return [
-                ver
-                for ver in vers_at_publish
-                if ver in [jdk_src_ver, "8", "11", "17", "21"]
-            ]
+            return [ver for ver in vers_at_publish if ver in [jdk_src_ver, "8", "11", "17", "21"]]
         else:
             return [ver for ver in vers_at_publish]
 
@@ -389,16 +371,14 @@ class BuildPackages:
         else:
             return re.sub(r"1\.([0-9]|1[0-9]|20|21)", r"\1", version)
 
-    def parse_build_jdk(self, version) -> str:
+    def parse_build_jdk(self, version):
         """Parses the major JDK version from the highly specific format
         returned by the java.version system property.
         """
         if not version:
             return None
 
-        result = re.search(
-            r"(?:(1\.\d)|[2-9](?=\.\d)|(\d{2}|\d{1}(?![\d\.])))", version
-        )
+        result = re.search(r"(?:(1\.\d)|[2-9](?=\.\d)|(\d{2}|\d{1}(?![\d\.])))", version)
         if result is None:
             self.log.debug(f"COULDN'T PARSE {version}")
             return None
@@ -415,6 +395,6 @@ class BuildPackages:
     def clone_rep_central(self):
         clone_dir = "./temp/builder"
         url = "https://github.com/Vel1khan/reproducible-central.git"
-        process = subprocess.run(["git", "clone", url, clone_dir])
+        process = subprocess.run(["git", "clone", url, clone_dir], check=False)
         if process.returncode != 0:
             self.log.error("Problem encountered")

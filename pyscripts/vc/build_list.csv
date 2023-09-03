@@ -1,0 +1,7 @@
+groupid,artifactid,version # Header
+# FROM RC
+com.corgibytes,mrm,1.4.2
+
+# NOT FROM RC WITH TIMESTAMP PROPERTY
+
+# NOT FROM RC WITHOUT TIMESTAMP

@@ -10,19 +10,19 @@ from psycopg2.extras import DictRow
 
 # https://maven.apache.org/scm/scm-url-format.html
 # https://maven.apache.org/scm/git.html
-def git_or_ssh_to_https(url: str) -> tuple:
+def git_or_ssh_to_https(url: str):
     pattern = r"(git://|git@)([^:]*):(.*)"
     replacement = r"https://\2/\3"
     n_url = re.sub(pattern, replacement, url)
     return (n_url, url != n_url)
 
 
-def git_to_https(url: str) -> str:
+def git_to_https(url: str):
     n_url = re.sub(r"^git://", "https://", url)
     return (n_url, url != n_url)
 
 
-def add_https_if_missing(url: str) -> str:
+def add_https_if_missing(url: str):
     pattern = re.compile(r"^(https?|git|ssh)://|^git@|^ssh@")
     if not pattern.match(url):
         url = "https://" + url
@@ -32,18 +32,18 @@ def add_https_if_missing(url: str) -> str:
 
 
 # TODO look into what happens with repositories like username/tree/tree/master
-def remove_tree_path(url: str) -> tuple:
+def remove_tree_path(url: str):
     n_url = re.sub(r"/tree.*", "", url)
     return (n_url, url != n_url)
 
 
-def remove_scm_prefix(url: str) -> str:
+def remove_scm_prefix(url: str):
     return re.sub(
         r"^scm:(git@|git:)", lambda x: x.group(1) if x.group(1) != "git:" else "", url
     )
 
 
-def convert_link_to_github(url: str) -> str:
+def convert_link_to_github(url: str):
     pattern = re.compile(r"([\w-]+\.git)")
     match = pattern.search(url)
     if match:
@@ -116,6 +116,10 @@ def compare_jars(actual_path, reference_path):
     for file, sha512 in actual_hashes.items():
         if file not in reference_hashes:
             extra_files.append(file)
+    print(f"Actual path: {actual_path}")
+    print(f"Actual hashes {actual_hashes}")
+    print(f"Reference path: {reference_path}")
+    print(f"Reference hashes {reference_hashes}")
 
     return hash_mismatches, extra_files, missing_files
 
