@@ -27,8 +27,8 @@ def create_build_spec_coord2path_dic(repo_path):
                 artifact_matches = re.findall(artifact_pattern, table.group(1))
                 modules.update(set(artifact_matches))
 
-        versions = re.findall(r'\[\d+\.\d+\.\d+\]', content)
-        clean_versions = [v.strip('[]') for v in versions]
+        versions = re.findall(r'\[(\d+(\.\d+)?(\.\d+)?(-\w+)?(\.\w+)?)\]', content)
+        clean_versions = [v[0].strip('[]') for v in versions]
         for version in clean_versions:
             artifact_path = link.replace("README.md", "")
             build_spec = find_file_with_suffix(os.path.join(repo_path, artifact_path), version + ".buildspec")
@@ -47,7 +47,7 @@ def find_file_with_suffix(directory, suffix):
 
 
 if __name__ == '__main__':
-    repo_path = "path/to/reproducible-central"
+    repo_path = ""
 
     coord2path_dic = create_build_spec_coord2path_dic(repo_path)
     for coordinate in coord2path_dic:
