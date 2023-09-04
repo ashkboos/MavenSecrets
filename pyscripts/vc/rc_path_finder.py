@@ -47,7 +47,7 @@ def find_file_with_suffix(directory, suffix):
 
 
 if __name__ == '__main__':
-    repo_path = "/Users/mehdi/Desktop/MyMac/Phd/Repositories/reproducible-central"
+    repo_path = "path/to/reproducible-central"
 
     coord2path_dic = create_build_spec_coord2path_dic(repo_path)
     for coordinate in coord2path_dic:
