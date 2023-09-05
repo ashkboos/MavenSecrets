@@ -51,6 +51,16 @@ GROUP BY year
 ORDER BY year;
 ~~~
 
+Obtain the average number of transitive dependencies per year:
+
+~~~postgresql
+SELECT EXTRACT(YEAR FROM t1.lastmodified) AS year, AVG(t2.transitivedependencies) AS average_size
+FROM package_list AS t1
+         JOIN packages AS t2 ON t1.groupid = t2.groupid AND t1.artifactid = t2.artifactid AND t1.version = t2.version
+GROUP BY year
+ORDER BY year;
+~~~
+
 Obtain the average size of an artifact per year the artifact was last modified:
 
 ~~~postgresql
