@@ -3,12 +3,15 @@ import re
 
 
 def create_build_spec_coord2path_dic(repo_path):
-    with open(os.path.join(repo_path, 'README.md'), 'r') as file:
+    with open(os.path.join(repo_path, "README.md"), "r") as file:
         content = file.read()
 
-    table_content = re.search(r"<!-- BEGIN GENERATED RESULTS TABLE -->(.*?)<!-- END GENERATED RESULTS TABLE -->",
-                              content, re.DOTALL).group(1)
-    table_lines = table_content.strip().split('\n')[2:-1]  # Skip table headers and last row stats
+    table_content = re.search(
+        r"<!-- BEGIN GENERATED RESULTS TABLE -->(.*?)<!-- END GENERATED RESULTS TABLE -->",
+        content,
+        re.DOTALL,
+    ).group(1)
+    table_lines = table_content.strip().split("\n")[2:-1]  # Skip table headers and last row stats
 
     artifacts_dict = {}
     for line in table_lines:
@@ -17,9 +20,11 @@ def create_build_spec_coord2path_dic(repo_path):
         modules = {full_name}
         if link:
             artifact_readme_path = os.path.join(repo_path, link)
-            with open(artifact_readme_path, 'r') as file:
+            with open(artifact_readme_path, "r") as file:
                 content = file.read()
-            table_pattern = r"<details><summary>This project defines \d+ modules:</summary>(.*?)</details>"
+            table_pattern = (
+                r"<details><summary>This project defines \d+ modules:</summary>(.*?)</details>"
+            )
             table = re.search(table_pattern, content, re.DOTALL)
 
             if table is not None:
@@ -27,11 +32,13 @@ def create_build_spec_coord2path_dic(repo_path):
                 artifact_matches = re.findall(artifact_pattern, table.group(1))
                 modules.update(set(artifact_matches))
 
-        versions = re.findall(r'\[(\d+(\.\d+)?(\.\d+)?(-\w+)?(\.\w+)?)\]', content)
-        clean_versions = [v[0].strip('[]') for v in versions]
+        versions = re.findall(r"\[(\d+(\.\d+)?(\.\d+)?(-\w+)?(\.\w+)?)\]", content)
+        clean_versions = [v[0].strip("[]") for v in versions]
         for version in clean_versions:
             artifact_path = link.replace("README.md", "")
-            build_spec = find_file_with_suffix(os.path.join(repo_path, artifact_path), version + ".buildspec")
+            build_spec = find_file_with_suffix(
+                os.path.join(repo_path, artifact_path), version + ".buildspec"
+            )
             for module in modules:
                 artifacts_dict[module + ":" + version] = build_spec
 
@@ -46,8 +53,8 @@ def find_file_with_suffix(directory, suffix):
     return None
 
 
-if __name__ == '__main__':
-    repo_path = ""
+if __name__ == "__main__":
+    repo_path = "temp/builder/"
 
     coord2path_dic = create_build_spec_coord2path_dic(repo_path)
     for coordinate in coord2path_dic:
