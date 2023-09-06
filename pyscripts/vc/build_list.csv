@@ -1,322 +1,342 @@
-# SQL QUERIES
 # {FROM RC}
-#SELECT DISTINCT groupid, artifactid, version FROM builds WHERE from_existing LIMIT 100;
+#SELECT groupid, artifactid, version, setseed(0.6) FROM
+#    (SELECT DISTINCT p.groupid,p.artifactid,p.version FROM packages p
+#    JOIN tags t on p.groupid = t.groupid and p.artifactid = t.artifactid and p.version = t.version
+#    WHERE buildspec_path is not null
+#    AND line_ending_lf is not null
+#    AND tag_name is not null) sub
+#ORDER BY random() LIMIT 100;
 
 # {NOT FROM RC WITH TIMESTAMP PROPERTY}
-#SELECT *
-#FROM (
-#    SELECT DISTINCT groupid, artifactid, version
-#    FROM builds b1
-#    WHERE build_success AND NOT from_existing
-#        AND NOT EXISTS (
-#        SELECT 1
-#        FROM builds b2
-#        WHERE b2.groupid = b1.groupid AND b2.artifactid = b1.artifactid AND b2.version = b1.version
-#          AND (NOT build_success OR from_existing)
-#    )
-#     ) sub
-#ORDER BY RANDOM() LIMIT 100;
+#SELECT groupid, artifactid, version, setseed(0.6) FROM
+#    (SELECT DISTINCT p.groupid,p.artifactid,p.version FROM packages p
+#    JOIN tags t on p.groupid = t.groupid and p.artifactid = t.artifactid and p.version = t.version
+#     WHERE buildspec_path is null
+#       AND line_ending_lf is not null
+#       AND output_timestamp_prop is not null
+#       AND tag_name is not null) sub
+#ORDER BY random() LIMIT 100;
 
 # {NOT FROM RC WITHOUT TIMESTAMP PROPERTY}
-# SELECT *
-# FROM (SELECT DISTINCT t.groupid, t.artifactid, t.version
-#       FROM tags t
-#                JOIN packages p ON t.groupid = p.groupid
-#           AND t.artifactid = p.artifactid
-#           AND t.version = p.version
-#       WHERE output_timestamp_prop IS NULL AND tag_name is NOT NULL
-#      ) sub
-# ORDER BY random()
-# LIMIT 100;
+#SELECT groupid, artifactid, version, setseed(0.6) FROM
+#    (SELECT DISTINCT p.groupid,p.artifactid,p.version FROM packages p
+#    JOIN tags t on p.groupid = t.groupid and p.artifactid = t.artifactid and p.version = t.version
+#     WHERE buildspec_path is null
+#       AND line_ending_lf is not null
+#       AND output_timestamp_prop is null
+#       AND tag_name is not null) sub
+#ORDER BY random() LIMIT 100;
+
 
 groupid,artifactid,version # Header
 # {FROM RC}
-com.github.veithen,jrel,0.1.0
-com.github.veithen.checkt,checkt,0.1.0
-com.github.veithen.maven,java-format-maven-plugin,0.2.0
-com.innoq,junit5-logging-extension,0.2.0
-de.unentscheidbar,migratedb,0.2.0
-eu.maveniverse.maven.mima,mima,1.0.2
-io.cucumber,junit-xml-formatter,0.2.0
-io.github.derkrischan,jpdftest,0.10.0
-io.github.git-commit-id,git-commit-id-maven-plugin,6.0.0
-io.liftwizard,liftwizard,0.33.0
-io.micronaut.build,micronaut-maven-plugin,1.1.5
-io.micronaut.maven,micronaut-maven-plugin,4.0.0-M2
-nl.basjes.maven.release,conventional-commits-version-policy,1.0.1
-org.apache.jackrabbit,filevault-package-maven-plugin,1.3.2
-# org.apache.jdo,jdo,3.2
-org.apache.karaf.minho,minho,0.1
-org.apache.maven.doxia,doxia-sitetools,1.9.2
-org.apache.maven.plugins,maven-artifact-plugin,3.4.0
-org.apache.maven.plugins,maven-ear-plugin,3.2.0
-org.apache.maven.plugins,maven-invoker-plugin,3.5.1
-org.apache.maven.plugins,maven-jar-plugin,3.2.2
-org.apache.maven.plugins,maven-javadoc-plugin,3.3.0
-org.apache.maven.plugins,maven-jlink-plugin,3.1.0
-org.apache.maven.plugins,maven-pdf-plugin,1.6.1
-org.apache.maven.plugins,maven-project-info-reports-plugin,3.2.2
-org.apache.maven.plugins,maven-remote-resources-plugin,3.1.0
-org.apache.maven.plugins,maven-scripting-plugin,3.0.0
-org.apache.maven.plugins,maven-site-plugin,3.12.1
-org.apache.maven.reporting,maven-reporting-impl,4.0.0-M6
-org.apache.maven.resolver,maven-resolver-ant-tasks,1.2.1
-org.apache.maven.shared,maven-artifact-transfer,0.13.1
-org.apache.maven.shared,maven-invoker,3.1.0
-org.apache.maven.shared,maven-shared-resources,3
-org.apache.maven.shared,maven-verifier,1.7.2
-org.apache.qpid,protonj2-parent,1.0.0-M14
-#org.apache.rat,apache-rat-project,0.14
-org.apache.sling,maven-enforcer-rules,1.0.0
-org.apache.sling,org.apache.sling.commons.content.analyzing,1.0.0
-org.apache.sling,org.apache.sling.commons.content.processing,1.0.0
-org.apache.sling,org.apache.sling.commons.crypto,1.1.0
-org.apache.sling,org.apache.sling.commons.johnzon,1.2.0
-org.apache.sling,org.apache.sling.commons.messaging,1.0.2
-org.apache.sling,org.apache.sling.commons.messaging.mail,2.0.0
-org.apache.sling,org.apache.sling.distribution.journal,0.1.26
-org.apache.sling,org.apache.sling.feature,1.2.30
-org.apache.sling,org.apache.sling.feature.cpconverter,1.1.10
-org.apache.sling,org.apache.sling.feature.diff,0.1.0
-org.apache.sling,org.apache.sling.feature.launcher,1.2.0
-org.apache.sling,org.apache.sling.installer.console,1.1.2
-org.apache.sling,org.apache.sling.installer.core,3.11.4
-org.apache.sling,org.apache.sling.javax.activation,0.3.0
-org.apache.sling,org.apache.sling.jcr.contentloader,2.4.2
+org.apache.isis.valuetypes,isis-valuetypes-prism-resources,2.0.0-M7
+eu.maveniverse.maven.mima,context,1.0.3
+org.apache.plc4x,plc4x-protocols-genericcan,0.10.0
+org.apache.dubbo,dubbo-metadata-report-nacos,2.7.7
+org.apache.maven.doxia,doxia-module-confluence,1.12.0
+org.codehaus.modello,modello-plugin-stax,2.0.0
+com.github.veithen.daemon,daemon-launcher-protocol,0.4.1
+io.wcm.tooling.commons,io.wcm.tooling.commons.crx-packmgr-helper,2.1.6
+io.dropwizard.metrics5,metrics-influxdb,5.0.0-rc10
 org.apache.sling,org.apache.sling.models.api,1.5.0
-org.apache.sling,org.apache.sling.models.caconfig,1.0.0
-org.apache.sling,org.apache.sling.models.validation-impl,1.1.0
-org.apache.sling,org.apache.sling.pipes,4.4.0
-org.apache.sling,org.apache.sling.resourceaccesssecurity,1.1.0
-org.apache.sling,org.apache.sling.resourcemerger,1.4.2
-org.apache.sling,org.apache.sling.scripting.spi,1.0.4
-org.apache.sling,org.apache.sling.security,1.1.24
+io.liftwizard,liftwizard-graphql-instrumentation-metrics,1.0.0
+org.apache.maven.resolver,maven-resolver-named-locks-hazelcast,1.9.7
+org.apache.jena,jena-shacl,4.5.0
+io.fabric8,volcano-model-v1beta1,5.11.1
+org.apache.sling,maven-enforcer-rules,1.0.0
+org.owasp,dependency-check-utils,7.3.2
+com.github.veithen.checkt,checkt-annotation-processor,0.1.0
+io.dropwizard.metrics5,metrics-jakarta-servlets,5.0.0-rc16
+org.apache.batchee,batchee-webapp,1.0.3
+org.glassfish.main.connectors,connectors-internal-api,7.0.5
+org.apache.karaf.tooling,karaf-services-maven-plugin,4.3.7
+org.apache.axis2,axis2-resource-bundle,1.8.1
+org.glassfish.main.common,glassfish-mbeanserver,7.0.3
+org.apache.plc4x,plc4j-apache-edgent,0.7.0
+org.apache.jspwiki.it,jspwiki-it-test-custom-jdbc,2.11.3
+org.alluxio,alluxio-underfs-adl,300
+org.apache.isis.extensions,isis-extensions-pdfjs-ui,2.0.0-M7
+org.apache.sling,org.apache.sling.feature,1.2.30
+org.apache.activemq,artemis-log-annotation-processor,2.27.1
+org.apache.ws.commons.axiom,axiom-weaver-maven-plugin,1.4.0
+org.apache.plc4x,plc4x-build-utils-language-c,0.7.0
+io.liftwizard,liftwizard-bundle-logging-config,0.15.0
+io.dropwizard.metrics,metrics-jdbi3,4.1.22
+world.convex,convex-peer,0.7.4
+org.alluxio,alluxio-core-client-hdfs3,300
+io.dropwizard.metrics5,metrics-jersey31,5.0.0-rc14
+com.github.veithen.daemon,daemon-maven-plugin,0.4.2
+org.apache.isis.viewer,isis-viewer-restfulobjects-viewer,2.0.0-M7
+org.apache.sling,org.apache.sling.javax.activation,0.3.0
+io.liftwizard,liftwizard-bundle-connection-manager-holder,0.35.0
+io.liftwizard,liftwizard-reladomo-operation-compiler,0.5.0
+io.liftwizard,liftwizard-servlet-logging-resource-info,0.13.0
+io.fabric8,chaosmesh-server-mock,5.2.1
+org.apache.maven.plugins,maven-scripting-plugin,3.0.0
+org.glassfish.main,hk2-config-generator,7.0.5
 org.apache.sling,org.apache.sling.sitemap,1.0.4
-org.apache.sling,org.apache.sling.starter.content,1.0.12
-org.apache.sling,org.apache.sling.testing.caconfig-mock-plugin,1.5.0
-org.apache.sling,org.apache.sling.testing.clients,3.0.16
-org.apache.tomee,jakartaee-api,10.0-M1
-org.codehaus.mojo,buildplan-maven-plugin,2.2.0
-org.codehaus.mojo,extra-enforcer-rules,1.5.1
-org.codehaus.mojo,properties-maven-plugin,1.1.0
-org.codehaus.plexus,plexus-archiver,4.5.0
-org.codehaus.plexus,plexus-cipher,2.0
-org.codehaus.plexus,plexus-xml,4.0.0
-org.liquibase.ext,liquibase-percona,4.3.3
-org.owasp.antisamy,antisamy,1.6.3
-org.simplify4u,pgp-keys-map,2021.07.02
-org.simplify4u.plugins,sign-maven-plugin,0.3.1
-org.tomitribe.transformer,org.eclipse.transformer.parent,0.1.1a
-org.webjars,flexmonster,2.9.42
-tech.picnic.error-prone-support,error-prone-support,0.7.0
-world.convex,convex,0.7.5
+org.apache.maven.scm,maven-scm-provider-bazaar,1.12.2
+org.apache.drill.contrib,drill-storage-googlesheets,1.21.0
+com.github.veithen.daemon,daemon-api,0.5.0
+io.liftwizard,liftwizard-bundle-object-mapper,0.28.0
+io.liftwizard,liftwizard-config-clock-incrementing,0.18.0
+org.apache.dubbo,dubbo-rpc-memcached,2.7.7
+io.liftwizard,liftwizard-servlet-logging-mdc,1.0.1
+io.liftwizard,liftwizard-config-system-properties,0.28.0
+io.liftwizard,liftwizard-reladomo-test-resource-writer,0.35.0
+org.apache.drill.contrib,drill-storage-elasticsearch,1.21.0
+org.apache.maven.wagon,wagon-ssh-common,3.5.0
+org.apache.accumulo,accumulo-minicluster,2.1.0
+org.apache.jena,jena-rdfconnection,3.17.0
+org.apache.batchee,batchee-camel,1.0.3
+org.apache.sling,org.apache.sling.feature.diff,0.1.0
+io.liftwizard,liftwizard-config-object-mapper,0.8.0
+io.dropwizard.metrics,metrics-jakarta-servlet,4.2.10
+io.fabric8,crd-generator-apt,6.4.0
+io.liftwizard,liftwizard-configuration-factory-json,0.32.0
+io.liftwizard,liftwizard-bundle-prioritized-api,0.4.0
+org.apache.maven.doxia,doxia-module-latex,1.9.1
+org.apache.syncope.common.keymaster.self,syncope-common-keymaster-client-self,3.0.0
+org.apache.maven.reporting,maven-reporting-impl,4.0.0-M6
+io.liftwizard,liftwizard-junit-rule-match-json,0.18.0
+org.apache.maven.skins,maven-fluido-skin,2.0.0-M5
+org.apache.karaf.minho,minho-banner,0.1
+org.apache.logging.log4j,log4j-changelog,0.1.0
+io.dropwizard,dropwizard-request-logging,2.0.31
+org.apache.plc4x,plc4j-apache-camel,0.10.0
+org.apache.sling,org.apache.sling.installer.core,3.11.4
+org.apache.jspwiki,jspwiki-event,2.11.2
+org.apache.maven.shared,maven-artifact-transfer,0.13.1
+io.liftwizard,liftwizard-config-ddl-executor,0.4.0
+org.apache.isis.valuetypes,isis-valuetypes-jodatime-applib,2.0.0-M7
+io.liftwizard,liftwizard-bundle-h2,0.12.0
+io.dropwizard.metrics5,metrics-httpasyncclient,5.0.0-rc16
+org.codehaus.mojo.versions,versions-enforcer,2.15.0
+org.apache.jspwiki,jspwiki-http,2.11.3
+org.apache.maven.resolver,maven-resolver-transport-file,1.7.2
+org.apache.isis.testing,isis-testing-fakedata-integtests,2.0.0-M7
+org.glassfish.main.security,webservices.security,7.0.5
+org.apache.isis.extensions,isis-extensions-shiro-realm-ldap-impl,2.0.0-M7
+eu.maveniverse.maven.mima.runtime,standalone-static,2.2.0
+org.apache.maven.doxia,doxia-sink-api,1.9.1
+io.liftwizard,liftwizard-healthcheck-reladomo,0.33.0
+io.dropwizard.metrics5,metrics-ehcache,5.0.0-rc14
+org.apache.maven.resolver,maven-resolver-transport-http,1.6.2
+org.apache.directory.api,api-util,2.1.1
+org.apache.dubbo,dubbo-container-api,3.0.6
+org.apache.sling,org.apache.sling.resourceaccesssecurity,1.1.0
+io.liftwizard,liftwizard-config-metrics-reporter-slf4j,0.32.0
+org.apache.dubbo,dubbo-serialization-protostuff,2.7.7
+org.apache.drill.contrib,drill-format-excel,1.21.0
+org.apache.drill.contrib,drill-jdbc-storage,1.21.0
 
 
 # {NOT FROM RC WITH TIMESTAMP PROPERTY}
-com.github.marschall,jakarta-jms-adapter,1.0.0
-org.apache.maven.plugin-tools,maven-plugin-tools-beanshell,3.9.0
-org.apache.flink,flink-kubernetes-standalone,1.4.0
-io.fabric8,volcano-client,5.11.0
-org.apache.dolphinscheduler,dolphinscheduler-task-pytorch,3.1.7
-org.codehaus.mojo,keytool-api-test,1.7
-wtf.metio.yosql.dao,yosql-dao-jdbi,2021.5.5
-io.liftwizard,liftwizard-bundle-prioritized-api,0.4.0
-io.fabric8,kubernetes-model-certificates,6.6.2
-io.liftwizard,liftwizard-connection-manager-holder,0.19.0
-io.fabric8,kubernetes-test,5.11.2
-io.liftwizard,liftwizard-servlet-logging-log4j-map,0.28.0
-org.apache.dolphinscheduler,dolphinscheduler-task-python,3.0.3
-io.liftwizard,liftwizard-bundle-connection-manager,0.9.0
-org.apache.seatunnel,seatunnel-connector-spark-console,2.1.3
-org.apache.dolphinscheduler,dolphinscheduler-alert-pagerduty,3.1.7
-io.liftwizard,liftwizard-config-logging-http,0.9.0
-org.apache.jena,jena-jdbc-driver-bundle,3.16.0
-io.fabric8,istio-tests,5.12.2
-io.dropwizard.metrics5,metrics-jetty10,5.0.0-rc16
-io.liftwizard,liftwizard-config-reladomo,0.19.0
-org.apache.sling,org.apache.sling.repoinit.filevault.validator,1.0.0
-io.liftwizard,liftwizard-bundle-h2,0.12.0
-org.apache.wss4j,wss4j-ws-security-stax,2.4.0
-org.apache.dolphinscheduler,dolphinscheduler-task-switch,3.1.5
-io.liftwizard,liftwizard-bundle-connection-manager-holder,0.35.0
-org.apache.maven.wagon,wagon-http,3.4.0
-org.apache.activemq.examples.broker,management-notifications,2.20.0
-io.liftwizard,liftwizard-servlet-logging-opentracing,0.33.0
-io.liftwizard,liftwizard-reladomo-graphql-operation,0.21.0
-de.unentscheidbar,migratedb-maven-plugin,0.2.0
-ai.platon.pulsar,pulsar-jsoup,1.6.6.1
-io.fabric8,open-cluster-management-client,6.3.0
-org.glassfish.hk2,hk2-json,3.0.4
-org.apache.karaf.examples,karaf-redis-example-service,4.3.5
-org.apache.maven.doxia,doxia-module-confluence,1.12.0
-io.liftwizard,liftwizard-config-clock-incrementing,0.18.0
-org.finos.legend.engine,legend-engine-xt-snowflakeApp-pure,4.13.3
-org.apache.axis2,axis2-jibx-codegen,1.8.2
-nl.basjes.energy.nifi,nifi-energy-nar,0.0.1
-org.apache.activemq,artemis-junit-5,2.28.0
-org.apache.bookkeeper,bookkeeper-server-tests-shaded,4.16.0
-io.dropwizard.metrics5,metrics-httpasyncclient,5.0.0-rc16
-org.apache.karaf.examples,karaf-blueprint-example-provider,4.2.14
-org.apache.qpid,protonj2-test-driver,1.0.0-M14
-org.apache.jena,jena-iri,4.3.0
-org.glassfish.main.admingui,war,7.0.0-M10
-org.codehaus.mojo.versions,versions-enforcer,2.15.0
-io.fabric8,open-cluster-management-agent-model,6.2.0
-org.apache.bookkeeper,bookkeeper-server-shaded,4.16.0
-org.finos.legend.engine,legend-engine-service-post-validation-runner,4.13.3
-org.apache.maven.resolver,maven-resolver-test-util,1.7.0
-org.apache.dolphinscheduler,dolphinscheduler-registry-mysql,3.1.1
-io.liftwizard,liftwizard-config-logging-logstash,0.29.0
-org.phoebus,app-display-navigation,4.7.2
-org.glassfish.main.core,api-exporter-fragment,7.0.2
-org.apache.activemq,artemis-jdbc-store,2.28.0
-org.apache.axis2.archetype,quickstart-webapp,1.8.0
-io.liftwizard,liftwizard-graphql-scalar-temporal,0.31.0
-de.unentscheidbar,migratedb-integration-tests,0.1.0
+org.apache.linkis,linkis-cli-common,1.1.3
+org.apache.dubbo.extensions,dubbo-filter-polaris-circuitbreaker-dubbo2,1.0.0
+org.apache.camel.quarkus,camel-quarkus-integration-test-xmpp,2.6.0
+org.apache.seatunnel,seatunnel-engine-server,2.3.0-beta
+org.apache.camel.quarkus,camel-quarkus-ssh,1.8.0
+org.apache.streampark,streampark-flink-shims_flink-1.16_2.12,2.1.0
+org.apache.syncope.ext.saml2sp4ui,syncope-ext-saml2sp4ui-logic,3.0.0-M0
+org.apache.camel.quarkus,camel-quarkus-kamelet-reify,2.1.0
+org.apache.camel.quarkus,camel-quarkus-integration-test-core-languages,2.13.1
+org.apache.streampark,streampark-flink-connector-kafka_2.11,2.0.0
+org.apache.camel.quarkus,camel-quarkus-integration-test-geocoder,2.6.0
+org.apache.camel.quarkus,camel-quarkus-integration-test-foundation,1.6.0
+io.streamnative.connectors,pulsar-spark-connector_2.12,3.1.1.4
+org.apache.camel.quarkus,camel-quarkus-slack,2.13.1
+com.alibaba.msha,client-bridge-rpc-base,0.2.1
+org.apache.sedona,sedona-viz-3.0_2.12,1.3.0-incubating
+org.apache.bahir,flink-connector-pinot_2.11,1.1.0
+org.apache.seatunnel,connector-iceberg-hadoop3-flink-e2e,2.3.0
+io.streamnative,pulsar-io-kafka-connect-adaptor,2.10.0-rc-202202062205
+org.glassfish.jersey.media,html-json,3.0.10
+org.apache.flume.flume-shared,flume-shared-kafka,1.10.1
+org.apache.dubbo.extensions,dubbo-metadata-report-consul,1.0.1
+org.apache.seatunnel,connector-assert,2.3.0
+org.apache.activemq.examples.broker,jms-bridge,2.20.0
+org.apache.dolphinscheduler,dolphinscheduler-task-openmldb,3.1.5
+org.apache.sedona,sedona-core-3.0_2.13,1.3.0-incubating
+org.apache.kylin,kylin-data-loading-server,5.0.0-alpha
+org.apache.camel.quarkus,camel-quarkus-nsq-deployment,2.5.0
+org.apache.skywalking,data-generator,9.2.0
+org.apache.camel.quarkus,camel-quarkus-aws2-ecs-deployment,1.5.0
+org.glassfish.main.security,security-ee,7.0.4
+org.apache.dolphinscheduler,dolphinscheduler-alert-dingtalk,3.0.2
+org.apache.camel.quarkus,camel-quarkus-schematron-integration-test,2.0.0-M1
+org.apache.flink,flink-table-store-common,0.3.0
+ai.platon.pulsar,pulsar-ql-common,1.10.11
+org.apache.syncope.ext.scimv2,syncope-ext-scimv2-scim-rest-cxf,2.1.10
+io.streamnative,pulsar-broker-auth-sasl,2.10.0-rc-202110212205
+org.apache.camel.quarkus,camel-quarkus-hl7,2.15.0
+org.apache.camel.quarkus,camel-quarkus-cron,2.8.0
+org.glassfish.mq,mqbroker-comm,6.4.0
+org.apache.camel.quarkus,camel-quarkus-jfr-deployment,2.8.0
+org.apache.sling,org.apache.sling.jcr.webconsole,1.1.0
+org.glassfish.mq,mqpartition-persist-jdbc,6.4.0
+org.apache.camel.quarkus,perf-regression,2.15.0
+org.apache.dolphinscheduler,dolphinscheduler-task-seatunnel,3.1.5
+org.apache.camel.quarkus,camel-quarkus-xmpp,2.1.0
+org.apache.flink,flink-ml-core_2.12,2.0.0
+org.finos.legend.engine,legend-engine-xt-authentication-grammar,4.11.1
+org.apache.hbase,hbase-endpoint,2.3.6
+org.apache.camel.quarkus,camel-quarkus-openstack,2.8.0-M1
+io.dropwizard.metrics,metrics-annotation,4.2.0-rc.3
+org.apache.flink,statefun-async-example,2.2.0
+org.apache.camel.kamelets,camel-kamelets,0.7.1
+org.apache.felix,org.apache.felix.http.inventoryprinter,1.0.0
+org.glassfish.main.extras,jakartaee,7.0.2
+org.apache.camel.quarkus,camel-quarkus-integration-test-google-functions,2.10.0
+io.fabric8,tekton-model-triggers-v1beta1,6.5.1
+org.sonatype.goodies.dropwizard,dropwizard-support-shiro,2.0.0
+org.apache.seatunnel,imap-storage-api,2.3.1
+org.apache.zookeeper,zookeeper-contrib-fatjar,3.6.4
+org.apache.dubbo.extensions,dubbo-filter-seata,1.0.2
+org.apache.seatunnel,seatunnel-spark-connector-v2-example,2.3.1
+org.sonatype.nexus.maven,nexus-common,1.6.9
+org.apache.streampipes,streampipes-service-discovery-api,0.70.0
+org.apache.camel.quarkus,camel-quarkus-xpath-deployment,2.0.0-M2
+org.apache.camel.quarkus,camel-quarkus-integration-test-jgroups-raft,2.13.2
+org.apache.camel.quarkus,camel-quarkus-jgroups-raft-deployment,2.13.3
+org.apache.activemq.examples.failover,replicated-transaction-failover,2.25.0
+org.apache.streampark,streampark-flink-connector-http_2.11,2.1.0
+wtf.metio.yosql,javapoet-type-guesser,2022.8.4
+org.apache.camel.quarkus,camel-quarkus-management-deployment,2.8.0
+org.apache.servicecomb,inspector,2.7.8
+org.apache.camel.quarkus,camel-quarkus-freemarker,1.7.0
+org.sonatype.goodies.dropwizard,dropwizard-support-aws,2.0.0
+org.apache.camel.quarkus,camel-quarkus-iec60870-deployment,2.7.0
+org.apache.flink,flink-table-store-spark,0.2.0
+org.apache.jena,jena-permissions,4.3.1
+org.apache.linkis,linkis-jdbc-driver,1.3.2
+org.finos.legend.engine,legend-engine-xt-relationalStore-memsql-execution,4.12.1
+io.wcm,io.wcm.sling.models,1.6.0
+org.apache.seatunnel,seatunnel-transform-flink-udf,2.1.2
+org.apache.doris,flink-doris-connector-1.12_2.12,1.0.3
+org.apache.directory.studio,org.apache.directory.studio.ldapbrowser.ui,2.0.0.v20210717-M17
+org.apache.flume.flume-ng-sources,flume-taildir-source,1.10.1
+org.apache.dubbo.extensions,dubbo-registry-polaris,1.0.0
+org.apache.dubbo.extensions,dubbo-cluster-specify-address-dubbo3,1.0.2
+org.glassfish.main.jdbc,jdbc-runtime,7.0.2
+org.apache.syncope.core,syncope-core-starter,3.0.0-M2
+org.apache.camel.quarkus,camel-quarkus-integration-test-coap,2.11.0
+org.apache.camel.quarkus,camel-quarkus-lumberjack,2.2.1
+io.dwpbank.movewp3,microservice-security-autoconfiguration,0.5.0
 org.apache.bookkeeper,bookkeeper-tools-framework,4.16.1
-wtf.metio.yosql.codegen,yosql-codegen-tck,2021.4.21
-io.fabric8,kubernetes-model-gatewayapi,6.3.1
-org.apache.dolphinscheduler,dolphinscheduler-datasource-presto,3.1.6
-org.apache.karaf.minho,minho-config-properties,0.1
-org.apache.seatunnel,seatunnel-connectors-flink-dist,2.1.2
-org.apache.seatunnel,seatunnel-config-shade,2.1.1
-com.github.veithen.cosmos,cosmos-equinox,0.4.3
-io.streamnative.connectors,pulsar-flink-sql-connector_2.12,1.12.4.3
-io.liftwizard,liftwizard-config-ddl-executor,0.4.0
-org.phoebus,save-and-restore-service,4.7.2
-io.liftwizard,liftwizard-bundle-cors,0.26.0
-org.apache.activemq,activemq-mqtt,5.18.0
-org.codehaus.mojo,mrm-webapp,1.4.0
-org.apache.bookkeeper.http,vertx-http-server,4.16.1
-io.fabric8,volcano-tests,6.3.0
-org.apache.activemq.examples.stomp,stomp1.1,2.22.0
-org.apache.karaf.examples,karaf-jaas-example-war,4.3.3
-org.apache.dolphinscheduler,dolphinscheduler-scheduler-quartz,3.1.0
-io.liftwizard,docs,0.31.0
-io.fabric8,open-cluster-management-apps-model,6.6.2
-org.apache.seatunnel,seatunnel-connector-flink-doris,2.1.3
-org.apache.drill.exec,drill-jdbc,1.20.0
-io.streamnative.connectors,pulsar-flink-connector-origin,1.12.4.8
-wtf.metio.yosql.codegen,yosql-codegen,2022.7.6
-org.apache.seatunnel,seatunnel-connector-spark-clickhouse,2.1.3
-io.wcm.tooling.commons,io.wcm.tooling.commons.crx-packmgr-helper,2.1.6
-org.apache.camel.kamelets,camel-kamelets-catalog,0.6.0
-io.fabric8,kubernetes-model-coordination,5.2.1
-io.dropwizard.metrics5,metrics-influxdb,5.0.0-rc10
-io.wcm,io.wcm.site-api.processor,1.0.0
-io.liftwizard,liftwizard-junit-rule-match-file,0.30.0
-org.apache.karaf.minho,minho-osgi,0.1
-io.dropwizard.metrics5,metrics-jdbi3,5.0.0-rc15
-org.apache.karaf.minho,minho-jpa,0.1
-org.apache.dubbo,dubbo-registry-kubernetes,3.0.2.1
-org.apache.seatunnel,seatunnel-transform-spark-sql,2.1.3
-org.apache.activemq,artemis-jakarta-client-all,2.22.0
-wtf.metio.yosql.models,yosql-models-constants,2021.5.5
-io.liftwizard,liftwizard-graphql-instrumentation-logging,0.24.0
-
+org.quickperf,quick-sql-test-data,0.1
+org.apache.camel.quarkus,camel-quarkus-jsh-dsl-deployment,2.16.0
+org.apache.camel.quarkus,camel-quarkus-integration-test-console,3.0.0-M1
+org.apache.dolphinscheduler,dolphinscheduler-alert-pagerduty,3.1.7
+org.glassfish.jersey.examples,declarative-linking,3.0.9
+org.apache.hugegraph,computer-k8s,1.0.0
+wtf.metio.yosql.testing,yosql-testing-configs,2022.6.22
+org.apache.camel.quarkus,camel-quarkus-support-commons-logging-deployment,2.4.0
 
 
 # {NOT FROM RC WITHOUT TIMESTAMP PROPERTY}
-com.github.xuwei-k,zeroapply_2.13.0-RC2,0.2.2
-com.spotify,tfexample-derive_2.12,0.1.0
-org.skinny-framework,skinny-oauth2_2.12,2.3.5
-org.apache.spark,spark-sketch_2.13,3.2.3
-dev.hnaderi,edomata-core_sjs1_3,0.5.2
-com.firebaseui,firebase-ui-database,1.2.0
-org.togglz,togglz-testing,3.1.1
-org.wildfly,wildfly-domain-http,8.1.0.Final
-org.typelevel,cats-effect-testing-utest_sjs1_3.0.0-RC2,1.0.1
-org.wso2.carbon.identity,application-authentication-framework-feature,4.5.2
-org.springframework.cloud.stream.app,router-sink-kafka,3.1.0
-com.netflix.dyno,dyno-demo,1.4.4-rc.1
-io.github.greycode,shardingsphere-test-e2e-discovery,5.3.1.3
-org.jxmapviewer,jxmapviewer2,2.3
-com.almende.eve,eve-tests,3.1.0
-com.soundcloud,cosine-lsh-join-spark_2.11,1.0.2
-com.github.chuanlikecode,netty-rpc,1.0.0.RELEASE
-com.github.imifou,jsonschema-module-addon,1.2.0
-com.documaster.idp,documaster-ws-client-idp-parent,1.0.0
-io.bootique.jersey,bootique-jersey-client,2.0
-co.infinum,abstractviewadapter-compiler,0.1.0
-de.javagl,swing-tasks,0.0.4
-org.webjars.npm,mini-css-extract-plugin,0.9.0
-io.mraa.upm,upm_h3lis331dl,1.2.0
-io.rhiot,rhiot-datasteam-node,0.1.3
-io.zeebe,zeebe-bpmn-model,0.20.1
-io.github.vigoo,desert-zio_sjs1_3,0.3.2
-io.chrisdavenport,circuit-http4s-server_2.11,0.2.0-M2
-org.aksw.jena-sparql-api,jena-sparql-api-cache-h2,3.17.0-1
-org.gwtproject.xml,gwt-xml,1.0.0-RC1
-org.apereo.cas,cas-server-support-basic,5.0.6
-org.webjars.npm,clear-cut,2.0.2
-io.github.xezzon,tao,0.9.0
-com.konloch,SocketServer,0.7.0
-org.webjars.npm,material__ripple,0.32.0
-org.molgenis,molgenis-data,1.21.5
-org.scala-sbt,zinc-compile_2.10,1.0.0-X1
-com.github.j5ik2o,reactive-aws-dynamodb-cats_2.11,1.1.1
-org.springframework.integration,spring-integration-jpa,5.5.11
-io.higherkindness,mu-rpc-fs2_2.13,0.22.1
-int.esa.ccsds.mo,XML_JAXB,1.7
-com.github.eikek,yamusca-derive_sjs1_2.13,0.10.0
-org.springframework.cloud.task.app,spring-cloud-starter-task-sqoop-tool,1.0.0.RELEASE
-net.exoego,aws-sdk-scalajs-facade-kinesisanalytics_sjs0.6_2.12,0.29.0-v2.624.0
-com.liferay.commerce,com.liferay.commerce.user.segment.test.util,1.1.3
-org.scalatest,scalatest-refspec_2.11,3.2.13
-org.metaeffekt.core,ae-core-dependency-management-pom,0.50.0
-net.openhft,chronicle-logger-log4j-2,4.21.82
-io.monix,implicitbox_sjs1_3.0.0-RC1,0.3.2
-com.github.davidmoten,order-tracker-webapp,0.2.1
-com.yomahub,tlog-webroot,1.3.5
-dk.alexandra.fresco,distance,1.2.1
-org.orbisgis,orbisgis-core,5.0.1
-org.jboss.forge,resources,2.0.0.Alpha4
-dk.cachet.carp.deployment,carp.deployment.core-metadata,1.0.0-alpha.9
-org.webjars.bowergithub.vaadin,vaadin-control-state-mixin,2.1.1
-io.github.s3s3l,yggdrasil-persistence,3.6.1-RELEASE
-org.talend.esb,bom,8.0.1
-com.typesafe.akka,akka-multi-node-testkit_3,2.8.1
-com.iobeam,iobeam-spark-scala-core,0.10
-net.exoego,aws-sdk-scalajs-facade-ecs_sjs1_2.12,0.33.0-v2.892.0
-dev.gitlive,firebase-auth-android-debug,1.4.2
-org.sakaiproject.common,sakai-import-bb6-resource,12.5
-org.scalameta,semanticdb-scalac-core_2.12.3,2.1.2
-com.kyleu,projectile-lib-websocket_2.12,1.3.0
-org.parttio,canvas-java,2.0.0
-org.webjars,famfamfam-flags,0.0
-io.streamnative,bk-grpc-name-resolver,4.14.7.2-arrowstreet
-software.amazon.awssdk,ivs,2.16.90
-io.toolisticon.aptk,tools,0.15.5
-net.exoego,aws-sdk-scalajs-facade-apigatewayv2_sjs0.6_2.13,0.25.0-v2-518-0
-net.sf.extjwnl.mcr,extjwnl-data-mcr30,1.0.5
-com.expedia.www,haystack-attribution-s3,1.0.1
-com.github.japgolly.univeq,univeq-scalaz_3,1.4.0
-io.github.haifeng303,feng-cloud-upms,1.0.0
-org.citrusframework,citrus-validation-json,4.0.0-M1
-io.smartdatalake,sdl-jms_2.11,1.2.3
-io.quarkus,quarkus-kubernetes-config,2.14.2.Final
-org.yupana,yupana-ehcache_2.13,0.29.0
-software.amazon.awssdk,iottwinmaker,2.17.247
-com.aoindustries,ao-messaging,1.0.3
-org.typelevel,macro-compat_sjs0.6_2.13.0-M5,1.1.1
-io.github.jmcardon,tsec-signatures_2.12,0.2.1
-com.github.pwliwanow.fdb-pubsub,pubsub_2.13,0.2.0
-io.smallrye.config,smallrye-config-parent,1.12.0
-com.arkivanov.mvikotlin,mvikotlin-timetravel-proto-internal-js,3.0.0-alpha01
-org.n52.sensorweb-server.sos,sos-coding,6.0.0-PR.13
-org.apache.calcite,calcite-linq4j,1.33.0
-io.github.h8000572003,commons-extend-with,0.0.1
-com.github.sebrichards,postmark-scala_2.9.3,1.0
-org.wso2.km.ext.forgerock,forgerock.auth.client,1.0.2
-uk.co.caeldev,spring-security-mongo,0.1.11
-org.overturetool.build,example-packager,3.0.2
-io.github.dunwu.tool,dunwu-tool-parser,1.0.9
-io.chrisdavenport,cookiejar_2.11,0.0.1
-io.ktor,ktor-server-netty-kotlinMultiplatform,1.3.0
-de.lhns,fs2-compress-zstd_3,0.4.1
-com.sap.cloud.security,java-bom,3.0.0
-org.wso2.carbon.store,org.wso2.carbon.es.feature,2.4.23
-com.github.romastyi,sbt-play-boilerplate-lib_2.10,0.2.1
+io.github.geraldnguyen,echo,1.0.0
+com.blibli.oss,blibli-backend-framework-aggregate-query,0.0.6
+org.sonatype.nexus,nexus-guice-servlet,3.9.0-01
+org.hswebframework.web,hsweb-commons-service-api,3.0.3
+org.pipecraft.pipes,pipes-core,0.91
+org.webjars.bowergithub.polymerelements,iron-iconset-svg,2.1.0
+org.webjars.npm,ngx-markdown,6.3.0
+com.zaubersoftware.commons.image,commons-image-api,3.52
+org.webjars.bower,jquery-colorbox,1.6.4
+io.airlift.airship,airship-shared,0.13
+org.webjars.npm,github-com-bevacqua-fuzzysearch,1.0.2
+org.dynamoframework,dynamo-functional-domain-frontend,2.7.2
+eu.europa.ec.joinup.sat,jdplus-tramoseats-cli-plugin,3.0.1
+org.webjars.npm,better-dom,4.0.0
+org.webjars.bowergithub.advanced-rest-client,api-type-documentation,2.0.3
+org.opencds.cqf,tooling-cli,2.4.0
+org.wso2.carbon.mediation,org.wso2.carbon.rest.api.stub,4.6.101
+com.github.skjolber.jackson,jackson-syntax-highlight,1.0.0
+com.google.cloud.genomics,google-genomics-dataflow,v1beta2-0.6
+com.indoqa,system-test-tools,1.0.0
+de.codepfleger,flume-parquet-sink,2.0
+org.uqbar-project,arena-examples,3.5-alpha-1
+co.elastic.apm,elastic-apm-agent,0.6.2
+org.apache.camel,camel-jacksonxml-starter,2.19.4
+org.webjars,json-editor,0.7.13
+org.webjars.npm,github-com-PillowPillow-ng2-webstorage,1.4.3
+io.swagger.core.v3,swagger-models,2.0.6
+org.pitest.quickbuilder,quickbuilder,1.2
+com.pepperize,projen-awscdk-construct,0.0.260
+org.ujmp,ujmp-jscience,0.3.0
+cn.danielw,fast-object-pool,2.2.0
+com.tencentcloudapi,tencentcloud-sdk-java-tts,3.1.444
+org.apache.druid.integration-tests,druid-it-cases,25.0.0
+org.webjars.bower,github-com-vpusher-game-card,1.0.6
+org.smartrplace.logging,fendodb-rest,0.1.0
+org.apache.flink,flink-ml-api,1.12.3
+com.puresoltechnologies.commons,osgi,0.6.0
+com.harium.propan,propan-jogl,1.0.0
+tec.uom.lib,uom-lib-common,1.0.2
+org.microbean,microbean-jndi,0.0.1
+cloud.elit,elit-ddr,0.0.3
+com.hortonworks.registries,schema-registry-ranger-authorizer,0.9.0
+org.mobicents.resources,restcomm-slee-ra-tftp-server-ratype,2.8.12
+com.github.jinahya,iata-ndc-bind-javax,0.0.1
+de.flapdoodle.wicket6,de.flapdoodle.wicket--examples,6.7.0
+io.helidon.reactive.media,helidon-reactive-media-jsonp,4.0.0-ALPHA1
+org.ops4j.pax.tipi,org.ops4j.pax.tipi.hamcrest.core,1.3.0.1
+org.jboss.arquillian.spock,arquillian-spock-example-groovy-2.x,1.0.0.Beta3
+com.github.shiver-me-timbers,smt-building,1.0
+com.jahnelgroup.flogger,flogger-core,1.4.0
+com.oracle.oci.sdk,oci-java-sdk-identitydomains,2.57.0
+org.webjars.bowergithub.wenzhixin,bootstrap-table,1.18.0
+de.mhus.app.vault,vault-manager,7.3.0
+ca.uhn.hapi.fhir,hapi-fhir-docs,6.1.0
+io.quarkus,quarkus-amazon-lambda-http-deployment,2.10.4.Final
+org.webjars.npm,backbone.typeahead.js,0.3.0
+org.jboss.arquillian.graphene,graphene-webdriver-drone,2.0.0.Alpha1
+io.helidon.security,helidon-security-provider-jwt,0.10.3
+info.tomfi.archetypes,java-full-mod,1.1.9
+org.apache.optiq,optiq-avatica,0.9.0-incubating
+com.premiumminds,billy-portugal,3.2.0
+cn.itlym,shoulder-starter-operation-log,0.5
+org.webjars.bower,angular-video-bg,0.3.0
+tech.cassandre.trading.bot,cassandre-trading-bot-spring-boot-starter-basic-archetype,2.1.1
+org.openehealth.ipf.platform-camel,ipf-platform-camel-ihe-xacml20,3.7.2
+net.enilink.platform,net.enilink.platform.workbench.karaf.feature,1.5.3
+org.wso2.appserver,org.wso2.appserver.integration.tests.reports,5.3.0-beta1
+com.addicticks.oss,httpsupload,1.0.2
+com.jashmore,in-memory-spring-cloud-schema-registry,3.1.1
+io.quarkus,quarkus-tika,2.2.5.Final
+io.semla,semla-maven-plugin,1.1.0
+com.github.mrzhqiang.helper.database,db-redis,2018.1.1
+org.hjug.refactorfirst.changepronenessranker,change-proneness-ranker,0.1.1
+ir.cafebabe.math.utils,bigdecimal-utils,1.3
+io.github.open-accelerators,issued-device-tracking-client,1.0.2
+org.webjars.npm,is-subset,0.1.1
+org.linqs,psl-core,2.2.1
+io.github.magrifle,jwt-ssors,1.0.6
+com.daedafusion,service-framework-core,1.0.1
+ch.dvbern.oss.cdifixtures,cdi-fixtures,1.0.6
+org.seedstack.seed,seed-cli,3.4.0
+cn.sexycode,myjpa-spring-boot-starter,0.0.2
+de.fraunhofer.iosb.ilt.FROST-Server,FROST-Server.MQTT.Moquette,2.0.1
+com.ibm.sbt,bss.provisioning.sample.app,1.1.11.20151208-1200
+org.wso2.carbon.devicemgt-plugins,org.wso2.carbon.device.mgt.input.adapter.extension,4.0.49
+org.bedework.caleng,bw-calendar-engine-impl,3.12.3
+pl.tlinkowski.unij,pl.tlinkowski.unij.service.collect.guava,0.1.3
+org.webjars,paperjs,0.9.22
+com.github.pkoli,xls2pojo-maven-plugin,1.0
+com.github.tohodog,qsrpc,1.1.1
+com.seoduct,logback-slack-appender,1.0.0
+software.amazon.awssdk,resource-groups,2.0.0-preview-8
+org.finos.legend.engine,legend-engine-test-runner-mapping-api,4.9.0
+group.rxcloud,vrml-switch,1.0.5
+com.tencentcloudapi,tencentcloud-sdk-java-tem,3.1.720
+org.nmdp.gl,gl-client,1.0
+io.github.jnan88,monitor-jvm,0.0.1
+com.simplaex,java-druid-client,1.2.0
+com.github.acodrx,gwtchartjs,0.5.0-Beta1
+org.webjars.npm,stop-iteration-iterator,1.0.0
+
 
 
 

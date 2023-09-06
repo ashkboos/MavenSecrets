@@ -71,3 +71,5 @@ if __name__ == "__main__":
     coord2path_dic = create_build_spec_coord2path_dic(repo_path)
     for coordinate in coord2path_dic:
         print(coordinate, ":", coord2path_dic[coordinate])
+    print(len(coord2path_dic))
+    print(len({k:v for k,v in coord2path_dic.items() if v is not None}))
