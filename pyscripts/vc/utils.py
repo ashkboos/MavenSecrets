@@ -38,9 +38,7 @@ def remove_tree_path(url: str):
 
 
 def remove_scm_prefix(url: str):
-    return re.sub(
-        r"^scm:(git@|git:)", lambda x: x.group(1) if x.group(1) != "git:" else "", url
-    )
+    return re.sub(r"^scm:(git@|git:)", lambda x: x.group(1) if x.group(1) != "git:" else "", url)
 
 
 def convert_link_to_github(url: str):
@@ -96,7 +94,6 @@ def get_jar_file_hashes(jar_path):
                 content = file.read()
                 sha512 = calculate_sha512(content)
                 file_hashes[file_info.filename] = sha512
-    print(jar_path)
     return file_hashes
 
 
@@ -116,10 +113,6 @@ def compare_jars(actual_path, reference_path):
     for file, sha512 in actual_hashes.items():
         if file not in reference_hashes:
             extra_files.append(file)
-    print(f"Actual path: {actual_path}")
-    print(f"Actual hashes {actual_hashes}")
-    print(f"Reference path: {reference_path}")
-    print(f"Reference hashes {reference_hashes}")
 
     return hash_mismatches, extra_files, missing_files
 

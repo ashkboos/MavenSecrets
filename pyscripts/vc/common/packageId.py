@@ -15,3 +15,6 @@ class PackageId:
             other.artifactid,
             other.version,
         )
+
+    def __hash__(self) -> int:
+        return hash((self.groupid, self.artifactid, self.version))

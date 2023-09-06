@@ -40,77 +40,67 @@ class Database:
         return self.cur.fetchall()
 
     # FOR DEBUGGING
-    def get_all_tags(self):
-        self.logged_execute(
-            f"""
-            SELECT * FROM tagsold;
-            """
-        )
-        return self.cur.fetchall()
-
-    # FOR DEBUGGING
     def get_all_matching_tags(self):
         self.logged_execute(
             f"""
-SELECT tag_name
-FROM (SELECT *,
-    SPLIT_PART(artifactid, '-', 1) AS p1,
-    SPLIT_PART(artifactid, '-', 2) AS p2,
-    SPLIT_PART(artifactid, '-', 3) AS p3,
-    SPLIT_PART(artifactid, '-', 4) AS p4,
-    SPLIT_PART(artifactid, '-', 5) AS p5
-    FROM tags) subquery
-WHERE LOWER(tag_name) IN (
-    LOWER(version),
-    LOWER(artifactid || '-' || version),
-    LOWER('version-' || version),
-    LOWER('v' || version),
-    LOWER('v.' || version),
-    LOWER('release-' || version),
-    LOWER('release-v' || version),
-    LOWER('release_' || version),
-    LOWER('release_v' || version),
-    LOWER('release/' || version),
-    LOWER('release/v' || version),
-    LOWER('releases/' || version),
-    LOWER('rel-' || version),
-    LOWER('rel_' || version),
-    LOWER('rel_v' || version),
-    LOWER('rel/' || version),
-    LOWER('rel/v' || version),
-    LOWER('r' || version),
-    LOWER('r.' || version),
-    LOWER('project-' || version),
-    LOWER(version || '-release'),
-    LOWER(version || '.release'),
-    LOWER('v' || version || '.release'),
-    LOWER(version || '.final'),
-    LOWER(version || '-final'),
-    LOWER( 'v' || version || '-final'),
-    LOWER('tag-' || version),
-    LOWER('tag' || version),
-    -- Complex
-    LOWER(p1 || '-' || version),
-    LOWER(p1 || '-v' || version),
-    LOWER(p2 || '-' || version),
-    LOWER(p2 || '-v' || version),
-    LOWER(p3 || '-' || version),
-    LOWER(p3 || '-v' || version),
-    LOWER(p4 || '-' || version),
-    LOWER(p4 || '-v' || version),
-    LOWER(p5 || '-' || version),
-    LOWER(p5 || '-v' || version),
-    LOWER(p1 || '-' || p2 || '-' || version),
-    LOWER(p1 || '-' || p2 || '-v' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-v' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-v' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-v' || version)
-    );
-
-"""
+            SELECT tag_name
+            FROM (SELECT *,
+                SPLIT_PART(artifactid, '-', 1) AS p1,
+                SPLIT_PART(artifactid, '-', 2) AS p2,
+                SPLIT_PART(artifactid, '-', 3) AS p3,
+                SPLIT_PART(artifactid, '-', 4) AS p4,
+                SPLIT_PART(artifactid, '-', 5) AS p5
+                FROM {self.TAGS_TABLE}) subquery
+            WHERE LOWER(tag_name) IN (
+                LOWER(version),
+                LOWER(artifactid || '-' || version),
+                LOWER('version-' || version),
+                LOWER('v' || version),
+                LOWER('v.' || version),
+                LOWER('release-' || version),
+                LOWER('release-v' || version),
+                LOWER('release_' || version),
+                LOWER('release_v' || version),
+                LOWER('release/' || version),
+                LOWER('release/v' || version),
+                LOWER('releases/' || version),
+                LOWER('rel-' || version),
+                LOWER('rel_' || version),
+                LOWER('rel_v' || version),
+                LOWER('rel/' || version),
+                LOWER('rel/v' || version),
+                LOWER('r' || version),
+                LOWER('r.' || version),
+                LOWER('project-' || version),
+                LOWER(version || '-release'),
+                LOWER(version || '.release'),
+                LOWER('v' || version || '.release'),
+                LOWER(version || '.final'),
+                LOWER(version || '-final'),
+                LOWER( 'v' || version || '-final'),
+                LOWER('tag-' || version),
+                LOWER('tag' || version),
+                -- Complex
+                LOWER(p1 || '-' || version),
+                LOWER(p1 || '-v' || version),
+                LOWER(p2 || '-' || version),
+                LOWER(p2 || '-v' || version),
+                LOWER(p3 || '-' || version),
+                LOWER(p3 || '-v' || version),
+                LOWER(p4 || '-' || version),
+                LOWER(p4 || '-v' || version),
+                LOWER(p5 || '-' || version),
+                LOWER(p5 || '-v' || version),
+                LOWER(p1 || '-' || p2 || '-' || version),
+                LOWER(p1 || '-' || p2 || '-v' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-v' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-v' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-v' || version)
+                );
+                """
         )
         return self.cur.fetchall()
 
@@ -425,6 +415,21 @@ WHERE LOWER(tag_name) IN (
         build_id: str = self.cur.fetchone()[0]
         self.conn.commit()
         return build_id
+
+    def get_buildspec_path(self, pkg: PackageId):
+        self.logged_execute(
+            f"""
+        SELECT buildspec_path
+        FROM {self.PKG_TABLE}
+        WHERE groupid=%s AND artifactid=%s AND version=%s;
+        """,
+            [pkg.groupid, pkg.artifactid, pkg.version],
+        )
+        record = self.cur.fetchone()
+        if record:
+            return record["buildspec_path"]
+        else:
+            return None
 
     def get_build_params_by_id(self, build_id):
         self.logged_execute(

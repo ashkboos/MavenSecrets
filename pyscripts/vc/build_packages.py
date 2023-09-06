@@ -26,6 +26,10 @@ class BuildPackages:
         self.db.create_builds_table()
         self.db.create_jar_repr_table()
         self.db.create_err_table()
+        self.PKG_IGNORE_RC = [
+            PackageId("com.corgibytes", "mrm", "1.4.2"),
+            PackageId("io.github.shanqiang-sq", "jstream", "1.0.31"),
+        ]  # packages that I contributed and merged into RC during the research
 
     def build_all(self):
         """Fetches all packages that have not been built yet and have the
@@ -39,11 +43,11 @@ class BuildPackages:
         for i, record in enumerate(maven_records):
             self.log.info(f"Processing {i+1}/{len(maven_records)}")
             pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
-            buildspecs = self.buildspec_exists(pkg)
-            if len(buildspecs) > 0:
-                self.log.debug(f"Buildspec found in {buildspecs[0]}!")
-                self.build_from_existing(pkg, buildspecs[0])
+            buildspec = self.db.get_buildspec_path(pkg)
             try:
+                if buildspec and pkg not in self.PKG_IGNORE_RC:
+                    self.log.debug(f"Using RC buildspec at {buildspec}")
+                    self.build_from_existing(pkg, buildspec)
                 self.build_from_scratch(pkg, record)
             except ValueError as err:
                 self.log.debug(err)
@@ -53,7 +57,7 @@ class BuildPackages:
             # if os.path.isdir(folder):
             #     shutil.rmtree(folder)
 
-    def fetch_records(self, maven_only = True):
+    def fetch_records(self, maven_only=True):
         if self.config.BUILD_LIST:
             self.log.info(f"{len(self.config.BUILD_LIST)} packages in build list")
             records = self.db.get_pkgs_from_list_with_tags(self.config.BUILD_LIST)
@@ -81,9 +85,7 @@ class BuildPackages:
             maven_records = [record for record in records if record["line_ending_lf"] is not None]
             non_maven = [record for record in records if record not in maven_records]
             if len(non_maven) > 0:
-                self.log.warning(
-                    f"{len(non_maven)} non-Maven packages have been excluded!"
-                )
+                self.log.warning(f"{len(non_maven)} non-Maven packages have been excluded!")
                 self.log.warning(f"Non-Maven records: {non_maven}")
             return maven_records
         else:
@@ -213,42 +215,6 @@ class BuildPackages:
             self.log.debug("File not found or malformed. Build (probably) failed")
             return Build_Result(False, process.stdout.decode(), process.stderr.decode(), None, None)
 
-    def buildspec_exists(self, pkg: PackageId) -> list:
-        """Given a package, checks whether a buildspec has already been created by the Reproducible
-        Central project and returns a list of all paths found.
-        """
-        paths = []
-
-        base_path = "content/"
-        # buildspec could be in com/github/hazendaz/7zip but also in
-        # com/github/hazendaz/7zip/7zip due to incosistency in repo path with artifactid
-        relative_path = (
-            pkg.groupid.replace(".", "/")
-            + "/"
-            + pkg.artifactid
-            + "/"
-            + pkg.artifactid
-            + "-"
-            + pkg.version
-            + ".buildspec"
-        )
-        path = os.path.join(base_path, relative_path)
-        if pkg.artifactid == "7zip":
-            self.log.debug(path)
-        if os.path.exists(path):
-            paths.append(path)
-
-        # path without artifactid
-        relative_path = (
-            pkg.groupid.replace(".", "/") + "/" + pkg.artifactid + "-" + pkg.version + ".buildspec"
-        )
-        path = os.path.join(base_path, relative_path)
-        if pkg.artifactid == "7zip":
-            self.log.debug(path)
-        if os.path.exists(path):
-            paths.append(path)
-        return paths
-
     def create_buildspec(
         self, pkg: PackageId, git_repo, git_tag, tool, jdk, newline, command: str
     ) -> str:
@@ -341,9 +307,6 @@ class BuildPackages:
                     actual_path, reference_path
                 )
                 self.db.insert_jar_repr(build_id, jar, hash_mismatches, missing_files, extra_files)
-                self.log.debug(hash_mismatches)
-                self.log.debug(extra_files)
-                self.log.debug(missing_files)
             except FileNotFoundError:
                 self.db.insert_error(pkg, None, "(COMPARE) Couldn't find one of the archives!")
                 return
