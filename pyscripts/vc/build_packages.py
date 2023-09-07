@@ -23,6 +23,7 @@ class BuildPackages:
         self.log = logging.getLogger(__name__)
         self.db = db
         self.config = config
+        self.timeout= 3600 # FIXME take this from config
         self.db.create_builds_table()
         self.db.create_jar_repr_table()
         self.db.create_err_table()
@@ -61,6 +62,10 @@ class BuildPackages:
         if self.config.BUILD_LIST:
             self.log.info(f"{len(self.config.BUILD_LIST)} packages in build list")
             records = self.db.get_pkgs_from_list_with_tags(self.config.BUILD_LIST)
+            already_built = [
+                PackageId(row["groupid"], row["artifactid"], row["version"])
+                for row in self.db.get_pkgs_in_builds()
+            ]
             missing = [
                 pkg
                 for pkg in self.config.BUILD_LIST
@@ -68,10 +73,11 @@ class BuildPackages:
                 not in [
                     PackageId(row["groupid"], row["artifactid"], row["version"]) for row in records
                 ]
+                and pkg not in already_built
             ]
             self.log.error(f"Missing packages: {missing}")
             self.log.info(f"FOUND {len(records)} packages to build.")
-            if len(records) != len(self.config.BUILD_LIST):
+            if missing:
                 raise ValueError(
                     "Not all packages from build list were found and/or did "
                     + "not have all necessary build params in DB."
@@ -111,7 +117,12 @@ class BuildPackages:
                 f"(BUILDER) Could not parse buildspec with path {buildspec_path}",
             )
             return
-        build_result = self.build(buildspec_path)
+        try:
+            build_result = self.build(buildspec_path, timeout=self.timeout)
+        except subprocess.TimeoutExpired:
+            self.db.insert_error(pkg, None, f"(BUILDER) Timed out")
+            return  # Don't try to rebuild again. Investigate manually.
+
         build_id = self.db.insert_build(build_spec, build_result, from_existing=True)
         self.compare(pkg, build_id, build_result)
 
@@ -164,11 +175,16 @@ class BuildPackages:
                     pkg, url, tag, "mvn", jdk, newline, self.config.BUILD_CMD
                 )
                 buildspec = self.parse_buildspec(buildspec_path)
-                build_result = self.build(buildspec_path)
+                try:
+                    build_result = self.build(buildspec_path, timeout=self.timeout)
+                except subprocess.TimeoutExpired:
+                    self.db.insert_error(pkg, None, f"(BUILDER) Timed out")
+                    return  # Don't try to rebuild again. Investigate manually.
+
                 build_id = self.db.insert_build(buildspec, build_result, False)
                 self.compare(pkg, build_id, build_result)
 
-    def build(self, buildspec_path):
+    def build(self, buildspec_path, timeout=None):
         """Given the path to a buildspec, runs the Reproducible Central rebuild.sh
         script in a subprocess, waiting for completion. Then it locates the .buildcompare
         file produced by the script to get the (non-)reproducible files and
@@ -180,6 +196,7 @@ class BuildPackages:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
+            timeout=timeout,
         )
 
         dir_path = os.path.dirname(buildspec_path)

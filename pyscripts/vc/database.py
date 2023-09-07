@@ -338,7 +338,7 @@ class Database:
     def get_pkgs_from_list_with_tags(self, pkg_list: list[PackageId]):
         """Given a list of PackageIds, fetches necessary info to build the packages
         from the tags, package and package_list tables. Only fetches packages that
-        have a tag.
+        have a tag and not in build table.
         """
         query = f"""
         SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
@@ -354,11 +354,20 @@ class Database:
             AND t.version = pl.version
         WHERE t.url IS NOT NULL
         AND tag_name IS NOT NULL
-        AND (t.groupid, t.artifactid, t.version) IN %s;
+        AND (t.groupid, t.artifactid, t.version) IN %s
+        AND NOT EXISTS (SELECT 1 FROM {self.BUILDS_TABLE} b 
+        WHERE b.groupid = t.groupid AND b.artifactid = t.artifactid AND b.version = t.version);
         """
         self.cur.execute(
             query, (tuple((pkg.groupid, pkg.artifactid, pkg.version) for pkg in pkg_list),)
         )
+        return self.cur.fetchall()
+
+    def get_pkgs_in_builds(self):
+        query = """
+        SELECT DISTINCT groupid, artifactid, version FROM builds;
+        """
+        self.logged_execute(query)
         return self.cur.fetchall()
 
     def create_builds_table(self):
