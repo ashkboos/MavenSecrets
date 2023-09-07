@@ -97,7 +97,7 @@ io.fabric8,crd-generator-apt,6.4.0
 io.liftwizard,liftwizard-configuration-factory-json,0.32.0
 io.liftwizard,liftwizard-bundle-prioritized-api,0.4.0
 org.apache.maven.doxia,doxia-module-latex,1.9.1
-org.apache.syncope.common.keymaster.self,syncope-common-keymaster-client-self,3.0.0
+# org.apache.syncope.common.keymaster.self,syncope-common-keymaster-client-self,3.0.0
 org.apache.maven.reporting,maven-reporting-impl,4.0.0-M6
 io.liftwizard,liftwizard-junit-rule-match-json,0.18.0
 org.apache.maven.skins,maven-fluido-skin,2.0.0-M5
@@ -139,7 +139,7 @@ org.apache.camel.quarkus,camel-quarkus-integration-test-xmpp,2.6.0
 org.apache.seatunnel,seatunnel-engine-server,2.3.0-beta
 org.apache.camel.quarkus,camel-quarkus-ssh,1.8.0
 org.apache.streampark,streampark-flink-shims_flink-1.16_2.12,2.1.0
-org.apache.syncope.ext.saml2sp4ui,syncope-ext-saml2sp4ui-logic,3.0.0-M0
+# org.apache.syncope.ext.saml2sp4ui,syncope-ext-saml2sp4ui-logic,3.0.0-M0
 org.apache.camel.quarkus,camel-quarkus-kamelet-reify,2.1.0
 org.apache.camel.quarkus,camel-quarkus-integration-test-core-languages,2.13.1
 org.apache.streampark,streampark-flink-connector-kafka_2.11,2.0.0
@@ -168,7 +168,7 @@ org.apache.dolphinscheduler,dolphinscheduler-alert-dingtalk,3.0.2
 org.apache.camel.quarkus,camel-quarkus-schematron-integration-test,2.0.0-M1
 org.apache.flink,flink-table-store-common,0.3.0
 ai.platon.pulsar,pulsar-ql-common,1.10.11
-org.apache.syncope.ext.scimv2,syncope-ext-scimv2-scim-rest-cxf,2.1.10
+# org.apache.syncope.ext.scimv2,syncope-ext-scimv2-scim-rest-cxf,2.1.10
 io.streamnative,pulsar-broker-auth-sasl,2.10.0-rc-202110212205
 org.apache.camel.quarkus,camel-quarkus-hl7,2.15.0
 org.apache.camel.quarkus,camel-quarkus-cron,2.8.0
@@ -220,7 +220,7 @@ org.apache.flume.flume-ng-sources,flume-taildir-source,1.10.1
 org.apache.dubbo.extensions,dubbo-registry-polaris,1.0.0
 org.apache.dubbo.extensions,dubbo-cluster-specify-address-dubbo3,1.0.2
 org.glassfish.main.jdbc,jdbc-runtime,7.0.2
-org.apache.syncope.core,syncope-core-starter,3.0.0-M2
+# org.apache.syncope.core,syncope-core-starter,3.0.0-M2
 org.apache.camel.quarkus,camel-quarkus-integration-test-coap,2.11.0
 org.apache.camel.quarkus,camel-quarkus-lumberjack,2.2.1
 io.dwpbank.movewp3,microservice-security-autoconfiguration,0.5.0
