@@ -23,7 +23,7 @@ class BuildPackages:
         self.log = logging.getLogger(__name__)
         self.db = db
         self.config = config
-        self.timeout= 3600 # FIXME take this from config
+        self.timeout = 3600  # FIXME take this from config
         self.db.create_builds_table()
         self.db.create_jar_repr_table()
         self.db.create_err_table()
@@ -117,6 +117,14 @@ class BuildPackages:
                 f"(BUILDER) Could not parse buildspec with path {buildspec_path}",
             )
             return
+        if build_spec.command.startswith("SHELL"):
+            self.db.insert_error(
+                pkg,
+                None,
+                f"(BUILDER) SHELL command from RC. Ignored.{buildspec_path}",
+            )
+            return
+
         try:
             build_result = self.build(buildspec_path, timeout=self.timeout)
         except subprocess.TimeoutExpired:
