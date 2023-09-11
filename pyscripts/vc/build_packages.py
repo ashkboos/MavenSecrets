@@ -42,8 +42,10 @@ class BuildPackages:
         maven_records = self.fetch_records()
 
         for i, record in enumerate(maven_records):
-            self.log.info(f"Processing {i+1}/{len(maven_records)}")
             pkg = PackageId(record["groupid"], record["artifactid"], record["version"])
+            self.log.info(
+                f"Processing {pkg.groupid}:{pkg.artifactid}:{pkg.version} ({i+1}/{len(maven_records)})"
+            )
             buildspec = self.db.get_buildspec_path(pkg)
             try:
                 if buildspec and pkg not in self.PKG_IGNORE_RC:
@@ -124,6 +126,13 @@ class BuildPackages:
                 f"(BUILDER) SHELL command from RC. Ignored.{buildspec_path}",
             )
             return
+
+        build_spec.groupid, build_spec.artifactid, build_spec.version = (
+            pkg.groupid,
+            pkg.artifactid,
+            pkg.version,
+        )  # override pkg coords from buildspec. we don't want sub-modules taking the
+        # coords of the parent pkg
 
         try:
             build_result = self.build(buildspec_path, timeout=self.timeout)
@@ -289,9 +298,6 @@ class BuildPackages:
         # Assign the values to Python variables, can throw ValueError
         groupId, artifactId, version, tool, jdk, newline, command = var_values
 
-        self.log.info(f"groupId = {groupId}")
-        self.log.info(f"artifactId = {artifactId}")
-        self.log.info(f"version = {version}")
         self.log.info(f"tool = {tool}")
         self.log.info(f"jdk = {jdk}")
         self.log.info(f"newline = {newline}")
