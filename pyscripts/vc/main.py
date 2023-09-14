@@ -1,15 +1,18 @@
 import logging
+import time
+from datetime import timedelta
 
+from analyse_historical import HistoricalAnalyzer
+from build_packages import BuildPackages
 from common.config import Config
 from database import Database
 from extract_hosts import Extractor
-from analyse_historical import HistoricalAnalyzer
 from get_tags import GetTags
-from build_packages import BuildPackages
 from verify_hosts import VerifyHost
 
 
 def main():
+    start_time = time.monotonic()
     config = Config()
     logging.basicConfig(
         level=config.LOG_LEVEL,
@@ -53,6 +56,8 @@ def main():
         builder.clone_rep_central()
         builder.build_all()
 
+    end_time = time.monotonic()
+    log.info(f"Time taken: {timedelta(seconds=end_time - start_time)}")
     # Don't forget to note down the last commit of the cloned Reproducible Central repo
 
 
