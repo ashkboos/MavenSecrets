@@ -51,6 +51,9 @@ class BuildPackages:
                 if buildspec and pkg not in self.PKG_IGNORE_RC:
                     self.log.debug(f"Using RC buildspec at {buildspec}")
                     self.build_from_existing(pkg, buildspec)
+            except ValueError as err:
+                self.log.debug(err)
+            try:
                 self.build_from_scratch(pkg, record)
             except ValueError as err:
                 self.log.debug(err)
@@ -342,11 +345,14 @@ class BuildPackages:
                 self.db.insert_error(pkg, None, "(COMPARE) Couldn't find one of the archives!")
                 return
 
-    def choose_jdk_versions(self, jdk_src_ver: str, pub_date, lts_only: bool) -> list:
+    def choose_jdk_versions(self, jdk_src_ver: str | None, pub_date, lts_only: bool) -> list:
         """Given the source jdk version and the package's publish date, returns
         all jdk versions available at that date. Only LTS versions are returned if
         lts_only = true.
         """
+        if jdk_src_ver is None:
+            jdk_src_ver = "7"
+
         pub_date = pd.to_datetime(pub_date)
         data = {
             "0": "1996-01-23",
@@ -377,7 +383,9 @@ class BuildPackages:
         all_vers_after = dict(dropwhile(lambda kv: kv[0] != jdk_src_ver, jdk_rel_dates.items()))
         vers_at_publish = dict(takewhile(lambda kv: kv[1] < pub_date, all_vers_after.items()))
         if lts_only:
-            return [ver for ver in vers_at_publish if ver in [jdk_src_ver, "8", "11", "17", "21"]]
+            return [
+                ver for ver in vers_at_publish if ver in [jdk_src_ver, "7", "8", "11", "17", "21"]
+            ]
         else:
             return [ver for ver in vers_at_publish]
 
