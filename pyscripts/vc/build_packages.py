@@ -290,16 +290,16 @@ class BuildPackages:
         Returns: Build_Spec object
         """
         # Source the bash file and echo the variables
-        command = f'source {path}; echo "$groupId"; echo "$artifactId"; echo "$version"; echo "$tool"; echo "$jdk"; echo "$newline"; echo "$command"'
+        command = f'source {path}; echo -n "$groupId;;;"; echo -n "$artifactId;;;"; echo -n "$version;;;"; echo -n "$gitRepo;;;"; echo -n "$gitTag;;;"; echo -n "$tool;;;"; echo -n "$jdk;;;"; echo -n "$newline;;;"; echo -n "$command"'
 
         process = subprocess.Popen(["bash", "-c", command], stdout=subprocess.PIPE)
         output, _ = process.communicate()
 
         # Decode and split the output into the variable values
-        var_values = output.decode().strip().split("\n")
+        var_values = output.decode().strip().split(";;;")
 
         # Assign the values to Python variables, can throw ValueError
-        groupId, artifactId, version, tool, jdk, newline, command = var_values
+        groupId, artifactId, version, gitRepo, gitTag, tool, jdk, newline, command = var_values
 
         self.log.info(f"tool = {tool}")
         self.log.info(f"jdk = {jdk}")
