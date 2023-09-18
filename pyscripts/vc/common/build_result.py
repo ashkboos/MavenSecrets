@@ -4,7 +4,7 @@ from typing import List
 class Build_Result:
     def __init__(
         self,
-        build_success: str,
+        build_success: bool,
         stdout: str,
         stderr: str,
         ok_files: List[str],

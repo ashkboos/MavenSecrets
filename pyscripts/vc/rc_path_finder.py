@@ -1,6 +1,8 @@
 import os
 import re
 
+from common.packageId import PackageId
+
 
 def create_build_spec_coord2path_dic(repo_path):
     with open(os.path.join(repo_path, "README.md"), "r") as file:
@@ -36,8 +38,11 @@ def create_build_spec_coord2path_dic(repo_path):
         clean_versions = [v[0].strip("[]") for v in versions]
         for version in clean_versions:
             artifact_path = link.replace("README.md", "")
-            build_spec = find_file_with_suffix(
-                os.path.join(repo_path, artifact_path), version + ".buildspec"
+            build_spec = remove_path_prefix(
+                find_file_with_suffix(
+                    os.path.join(repo_path, artifact_path), version + ".buildspec"
+                ),
+                repo_path,
             )
             for module in modules:
                 artifacts_dict[module + ":" + version] = build_spec
@@ -45,7 +50,14 @@ def create_build_spec_coord2path_dic(repo_path):
     return artifacts_dict
 
 
-def find_file_with_suffix(directory, suffix):
+def remove_path_prefix(buildspec_path: str | None, repo_path):
+    if buildspec_path is None:
+        return None
+    if buildspec_path.startswith(repo_path):
+        return buildspec_path[len(repo_path) :]
+
+
+def find_file_with_suffix(directory, suffix) -> str | None:
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file.endswith(suffix):
@@ -59,3 +71,5 @@ if __name__ == "__main__":
     coord2path_dic = create_build_spec_coord2path_dic(repo_path)
     for coordinate in coord2path_dic:
         print(coordinate, ":", coord2path_dic[coordinate])
+    print(len(coord2path_dic))
+    print(len({k:v for k,v in coord2path_dic.items() if v is not None}))

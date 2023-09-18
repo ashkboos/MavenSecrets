@@ -4,6 +4,8 @@ class Build_Spec:
         groupid: str,
         artifactid: str,
         version: str,
+        gitRepo: str,
+        gitTag: str,
         tool: str,
         jdk: str,
         newline: str,
@@ -12,6 +14,8 @@ class Build_Spec:
         self.groupid = groupid
         self.artifactid = artifactid
         self.version = version
+        self.gitRepo = gitRepo
+        self.gitTag = gitTag
         self.tool = tool
         self.jdk = jdk
         self.newline = newline

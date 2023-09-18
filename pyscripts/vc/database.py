@@ -1,10 +1,10 @@
 import logging
-import psycopg2
-from psycopg2.extras import DictCursor, execute_batch
 
-from common.packageId import PackageId
+import psycopg2
 from common.build_result import Build_Result
 from common.build_spec import Build_Spec
+from common.packageId import PackageId
+from psycopg2.extras import DictCursor, execute_batch
 
 
 class Database:
@@ -16,20 +16,21 @@ class Database:
         self.cur: DictCursor = self.conn.cursor(cursor_factory=DictCursor)
 
         self.PKG_TABLE = "packages"
-        self.PKG_LIST_TABLE = "package_list"
+        self.PKG_LIST_TABLE = "selected_packages"
         self.HOST_TABLE = "hosts"
         self.ERR_TABLE = "errors"
         self.TAGS_TABLE = "tags"
+        self.BUILDS_TABLE = "builds"
+        self.JAR_REPR_TABLE = "jar_reproducibility"
         self.HOST_URL_FIELDS = {
             "scm_url": ("url", "host"),
             "homepage_url": ("url_home", "host_home"),
             "dev_conn_url": ("url_dev_conn", "host_dev_conn"),
             "scm_conn_url": ("url_scm_conn", "host_scm_conn"),
         }
-        self.BUILDS_TABLE = "builds"
 
     def get_urls(self, fieldname: str):
-        self.execute(
+        self.logged_execute(
             f"""
             SELECT groupid, artifactid, version, {fieldname}
             FROM {self.PKG_TABLE}
@@ -39,77 +40,67 @@ class Database:
         return self.cur.fetchall()
 
     # FOR DEBUGGING
-    def get_all_tags(self):
-        self.execute(
-            f"""
-            SELECT * FROM tagsold;
-            """
-        )
-        return self.cur.fetchall()
-
-    # FOR DEBUGGING
     def get_all_matching_tags(self):
-        self.execute(
+        self.logged_execute(
             f"""
-SELECT tag_name
-FROM (SELECT *,
-    SPLIT_PART(artifactid, '-', 1) AS p1,
-    SPLIT_PART(artifactid, '-', 2) AS p2,
-    SPLIT_PART(artifactid, '-', 3) AS p3,
-    SPLIT_PART(artifactid, '-', 4) AS p4,
-    SPLIT_PART(artifactid, '-', 5) AS p5
-    FROM tags) subquery
-WHERE LOWER(tag_name) IN (
-    LOWER(version),
-    LOWER(artifactid || '-' || version),
-    LOWER('version-' || version),
-    LOWER('v' || version),
-    LOWER('v.' || version),
-    LOWER('release-' || version),
-    LOWER('release-v' || version),
-    LOWER('release_' || version),
-    LOWER('release_v' || version),
-    LOWER('release/' || version),
-    LOWER('release/v' || version),
-    LOWER('releases/' || version),
-    LOWER('rel-' || version),
-    LOWER('rel_' || version),
-    LOWER('rel_v' || version),
-    LOWER('rel/' || version),
-    LOWER('rel/v' || version),
-    LOWER('r' || version),
-    LOWER('r.' || version),
-    LOWER('project-' || version),
-    LOWER(version || '-release'),
-    LOWER(version || '.release'),
-    LOWER('v' || version || '.release'),
-    LOWER(version || '.final'),
-    LOWER(version || '-final'),
-    LOWER( 'v' || version || '-final'),
-    LOWER('tag-' || version),
-    LOWER('tag' || version),
-    -- Complex
-    LOWER(p1 || '-' || version),
-    LOWER(p1 || '-v' || version),
-    LOWER(p2 || '-' || version),
-    LOWER(p2 || '-v' || version),
-    LOWER(p3 || '-' || version),
-    LOWER(p3 || '-v' || version),
-    LOWER(p4 || '-' || version),
-    LOWER(p4 || '-v' || version),
-    LOWER(p5 || '-' || version),
-    LOWER(p5 || '-v' || version),
-    LOWER(p1 || '-' || p2 || '-' || version),
-    LOWER(p1 || '-' || p2 || '-v' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-v' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-v' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-' || version),
-    LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-v' || version)
-    );
-
-"""
+            SELECT tag_name
+            FROM (SELECT *,
+                SPLIT_PART(artifactid, '-', 1) AS p1,
+                SPLIT_PART(artifactid, '-', 2) AS p2,
+                SPLIT_PART(artifactid, '-', 3) AS p3,
+                SPLIT_PART(artifactid, '-', 4) AS p4,
+                SPLIT_PART(artifactid, '-', 5) AS p5
+                FROM {self.TAGS_TABLE}) subquery
+            WHERE LOWER(tag_name) IN (
+                LOWER(version),
+                LOWER(artifactid || '-' || version),
+                LOWER('version-' || version),
+                LOWER('v' || version),
+                LOWER('v.' || version),
+                LOWER('release-' || version),
+                LOWER('release-v' || version),
+                LOWER('release_' || version),
+                LOWER('release_v' || version),
+                LOWER('release/' || version),
+                LOWER('release/v' || version),
+                LOWER('releases/' || version),
+                LOWER('rel-' || version),
+                LOWER('rel_' || version),
+                LOWER('rel_v' || version),
+                LOWER('rel/' || version),
+                LOWER('rel/v' || version),
+                LOWER('r' || version),
+                LOWER('r.' || version),
+                LOWER('project-' || version),
+                LOWER(version || '-release'),
+                LOWER(version || '.release'),
+                LOWER('v' || version || '.release'),
+                LOWER(version || '.final'),
+                LOWER(version || '-final'),
+                LOWER( 'v' || version || '-final'),
+                LOWER('tag-' || version),
+                LOWER('tag' || version),
+                -- Complex
+                LOWER(p1 || '-' || version),
+                LOWER(p1 || '-v' || version),
+                LOWER(p2 || '-' || version),
+                LOWER(p2 || '-v' || version),
+                LOWER(p3 || '-' || version),
+                LOWER(p3 || '-v' || version),
+                LOWER(p4 || '-' || version),
+                LOWER(p4 || '-v' || version),
+                LOWER(p5 || '-' || version),
+                LOWER(p5 || '-v' || version),
+                LOWER(p1 || '-' || p2 || '-' || version),
+                LOWER(p1 || '-' || p2 || '-v' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-v' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-v' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-' || version),
+                LOWER(p1 || '-' || p2 || '-' || p3 || '-' || p4 || '-' || p5 || '-v' || version)
+                );
+                """
         )
         return self.cur.fetchall()
 
@@ -118,7 +109,7 @@ WHERE LOWER(tag_name) IN (
         Gets all packages that have a valid github url and are not already in tags table.
         This does not exclude packages that have failed before.
         """
-        self.execute(
+        self.logged_execute(
             f"""
             SELECT groupid, artifactid, version, valid, valid_home, valid_scm_conn, valid_dev_conn
             FROM {self.HOST_TABLE} AS h
@@ -145,7 +136,7 @@ WHERE LOWER(tag_name) IN (
         return self.cur.fetchall()
 
     def get_distinct_urls(self, fieldname: str):
-        self.execute(
+        self.logged_execute(
             f"""
             SELECT DISTINCT ON (groupid, artifactid)
                 groupid, artifactid, version, {fieldname}
@@ -156,11 +147,11 @@ WHERE LOWER(tag_name) IN (
         return self.cur.fetchall()
 
     def get_all(self):
-        self.execute(f"SELECT * FROM {self.HOST_TABLE} ORDER BY url ASC")
+        self.logged_execute(f"SELECT * FROM {self.HOST_TABLE} ORDER BY url ASC")
         return self.cur.fetchall()
 
     def get_all_unprocessed(self):
-        self.execute(
+        self.logged_execute(
             f"SELECT * FROM {self.HOST_TABLE} WHERE processed = false ORDER BY url ASC"
         )
         return self.cur.fetchall()
@@ -203,7 +194,7 @@ WHERE LOWER(tag_name) IN (
             PRIMARY KEY(groupid,artifactid,version)
         )
         """
-        self.execute(query)
+        self.logged_execute(query)
         self.conn.commit()
 
     def collate_hosts_yearly(self, field: str):
@@ -224,11 +215,11 @@ WHERE LOWER(tag_name) IN (
         GROUP BY year, {field}
         ORDER BY year, count DESC;
         """
-        self.execute(query)
+        self.logged_execute(query)
         return self.cur.fetchall()
 
     def create_tags_table(self):
-        self.execute(
+        self.logged_execute(
             f"""
         CREATE TABLE IF NOT EXISTS {self.TAGS_TABLE}(
             groupid      TEXT NOT NULL,
@@ -262,7 +253,7 @@ WHERE LOWER(tag_name) IN (
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ON CONFLICT DO NOTHING;
         """
-        self.execute(
+        self.logged_execute(
             query,
             [
                 pkg.groupid,
@@ -288,7 +279,7 @@ WHERE LOWER(tag_name) IN (
             error VARCHAR
         )
         """
-        self.execute(query)
+        self.logged_execute(query)
         self.conn.commit()
 
     def insert_error(self, pkg: PackageId, url: str, err: str):
@@ -297,7 +288,7 @@ WHERE LOWER(tag_name) IN (
         (groupid, artifactid, version, url, error)
         VALUES (%s,%s,%s,%s,%s)
         """
-        self.execute(query, [pkg.groupid, pkg.artifactid, pkg.version, url, err])
+        self.logged_execute(query, [pkg.groupid, pkg.artifactid, pkg.version, url, err])
         self.conn.commit()
 
     # TODO make this a batch OP
@@ -306,7 +297,7 @@ WHERE LOWER(tag_name) IN (
         UPDATE {self.HOST_TABLE} SET {field} = %s
         WHERE groupid=%s AND artifactid=%s AND version=%s
         """
-        self.execute(query, [url, pkg.groupid, pkg.artifactid, pkg.version])
+        self.logged_execute(query, [url, pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
     def mark_processed(self, pkg: PackageId):
@@ -314,10 +305,28 @@ WHERE LOWER(tag_name) IN (
         UPDATE {self.HOST_TABLE} SET processed = true
         WHERE groupid=%s AND artifactid=%s AND version=%s
         """
-        self.execute(query, [pkg.groupid, pkg.artifactid, pkg.version])
+        self.logged_execute(query, [pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
-    def get_hosts_with_tags(self):
+    def get_packages_with_rc(self):
+        query = f"""
+        SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
+               t.url, java_version_manifest_2, lastmodified, line_ending_inconsistent_in_file, compiler_version_source,
+               java_version_manifest_3, java_version_class_major, output_timestamp_prop, buildspec_path, line_ending_lf, line_ending_crlf
+        FROM {self.TAGS_TABLE} AS t
+        JOIN {self.PKG_TABLE} p on t.groupid = p.groupid
+            AND t.artifactid = p.artifactid
+            AND t.version = p.version
+        JOIN {self.PKG_LIST_TABLE} pl on t.groupid = pl.groupid
+            AND t.artifactid = pl.artifactid
+            AND t.version = pl.version
+        WHERE buildspec_path IS NOT NULL
+        AND t.url IS NOT NULL
+        """
+        self.cur.execute(query)
+        return self.cur.fetchall()
+
+    def get_pkgs_with_tags(self):
         query = f"""
         SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
                t.url, java_version_manifest_2,
@@ -339,40 +348,78 @@ WHERE LOWER(tag_name) IN (
             WHERE b.groupid = t.groupid
               AND b.artifactid = t.artifactid
               AND b.version = t.version
-        )
+        ) ORDER BY RANDOM()
         """
-        self.execute(query)
+        self.logged_execute(query)
+        return self.cur.fetchall()
+
+    def get_pkgs_from_list_with_tags(self, pkg_list: list[PackageId]):
+        """Given a list of PackageIds, fetches necessary info to build the packages
+        from the tags, package and package_list tables. Only fetches packages that
+        have a tag and not in build table.
+        """
+        query = f"""
+        SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
+               t.url, java_version_manifest_2,
+               java_version_manifest_3, compiler_version_source, output_timestamp_prop,
+               lastmodified, line_ending_lf, line_ending_crlf, line_ending_inconsistent_in_file
+        FROM {self.TAGS_TABLE} AS t
+        JOIN {self.PKG_TABLE} p on t.groupid = p.groupid
+            AND t.artifactid = p.artifactid
+            AND t.version = p.version
+        JOIN {self.PKG_LIST_TABLE} pl on t.groupid = pl.groupid
+            AND t.artifactid = pl.artifactid
+            AND t.version = pl.version
+        WHERE t.url IS NOT NULL
+        AND tag_name IS NOT NULL
+        AND (t.groupid, t.artifactid, t.version) IN %s
+        AND NOT EXISTS (SELECT 1 FROM {self.BUILDS_TABLE} b 
+        WHERE b.groupid = t.groupid AND b.artifactid = t.artifactid AND b.version = t.version);
+        """
+        self.cur.execute(
+            query, (tuple((pkg.groupid, pkg.artifactid, pkg.version) for pkg in pkg_list),)
+        )
+        return self.cur.fetchall()
+
+    def get_pkgs_in_builds(self):
+        query = """
+        SELECT DISTINCT groupid, artifactid, version FROM builds;
+        """
+        self.logged_execute(query)
         return self.cur.fetchall()
 
     def create_builds_table(self):
-        self.execute(
+        self.logged_execute(
             f"""
-        CREATE TABLE IF NOT EXISTS {self.BUILDS_TABLE}
-        (
-            groupid       TEXT NOT NULL,
-            artifactid    TEXT NOT NULL,
-            version       TEXT NOT NULL,
-            jdk           TEXT NOT NULL,
-            newline       TEXT NOT NULL,
-            tool          TEXT NOT NULL,
-            from_existing BOOLEAN,
-            build_success BOOLEAN,
-            stdout        TEXT,
-            stderr        TEXT,
-            ok_files      TEXT[],
-            ko_files      TEXT[],
-            command       TEXT,
-            PRIMARY KEY (version, artifactid, groupid, tool, newline, jdk, from_existing, command)
-        );
-        """
+            create table if not exists {self.BUILDS_TABLE}
+            (
+                build_id serial primary key,
+                groupid       text    not null,
+                artifactid    text    not null,
+                version       text    not null,
+                jdk           text    not null,
+                newline       text    not null,
+                tool          text    not null,
+                from_existing boolean not null,
+                build_success boolean,
+                stdout        text,
+                stderr        text,
+                ok_files      text[],
+                ko_files      text[],
+                command       text    not null
+            )
+            """
         )
         self.conn.commit()
 
+    # TODO add RETURNING statement to get back the build_id
     def insert_build(self, bs: Build_Spec, br: Build_Result, from_existing: bool):
         query = f"""
         INSERT INTO {self.BUILDS_TABLE} (groupid, artifactid, version, jdk, newline, tool, 
         from_existing, build_success, stdout, stderr, ok_files, ko_files, command)
-        VALUES (%s{12*",%s"}) ON CONFLICT DO NOTHING; 
+        VALUES (%s{12*",%s"}) 
+        ON CONFLICT DO NOTHING 
+        RETURNING build_id; 
         """
         self.cur.execute(
             query,
@@ -392,14 +439,71 @@ WHERE LOWER(tag_name) IN (
                 bs.command,
             ],
         )
+        build_id: str = self.cur.fetchone()[0]
+        self.conn.commit()
+        return build_id
+
+    def get_buildspec_path(self, pkg: PackageId):
+        self.logged_execute(
+            f"""
+        SELECT buildspec_path
+        FROM {self.PKG_TABLE}
+        WHERE groupid=%s AND artifactid=%s AND version=%s;
+        """,
+            [pkg.groupid, pkg.artifactid, pkg.version],
+        )
+        record = self.cur.fetchone()
+        if record:
+            return record["buildspec_path"]
+        else:
+            return None
+
+    def get_build_params_by_id(self, build_id):
+        self.logged_execute(
+            f"""
+            SELECT b.groupid, b.artifactid, b.version, jdk, newline, tool, command, tag_name, url
+            FROM {self.BUILDS_TABLE} b
+            JOIN {self.TAGS_TABLE} t 
+            ON b.groupid = t.groupid and b.artifactid = t.artifactid and b.version = t.version
+            WHERE build_id=%s;
+            """,
+            [build_id],
+        )
+        return self.cur.fetchone()
+
+    def create_jar_repr_table(self):
+        self.logged_execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.JAR_REPR_TABLE}(
+                build_id INTEGER,
+                archive TEXT,
+                hash_mismatches TEXT[],
+                missing_files TEXT[],
+                extra_files TEXT[],
+                FOREIGN KEY (build_id) REFERENCES builds (build_id)
+                    MATCH SIMPLE ON UPDATE CASCADE ON DELETE CASCADE
+            );
+            """
+        )
         self.conn.commit()
 
-    def execute(self, query: str, vars: list = None):
-        if vars is None:
+    def insert_jar_repr(self, build_id, archive, hash_mismatches, missing_files, extra_files):
+        self.cur.execute(
+            f"""
+            INSERT INTO {self.JAR_REPR_TABLE}
+            (build_id, archive, hash_mismatches, missing_files, extra_files) 
+            VALUES (%s,%s,%s,%s,%s);
+            """,
+            [build_id, archive, hash_mismatches, missing_files, extra_files],
+        )
+        self.conn.commit()
+
+    def logged_execute(self, query: str, vals: list = None):
+        if vals is None:
             self.log.debug(f"Executing query: {query}")
         else:
-            self.log.debug(f"Executing query: {query} with values {vars}")
-        self.cur.execute(query, vars)
+            self.log.debug(f"Executing query: {query} with values {vals}")
+        self.cur.execute(query, vals)
 
     def close(self):
         self.cur.close()
