@@ -308,6 +308,24 @@ class Database:
         self.logged_execute(query, [pkg.groupid, pkg.artifactid, pkg.version])
         self.conn.commit()
 
+    def get_packages_with_rc(self):
+        query = f"""
+        SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
+               t.url, java_version_manifest_2, lastmodified, line_ending_inconsistent_in_file, compiler_version_source,
+               java_version_manifest_3, java_version_class_major, output_timestamp_prop, buildspec_path, line_ending_lf, line_ending_crlf
+        FROM {self.TAGS_TABLE} AS t
+        JOIN {self.PKG_TABLE} p on t.groupid = p.groupid
+            AND t.artifactid = p.artifactid
+            AND t.version = p.version
+        JOIN {self.PKG_LIST_TABLE} pl on t.groupid = pl.groupid
+            AND t.artifactid = pl.artifactid
+            AND t.version = pl.version
+        WHERE buildspec_path IS NOT NULL
+        AND t.url IS NOT NULL
+        """
+        self.cur.execute(query)
+        return self.cur.fetchall()
+
     def get_pkgs_with_tags(self):
         query = f"""
         SELECT t.groupid, t.artifactid, t.version, tag_name, release_tag_name,
